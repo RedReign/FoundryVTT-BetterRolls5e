@@ -9,7 +9,7 @@
 				"./scripts/init.js"],
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],
-	"url": "",
-	"manifest": "",
-	"download": ""
+	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e",
+	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/module.json",
+	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip"
 }
