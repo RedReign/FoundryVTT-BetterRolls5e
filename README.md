@@ -26,9 +26,9 @@ TBA
 - Tertiary "extra damage" rolls for weapons that have alt damage rolls but also deal two types of damage (Such as using a longsword with the Paladin's Improved Divine Smite)
 
 ## Acknowledgements
-Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
-Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
-My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
+- Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
+- Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
+- My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
 
 ## License
 The source code is licensed under GPL-3.0.
