@@ -1,0 +1,59 @@
+.dnd5e.sheet .item-buttons button {
+	font-size: 10px;
+	line-height: 12px;
+	margin: 0;
+}
+
+.dnd5e.sheet .item-buttons span {
+	padding: 0;
+}
+
+.red-dual .dice-row {
+	clear: both;
+}
+
+.red-dual .dice-row .dual-left {
+	float: left;
+	width: 50%;
+	display: inline;
+}
+
+.red-dual .dice-row .dual-right {
+	float: right;
+	width: 50%;
+	display: inline;
+}
+
+.red-dual .dice-row .tooltip.dual-left {
+	width: 45%;
+}
+
+.red-dual .dice-row .tooltip.dual-right {
+	width: 45%;
+}
+
+.red-dual .dice-row .failure {
+	color: #aa0200;
+}
+
+.red-dual .success {
+	color: #257f11;
+}
+
+.red-dual .mixed {
+	color: #11257f;
+}
+
+.red-full .flavor-text {
+	text-align: center;
+	font-size: 12px;
+}
+
+.red-full .inline {
+	display: inline;
+}
+
+.red-full .damage-type {
+	text-align: center;
+	font-size: 12px;
+}
