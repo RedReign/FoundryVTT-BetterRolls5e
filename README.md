@@ -5,7 +5,7 @@ Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hoo
 
 ## Installation
 - Download the [.zip file](https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip) in this repository.
-- 
+- Extract the zip as a folder in `\resources\app\public\modules`
 
 ## Features
 - Improved roll outputs into chat for efficiency. Dubbed "Better Rolls", these compounded rolls can include dual d20 rolls for attack rolls, ability checks, and saving throws, but also damage rolls and automatic critical damage calculation.
