@@ -1,19 +1,19 @@
 // Hook into different sheet via their rendering
 Hooks.on(`renderActorSheet5eNPC`, (app, html, data) => {
-	game.settings.get("betterRolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterRolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
 });
 Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
-	game.settings.get("betterRolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterRolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
 });
 Hooks.on(`renderSky5eSheet`, (app, html, data) => {
-	game.settings.get("betterRolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterRolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
 });
 Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
-	game.settings.get("betterRolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
-	game.settings.get("betterRolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
 });
 
 /**
@@ -34,7 +34,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
         let chatData = item.getChatData();
 		
 		// Check settings
-		let diceEnabled = game.settings.get("betterRolls5e", "diceEnabled");
+		let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled");
 		
 		//console.log(item);
 
@@ -104,8 +104,8 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 					case 'toolCheck': RedDice5e.fullRoll(item, ev, {itemType: "tool", info:true}); break;
 					case 'combinedWeaponRoll': RedDice5e.fullRoll(item, ev, {attack: true, damage: true}); break;
 					case 'combinedWeaponRoll2': RedDice5e.fullRoll(item, ev, {attack: true, altDamage: true}); break;
-					case 'spellAttackDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", attack: true, damage: true}); break;
-					case 'spellSaveDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", save: true, damage: true}); break;
+					case 'spellAttackDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", attack: true, damage: true, info: true}); break;
+					case 'spellSaveDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", save: true, damage: true, info: true}); break;
 				}
 			} else {
 				// If better rolls are off
@@ -180,7 +180,7 @@ function changeRollsToDual (app, html, data) {
 		//console.log(event);
 		let li = $(event.currentTarget).parents(".item"),
 			item = app.object.getOwnedItem(Number(li.attr("data-item-id")));
-		if (event.altKey || !game.settings.get("betterRolls5e", "imageButtonEnabled")) {
+		if (event.altKey || !game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 			item.actor.sheet._onItemRoll(event);
 		}
 		else {
@@ -377,7 +377,7 @@ class RedDice5e extends Dice5e {
 		// Figure out if roll labels are necessary
 		let labelsShown = 0,
 			showLabels = true;
-		if (game.settings.get("betterRolls5e", "rollTitlesEnabled") == false) {
+		if (game.settings.get("betterrolls5e", "rollTitlesEnabled") == false) {
 			let templates = ["attack", "damage", "altDamage"];
 			for (var i = 0; i < templates.length; i++) {
 				if (rollRequests[templates[i]] == true) {
@@ -438,13 +438,15 @@ class RedDice5e extends Dice5e {
 	
 	/**
 	* A function for returning a roll template with crits and fumbles appropriately colored.
-	* @param {HTMLElement} html
+	* @param {Object} array			Object containing the html for the roll and whether or not the roll is a crit
+	*	{HTMLElement} html
+	*	{Boolean} isCrit
 	* @param {Roll} roll			The desired roll to check for crits or fumbles
 	* @param {String} selector		The CSS class selection to add the colors to
 	*/
-	static tagCrits(html, roll, selector, debug=false) {
-		if (!roll) {return html;}
-		let $html = $(html["html"]),
+	static tagCrits(array, roll, selector, debug=false) {
+		if (!roll) {return array;}
+		let $html = $(array.html),
 			high = 0,
 			low = 0;
 		roll.dice.forEach( function(d) {
@@ -465,7 +467,7 @@ class RedDice5e extends Dice5e {
 		else if ((high == 0) && (low > 0)) $html.find(selector).addClass("failure");
 		else if ((high > 0) && (low > 0)) $html.find(selector).addClass("mixed");
 		let isCrit = false;
-		if ((high > 0) || (html["isCrit"] == true)) isCrit = true;
+		if ((high > 0) || (array.isCrit == true)) isCrit = true;
 		
 		let output = {
 			html: $html[0].outerHTML,
@@ -553,7 +555,7 @@ class RedDice5e extends Dice5e {
 	}
 	
 	static async damageTemplate (baseRoll, critRoll, title, damType) {
-		let labelPlacement = game.settings.get("betterRolls5e", "damageRollPlacement"),
+		let labelPlacement = game.settings.get("betterrolls5e", "damageRollPlacement"),
 			baseTooltip = await baseRoll.getTooltip(),
 			templateTooltip = null;
 		
@@ -568,7 +570,7 @@ class RedDice5e extends Dice5e {
 			righttotal: (critRoll ? critRoll.total : null),
 			title: title,
 			formula: baseRoll.formula,
-			crittext: game.settings.get("betterRolls5e", "critString")
+			crittext: game.settings.get("betterrolls5e", "critString")
 		};
 		
 		switch (labelPlacement) {
@@ -597,7 +599,7 @@ class RedDice5e extends Dice5e {
 			
 			rollData.item = itemData;
 			
-		let labelPlacement = game.settings.get("betterRolls5e", "damageRollPlacement"),
+		let labelPlacement = game.settings.get("betterrolls5e", "damageRollPlacement"),
 			type = itm.type,
 			parts = [],
 			dtype = (CONFIG.damageTypes[alternate ? itemData.damage2Type.value : itemData.damageType.value] || CONFIG.healingTypes[itemData.damageType.value]);

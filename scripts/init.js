@@ -3,7 +3,7 @@ Hooks.once("init", () => {
 	/**
 	* Register better rolls setting
 	*/
-	game.settings.register("betterRolls5e", "diceEnabled", {
+	game.settings.register("betterrolls5e", "diceEnabled", {
 		name: "Enable Better Rolls",
 		hint: "Enables the improved dice outputs for DnD5e. Affects all ability checks, saving throws, items, spells, and features on the sheet. Requires reopening the sheet.",
 		scope: "world",
@@ -15,7 +15,7 @@ Hooks.once("init", () => {
 	/**
 	* Register added roll buttons
 	*/
-	game.settings.register("betterRolls5e", "rollButtonsEnabled", {
+	game.settings.register("betterrolls5e", "rollButtonsEnabled", {
 		name: "Add Roll Buttons to Sheet",
 		hint: "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
 		scope: "world",
@@ -27,7 +27,7 @@ Hooks.once("init", () => {
 	/**
 	* Register better roll for icon
 	*/
-	game.settings.register("betterRolls5e", "imageButtonEnabled", {
+	game.settings.register("betterrolls5e", "imageButtonEnabled", {
 		name: "Make Item Image Auto-roll",
 		hint: "When clicking on an item's image, output a Better Roll message to chat instead of the normal chat output. Can be bypassed by holding Alt when clicking.",
 		scope: "world",
@@ -39,7 +39,7 @@ Hooks.once("init", () => {
 	/**
 	* Register roll title options
 	*/
-	game.settings.register("betterRolls5e", "rollTitlesEnabled", {
+	game.settings.register("betterrolls5e", "rollTitlesEnabled", {
 		name: "Show Roll Labels",
 		hint: "Adds small roll labels for messages with multiple sets of rolls, such as \"Attack\" and \"Damage\". Only works on Better Rolls. If a message only has one roll type, a label will still be applied.",
 		scope: "world",
@@ -48,7 +48,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterRolls5e", "damageRollPlacement", {
+	game.settings.register("betterrolls5e", "damageRollPlacement", {
 		name: "Show Damage Labels",
 		hint: "Determines where the damage type label is placed, relative to a damage roll.",
 		scope: "world",
@@ -62,7 +62,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterRolls5e", "critString", {
+	game.settings.register("betterrolls5e", "critString", {
 		name: "Critical Indicator",
 		hint: "Determines how criticals are labeled. Appears as text to the right of the critical damage roll. Only works on Better Rolls.",
 		scope: "world",
