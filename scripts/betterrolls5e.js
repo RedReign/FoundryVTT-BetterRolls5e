@@ -13,7 +13,7 @@ Hooks.on(`renderSky5eSheet`, (app, html, data) => {
 });
 Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, '', '', '.item .npc-item-header > .rollable') : null;
 });
 
 /**
@@ -130,11 +130,18 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
  * Replaces the sheet's d20 rolls for ability checks, skill checks, and saving throws into dual d20s.
  * Also replaces the default button on items with a "standard" roll.
  */
-function changeRollsToDual (app, html, data) {
+function changeRollsToDual (app, html, data, abilityButton = '', skillButton = '', itemButton = '') {
+	// Set default selectors
+	if (abilityButton === '') abilityButton = '.ability-name';
+    if (skillButton === '') skillButton = '.skill-name';
+	if (itemButton === '') itemButton = '.item .item-image';
+	
 	let actor = app.object;
 	
 	// Assign new action to ability check button
-	let abilityName = html.find('.ability-name');
+	let abilityName = html.find(abilityButton);
+	console.log(abilityName);
+	console.log(abilityButton);
 	abilityName.off();
 	abilityName.click(event => {
 		event.preventDefault();
@@ -164,7 +171,7 @@ function changeRollsToDual (app, html, data) {
 	});
 	
 	// Assign new action to skill button
-	let skillName = html.find('.skill-name');
+	let skillName = html.find(skillButton);
 	skillName.off();
 	skillName.click(event => {
 		event.preventDefault();
@@ -173,7 +180,7 @@ function changeRollsToDual (app, html, data) {
 	});
 	
 	// Assign new action to item image button
-	let itemImage = html.find('.item .item-image');
+	let itemImage = html.find(itemButton);
 	itemImage.off();
 	itemImage.click(event => {
 		//console.log("EVENT:");
@@ -444,18 +451,22 @@ class RedDice5e extends Dice5e {
 	* @param {Roll} roll			The desired roll to check for crits or fumbles
 	* @param {String} selector		The CSS class selection to add the colors to
 	*/
-	static tagCrits(array, roll, selector, debug=false) {
+	static tagCrits(array, roll, selector, critThreshold, debug=false) {
 		if (!roll) {return array;}
 		let $html = $(array.html),
 			high = 0,
 			low = 0;
 		roll.dice.forEach( function(d) {
+			// Add crit for improved crit threshold
+			let threshold = critThreshold || d.faces;
 			if (debug) {
 				//console.log("SIZE",d.faces,"VALUE",d.total);
 			}
 			if (d.faces > 1) {
-				if (d.results.includes(d.faces)) { high += 1; }
-				if (d.results.includes(1)) { low += 1; }
+				d.results.forEach( function(result) {
+					if (result >= threshold) { high += 1; }
+					else if (result == 1) { low += 1; }
+				});
 			}
 		});
 		if (debug) {
@@ -482,7 +493,7 @@ class RedDice5e extends Dice5e {
 	* @param {Object} data			The data to compare to for the Roll object
 	* @param {String} title			The title of the dual roll. By default, appears as small text centered above the rolls.
 	*/
-	static async rollDual20(parts, data, title) {
+	static async rollDual20(parts, data, title, critThreshold) {
 		let d20parts = ["1d20"].concat(parts);
 		
 		
@@ -507,8 +518,8 @@ class RedDice5e extends Dice5e {
 			html: await renderTemplate("public/modules/betterrolls5e/templates/red-dualroll.html", chatData),
 			crit: false
 		};
-		html = RedDice5e.tagCrits(html, leftRoll, ".dice-total.dual-left");
-		html = RedDice5e.tagCrits(html, rightRoll, ".dice-total.dual-right");
+		html = RedDice5e.tagCrits(html, leftRoll, ".dice-total.dual-left", critThreshold);
+		html = RedDice5e.tagCrits(html, rightRoll, ".dice-total.dual-right", critThreshold);
 		return html;
 	}
 	
@@ -519,6 +530,13 @@ class RedDice5e extends Dice5e {
 			title = titleEnabled ? "Attack" : null,
 			parts = [],
 			rollData = {};
+		
+		
+		// Add Improved Critical threshold
+		let critThreshold = 20;
+		if (itm.data.type == "weapon") {
+			critThreshold = itm.actor.getFlag("dnd5e", "weaponCriticalThreshold") || 20;
+		}
 		
 		// Add ability modifier bonus
 		if ( (itemData.ability.value.length > 0) || itm.data.type == "spell" ) {
@@ -549,7 +567,7 @@ class RedDice5e extends Dice5e {
 		}
 		// // // // //
 		
-		let dualRoll = RedDice5e.rollDual20(parts, rollData, title);
+		let dualRoll = RedDice5e.rollDual20(parts, rollData, title, critThreshold);
 		//console.log(dualRoll);
 		return dualRoll;
 	}
