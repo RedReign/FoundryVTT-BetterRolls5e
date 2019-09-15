@@ -4,8 +4,16 @@ A module for modifying certain sheet functions on Foundry VTT Character sheets f
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
 
 ## Installation
+### Method 1
 - Download the [.zip file](https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip) in this repository.
 - Extract the zip as a folder called `betterrolls5e` in `\resources\app\public\modules\`
+- Restart Foundry.
+- Enjoy!
+
+### Method 2
+- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
+- Paste the link: `https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/module.json`
+- Click "Install" and it should appear in your modules list.
 - Enjoy!
 
 ## Implemented Features
