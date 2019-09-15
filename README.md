@@ -18,7 +18,11 @@ Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hoo
 - Currently, does not add to or tamper with actor data in any way. Disabling the mod should not affect actor data.
 
 ## Gallery
-TBA
+[](https://i.imgur.com/vZcoslI.png)
+https://i.imgur.com/hBsV2NK.png
+https://i.imgur.com/yc6jp3C.png
+https://i.imgur.com/y7Hz7lY.png
+https://i.imgur.com/FmeNGm3.png
 
 ## Planned Features
 - Localization support
