@@ -365,6 +365,7 @@ class RedDice5e extends Dice5e {
 	*		{Boolean} title						Title of the Chat Message. Defaults to item header
 	*		{Boolean} info						Information written in the Chat Message
 	*		{Boolean} forceCrit					Whether to force a critical damage roll
+	*		{Boolean} sendMessage				Whether to send the message to chat, false simply returns the content of the roll
 	*/
 	static async fullRoll(item, event, params) {
 		let rollRequests = mergeObject({
@@ -375,7 +376,8 @@ class RedDice5e extends Dice5e {
 			altDamage: false,
 			title: null,
 			info: false,
-			forceCrit: false
+			forceCrit: false,
+			sendMessage: true
 		},params || {});
 		
 		let rollWhisper = null,
@@ -427,20 +429,22 @@ class RedDice5e extends Dice5e {
 			altdamage: altDamageRoll
 		});
 		
-		// Output the rolls to chat in one message
-		ChatMessage.create({
-			user: game.user._id,
-			content: content,
-			speaker: {
-				actor: actor._id,
-				token: actor.token,
-				alias: actor.name
-			},
-			type: CHAT_MESSAGE_TYPES.OTHER,
-			whisper: rollWhisper,
-			blind: rollBlind,
-			sound: CONFIG.sounds.dice
-		});
+		if (rollRequests.sendMessage == true) {
+			// Output the rolls to chat in one message
+			ChatMessage.create({
+				user: game.user._id,
+				content: content,
+				speaker: {
+					actor: actor._id,
+					token: actor.token,
+					alias: actor.name
+				},
+				type: CHAT_MESSAGE_TYPES.OTHER,
+				whisper: rollWhisper,
+				blind: rollBlind,
+				sound: CONFIG.sounds.dice
+			});
+		} else return content;
 	}
 	
 	/**
@@ -645,15 +649,30 @@ class RedDice5e extends Dice5e {
 		let baseRoll = new Roll(baseWithParts.join("+"), rollData).roll();
 		let critRoll = null;
 		if (isCrit) {
-			critRoll = new Roll(baseDice, rollData);
+			console.log(baseDice);
+			let startCritRoll = new Roll(baseDice, rollData);
 			let add = (itm.actor && itm.actor.getFlag("dnd5e", "savageAttacks")) ? 1 : 0;
-			critRoll.alter(add);
-			critRoll = critRoll.roll();
+			startCritRoll.alter(add);
+			let newTerms = RedDice5e.removeFlatBonus(startCritRoll.terms);
+			critRoll = new Roll(newTerms).roll();
 		}
-			
 			
 		let damageRoll = RedDice5e.damageTemplate(baseRoll, critRoll, title, dtype);
 		return damageRoll;
+	}
+	
+	static removeFlatBonus(terms) {
+		terms.forEach( function(t) {
+			console.log(t);
+			if ((t.indexOf('+') === -1) && (t.indexOf('-') === -1) && (t.indexOf('*') === -1) && (t.indexOf('/') === -1) &&
+				((t.indexOf('d') === -1) && (terms[t-1] !== '*') && (terms[t-1] !== '/'))) {
+				terms[t] = "0";
+			}
+			//console.log("New t: ", terms[t]);
+		});
+		let output = terms.join('');
+		//console.log("OUTPUT: ", output);
+		return output;
 	}
 	
 	static async rollAbilityCheck(actor, abl) {
