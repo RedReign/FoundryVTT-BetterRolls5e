@@ -11,9 +11,9 @@ Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hoo
 - Enjoy!
 
 ### Method 2 (Now Works™!)
-- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.~~
+- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
 - Paste the link: `https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json`
-- Click "Install" and it should appear in your modules list.~~
+- Click "Install" and it should appear in your modules list.
 - Enjoy!
 
 ## Implemented Features
