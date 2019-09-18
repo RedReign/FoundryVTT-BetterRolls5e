@@ -9,11 +9,11 @@ Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
 });
 Hooks.on(`renderSky5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {singleAbilityButton: false}) : null;
 });
 Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, '', '', '.item .npc-item-header > .rollable') : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
 });
 
 /**
@@ -130,48 +130,78 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
  * Replaces the sheet's d20 rolls for ability checks, skill checks, and saving throws into dual d20s.
  * Also replaces the default button on items with a "standard" roll.
  */
-function changeRollsToDual (app, html, data, abilityButton = '', skillButton = '', itemButton = '') {
-	// Set default selectors
-	if (abilityButton === '') abilityButton = '.ability-name';
-    if (skillButton === '') skillButton = '.skill-name';
-	if (itemButton === '') itemButton = '.item .item-image';
+function changeRollsToDual (app, html, data, params) {
+	let paramRequests = mergeObject({
+			abilityButton: '.ability-name',
+			checkButton: '.ability-mod',
+			saveButton: '.ability-save',
+			skillButton: '.skill-name',
+			itemButton: '.item .item-image',
+			singleAbilityButton: true
+		},params || {});
 	
 	let actor = app.object;
+	//console.log(paramRequests);
 	
 	// Assign new action to ability check button
-	let abilityName = html.find(abilityButton);
-	console.log(abilityName);
-	console.log(abilityButton);
-	abilityName.off();
-	abilityName.click(event => {
-		event.preventDefault();
-		let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
-			abl = actor.data.data.abilities[ability];
-		//console.log("Ability: ", ability);
-		if ( event.ctrlKey ) {
-			RedDice5e.fullRollAttribute(app.object, ability, "check");
-		} else if ( event.shiftKey ) {
-			RedDice5e.fullRollAttribute(app.object, ability, "save");
-		} else {
-			new Dialog({
-				title: `${abl.label} Ability Roll`,
-				content: `<p>What type of ${abl.label} roll?</p>`,
-				buttons: {
-					test: {
-						label: "Ability Check",
-						callback: () => RedDice5e.fullRollAttribute(app.object, ability, "check")
-					},
-					save: {
-						label: "Saving Throw",
-						callback: () => RedDice5e.fullRollAttribute(app.object, ability, "save")
+	let abilityName = html.find(paramRequests.abilityButton);
+	if (paramRequests.singleAbilityButton === true || (!game.settings.get("betterrolls5e", "dedicatedCheckSave"))) {
+		//console.log(abilityName);
+		//console.log(paramRequests.singleAbilityButton);
+		abilityName.off();
+		abilityName.click(event => {
+			event.preventDefault();
+			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+				abl = actor.data.data.abilities[ability];
+			//console.log("Ability: ", ability);
+			if ( event.ctrlKey ) {
+				RedDice5e.fullRollAttribute(app.object, ability, "check");
+			} else if ( event.shiftKey ) {
+				RedDice5e.fullRollAttribute(app.object, ability, "save");
+			} else {
+				new Dialog({
+					title: `${abl.label} Ability Roll`,
+					content: `<p>What type of ${abl.label} roll?</p>`,
+					buttons: {
+						test: {
+							label: "Ability Check",
+							callback: () => RedDice5e.fullRollAttribute(app.object, ability, "check")
+						},
+						save: {
+							label: "Saving Throw",
+							callback: () => RedDice5e.fullRollAttribute(app.object, ability, "save")
+						}
 					}
-				}
-			}).render(true);
-		}
-	});
+				}).render(true);
+			}
+		});
+	} else abilityName.off();
+	
+	if (game.settings.get("betterrolls5e", "dedicatedCheckSave") === true) {
+		let checkName = html.find(paramRequests.checkButton);
+		checkName.off();
+		checkName.click(event => {
+			event.preventDefault();
+			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+				abl = actor.data.data.abilities[ability];
+			//console.log("Ability: ", ability);
+			RedDice5e.fullRollAttribute(app.object, ability, "check");
+		});
+		
+		let saveName = html.find(paramRequests.saveButton);
+		saveName.off();
+		saveName.click(event => {
+			event.preventDefault();
+			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+				abl = actor.data.data.abilities[ability];
+			//console.log("Ability: ", ability);
+			RedDice5e.fullRollAttribute(app.object, ability, "save");
+		});
+	}
+	
 	
 	// Assign new action to skill button
-	let skillName = html.find(skillButton);
+	let skillName = html.find(paramRequests.skillButton);
 	skillName.off();
 	skillName.click(event => {
 		event.preventDefault();
@@ -180,7 +210,7 @@ function changeRollsToDual (app, html, data, abilityButton = '', skillButton = '
 	});
 	
 	// Assign new action to item image button
-	let itemImage = html.find(itemButton);
+	let itemImage = html.find(paramRequests.itemButton);
 	itemImage.off();
 	itemImage.click(event => {
 		//console.log("EVENT:");
@@ -279,7 +309,7 @@ class RedDice5e extends Dice5e {
 		}
 		
 		
-		let titleImage = (actor.data.img == "icons/svg/mystery-man.svg") ? actor.data.token.img : actor.data.img;
+		let titleImage = ((actor.data.img == "icons/svg/mystery-man.svg") || actor.data.img == "") ? actor.data.token.img : actor.data.img;
 		
 		let titleTemplate = await renderTemplate("public/modules/betterrolls5e/templates/red-header.html", {
 			item: {
@@ -543,8 +573,8 @@ class RedDice5e extends Dice5e {
 		}
 		
 		// Add ability modifier bonus
-		console.log(itm);
-		if ( ((itemData.ability) && itemData.ability.value.length > 0) || itm.data.type == "spell" ) {
+		//console.log(itm);
+		if ( ((itemData.ability.value) && itemData.ability.value.length > 0) || itm.data.type == "spell" ) {
 			let abl = "";
 			if (itm.data.type == "spell") {
 				abl = itemData.ability.value || actorData.attributes.spellcasting.value;
@@ -650,7 +680,7 @@ class RedDice5e extends Dice5e {
 		let baseRoll = new Roll(baseWithParts.join("+"), rollData).roll();
 		let critRoll = null;
 		if (isCrit) {
-			console.log(baseDice);
+			//console.log(baseDice);
 			let startCritRoll = new Roll(baseDice, rollData);
 			let add = (itm.actor && itm.actor.getFlag("dnd5e", "savageAttacks")) ? 1 : 0;
 			startCritRoll.alter(add);
@@ -664,7 +694,7 @@ class RedDice5e extends Dice5e {
 	
 	static removeFlatBonus(terms) {
 		terms.forEach( function(t) {
-			console.log(t);
+			//console.log(t);
 			if ((t.indexOf('+') === -1) && (t.indexOf('-') === -1) && (t.indexOf('*') === -1) && (t.indexOf('/') === -1) &&
 				((t.indexOf('d') === -1) && (terms[t-1] !== '*') && (terms[t-1] !== '/'))) {
 				terms[t] = "0";
