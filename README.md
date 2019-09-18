@@ -11,10 +11,10 @@ Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hoo
 - Enjoy!
 
 ### Method 2 (currently does not work)
-~~- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.~~
-~~- Paste the link: `https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/module.json`~~
-~~- Click "Install" and it should appear in your modules list.~~
-~~- Enjoy!~~
+- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.~~
+- Paste the link: `https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json`
+- Click "Install" and it should appear in your modules list.~~
+- Enjoy!
 
 ## Implemented Features
 - Improved roll outputs into chat for efficiency. Dubbed "Better Rolls", these compounded rolls can include dual d20 rolls for attack rolls, ability checks, and saving throws, but also damage rolls and automatic critical damage calculation.
