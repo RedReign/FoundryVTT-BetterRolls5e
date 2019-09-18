@@ -81,12 +81,4 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "dedicatedCheckSave", {
-		name: "Dedicated Check & Save Buttons",
-		hint: "Adds the ability to roll checks and saves by clicking on their respective bonuses on the sheet. Only works on Better Rolls. May not work on all sheets.",
-		scope: "world",
-		config: true,
-		default: true,
-		type: Boolean
-	});
 });

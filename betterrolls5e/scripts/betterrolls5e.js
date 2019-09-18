@@ -9,7 +9,7 @@ Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
 });
 Hooks.on(`renderSky5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {singleAbilityButton: false}) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
 });
 Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
@@ -145,7 +145,7 @@ function changeRollsToDual (app, html, data, params) {
 	
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
-	if (paramRequests.singleAbilityButton === true || (!game.settings.get("betterrolls5e", "dedicatedCheckSave"))) {
+	if (paramRequests.singleAbilityButton === true) {
 		//console.log(abilityName);
 		//console.log(paramRequests.singleAbilityButton);
 		abilityName.off();
@@ -175,29 +175,28 @@ function changeRollsToDual (app, html, data, params) {
 				}).render(true);
 			}
 		});
-	} else abilityName.off();
-	
-	if (game.settings.get("betterrolls5e", "dedicatedCheckSave") === true) {
-		let checkName = html.find(paramRequests.checkButton);
-		checkName.off();
-		checkName.click(event => {
-			event.preventDefault();
-			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
-				abl = actor.data.data.abilities[ability];
-			//console.log("Ability: ", ability);
-			RedDice5e.fullRollAttribute(app.object, ability, "check");
-		});
-		
-		let saveName = html.find(paramRequests.saveButton);
-		saveName.off();
-		saveName.click(event => {
-			event.preventDefault();
-			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
-				abl = actor.data.data.abilities[ability];
-			//console.log("Ability: ", ability);
-			RedDice5e.fullRollAttribute(app.object, ability, "save");
-		});
 	}
+	
+	
+	let checkName = html.find(paramRequests.checkButton);
+	checkName.off();
+	checkName.click(event => {
+		event.preventDefault();
+		let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+			abl = actor.data.data.abilities[ability];
+		//console.log("Ability: ", ability);
+		RedDice5e.fullRollAttribute(app.object, ability, "check");
+	});
+	
+	let saveName = html.find(paramRequests.saveButton);
+	saveName.off();
+	saveName.click(event => {
+		event.preventDefault();
+		let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+			abl = actor.data.data.abilities[ability];
+		//console.log("Ability: ", ability);
+		RedDice5e.fullRollAttribute(app.object, ability, "save");
+	});
 	
 	
 	// Assign new action to skill button
