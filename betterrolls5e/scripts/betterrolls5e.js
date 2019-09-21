@@ -692,16 +692,18 @@ class RedDice5e extends Dice5e {
 	}
 	
 	static removeFlatBonus(terms) {
-		terms.forEach( function(t) {
-			//console.log(t);
-			if ((t.indexOf('+') === -1) && (t.indexOf('-') === -1) && (t.indexOf('*') === -1) && (t.indexOf('/') === -1) &&
-				((t.indexOf('d') === -1) && (terms[t-1] !== '*') && (terms[t-1] !== '/'))) {
-				terms[t] = "0";
+		console.log(terms.length)
+		for (let i = 0; i < terms.length; i++) {
+			let term = terms[i];
+			// If the term is not an operation, and does not contain a dice roll, set its value to 0
+			if ((term.indexOf('+') === -1) && (term.indexOf('-') === -1) && (term.indexOf('*') === -1) && (term.indexOf('/') === -1) &&
+			((term.indexOf('d') === -1) && (terms[i-1] !== '*') && (terms[i-1] !== '/'))) {
+				terms[i] = "0";
+				console.log("Term changed! New term:", terms[i]);
 			}
-			//console.log("New t: ", terms[t]);
-		});
+		}
 		let output = terms.join('');
-		//console.log("OUTPUT: ", output);
+		console.log("OUTPUT: ", output);
 		return output;
 	}
 	
