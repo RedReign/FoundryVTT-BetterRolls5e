@@ -8,7 +8,7 @@ Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebutt
 ## Installation
 ### Method 1
 - Download the [.zip file](https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip) in this repository.
-- Extract the zip as a folder called `betterrolls5e` in `\resources\app\public\modules\`
+- Extract the contents of the zip in `\resources\app\public\modules\`
 - Restart Foundry.
 - Enjoy!
 
