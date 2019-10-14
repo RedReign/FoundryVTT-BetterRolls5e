@@ -57,3 +57,22 @@
 	text-align: center;
 	font-size: 12px;
 }
+
+.dnd5e.red-full.chat-card footer.card-footer {
+    margin-top:2px;
+}
+
+.dnd5e.item form .item-betterRolls {
+	padding: 8px 8px 0;
+	overflow-y: auto;
+}
+
+.dnd5e.item form .item-betterRolls label {
+	color: #888;
+	font-weight: bold;
+}
+
+.dnd5e.item form .item-betterRolls select {
+	font-size: 12px;
+	height: 24px;
+}

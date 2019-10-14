@@ -1,4 +1,4 @@
-<div class="red-full">
+<div class="dnd5e red-full chat-card">
 	{{#if title}} <div>{{{title}}}</div> {{/if}}
 	{{#if info}}<div class="card-content">{{{info}}}</div>{{/if}}
 	{{{dual}}}
@@ -7,5 +7,13 @@
 	{{/if}}
 	{{{damage}}}
 	{{{altdamage}}}
+	{{{extradamage}}}
 	{{{tags}}}
+	{{#if properties}}
+	<footer class="card-footer">
+        {{#each properties}}
+        <span>{{this}}</span>
+        {{/each}}
+    </footer>
+	{{/if}}
 </div>

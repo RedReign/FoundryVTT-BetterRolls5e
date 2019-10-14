@@ -1,0 +1,60 @@
+<div class="tab item-betterRolls" data-tab="betterRolls5e">
+	{{#if flags.betterRolls5e.quickDesc}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.quickDesc.label}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickDesc.value" value="flags.betterRolls5e.quickDesc.value" data-dtype="{{flags.betterRolls5e.quickDesc.type}}" {{checked flags.betterRolls5e.quickDesc.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.critRange}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.critRange.label}}</label>
+		<input type="text" name="flags.betterRolls5e.critRange.value" value="{{flags.betterRolls5e.critRange.value}}" data-dtype="{{flags.betterRolls5e.critRange.type}}"/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.extraDamage}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.extraDamage.label}}</label>
+		<input type="text" name="flags.betterRolls5e.extraDamage.value" value="{{flags.betterRolls5e.extraDamage.value}}" data-dtype="{{flags.betterRolls5e.extraDamage.type}}"/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.extraType}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.extraType.label}}</label>
+		<select name="flags.betterRolls5e.extraType.value" data-dtype="{{flags.betterRolls5e.extraType.type}}">
+			{{#select flags.betterRolls5e.extraType.value}}
+			<option value=""></option>
+			{{#each damageTypes as |name type|}}
+			<option value="{{type}}">{{name}}</option>
+			{{/each}}
+			{{/select}}
+		</select>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.quickExtra}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.quickExtra.label}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickExtra.value" value="flags.betterRolls5e.quickExtra.value" data-dtype="{{flags.betterRolls5e.quickExtra.type}}" {{checked flags.betterRolls5e.quickExtra.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.addToBase}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.addToBase.label}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.addToBase.value" value="flags.betterRolls5e.addToBase.value" data-dtype="{{flags.betterRolls5e.addToBase.type}}" {{checked flags.betterRolls5e.addToBase.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.addToAlt}}
+	<div class="form-group">
+		<label>{{flags.betterRolls5e.addToAlt.label}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.addToAlt.value" value="flags.betterRolls5e.addToAlt.value" data-dtype="{{flags.betterRolls5e.addToAlt.type}}" {{checked flags.betterRolls5e.addToAlt.value}}/>
+	</div>
+	{{/if}}
+	
+	
+	
+</div>
