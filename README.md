@@ -31,6 +31,7 @@ Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebutt
 ![](https://i.imgur.com/2kNCHdZ.png)
 
 Clicking with/without the Alt key:
+
 ![](https://i.imgur.com/Od15JXz.png)
 - Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
 - ***New!*** Per-item options for showing the item's description on a quick roll.
