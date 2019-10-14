@@ -20,19 +20,26 @@ Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebutt
 
 ## Implemented Features
 - Improved roll outputs into chat for efficiency. Dubbed "Better Rolls", these compounded rolls can include dual d20 rolls for attack rolls, ability checks, and saving throws, but also damage rolls and automatic critical damage calculation.
+![](https://i.imgur.com/Pq5HK73.png)
+![](https://i.imgur.com/6YzQWG9.png)
+![](https://i.imgur.com/pME8Tsz.png)
+![](https://i.imgur.com/XO2JUjB.png)
 - Added sheet buttons when expanding an item's summary in the sheet, allowing the sheet to quickly output whatever is needed (Attack & damage rolls combined, attack & alternate damage, just attack, just damage...)
+![](https://i.imgur.com/uFvpDPw.png)
 - Clicking an item/feat/spell's icon will give a quick roll, based on the fields present in the item clicked. Hold Alt while clicking to bypass this and do the default chat message.
-- Need for clicking through prompts in order to get a single roll are removed.
+![](https://i.imgur.com/2kNCHdZ.png)
+Clicking with/without the Alt key:
+![](https://i.imgur.com/Od15JXz.png)
+- Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
+- ***New!*** Per-item options for showing the item's description on a quick roll.
+- ***New!*** Per-item critical threshold.
+- ***New!*** Per-item extra damage rolls.
+![](https://i.imgur.com/FkotJOG.png)
+- Extra damage rolls can be configured and added separately to both normal and alternate damage rolls, allowing greater flexibility for weapons that deal damage in multiple ways.
 - Natively supports the 'Sky5e' and 'Better NPC' sheets for 5e.
+![](https://i.imgur.com/qleIQsq.png)
 - Configurable options for disabling better rolls, changing sheet outputs, and labels for both roll sets and damage type.
-- Currently, does not add to or tamper with actor data in any way. Disabling the mod should not affect actor data.
-
-## Gallery
-![](https://i.imgur.com/vZcoslI.png)
-![](https://i.imgur.com/hBsV2NK.png)
-![](https://i.imgur.com/yc6jp3C.png)
-![](https://i.imgur.com/y7Hz7lY.png)
-![](https://i.imgur.com/FmeNGm3.png)
+![](https://i.imgur.com/Wd0iT0E.png)
 
 ## Planned Features
 - Localization support
