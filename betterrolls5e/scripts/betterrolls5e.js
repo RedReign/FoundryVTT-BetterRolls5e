@@ -43,20 +43,28 @@ CONFIG.betterRolls5e = {
 
 // Hook into different sheet via their rendering
 Hooks.on(`renderActorSheet5eNPC`, (app, html, data) => {
+	setTimeout(() => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
 	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
 });
 Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
+	setTimeout(() => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
 	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
 });
 Hooks.on(`renderSky5eSheet`, (app, html, data) => {
+	setTimeout(() => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
 	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
 });
 Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
+	setTimeout(() => {
 	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
 	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
+	}, 50);
 });
 
 // Hook into the item sheets via their rendering
@@ -82,6 +90,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 
     // adding an event for when the description is shown
     html.find(triggeringElement).click(event => {
+		console.log("Summary expanded!");
         let li = $(event.currentTarget).parents(".item");
         let item = app.object.getOwnedItem(Number(li.attr("data-item-id")));
         let chatData = item.getChatData();
