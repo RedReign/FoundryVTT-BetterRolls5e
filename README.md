@@ -43,11 +43,12 @@ Clicking with/without the Alt key:
 ![](https://i.imgur.com/qleIQsq.png)
 - Configurable options for disabling better rolls, changing sheet outputs, and labels for both roll sets and damage type.
 ![](https://i.imgur.com/Wd0iT0E.png)
+- Localization support - now comes with a full Japanese translation!
+![](https://cdn.discordapp.com/attachments/513918036919713802/635495803787542559/unknown.png)
+
 
 ## Planned Features
-- Localization support
-- Per-item options for buttons that have both attack and alt damage rolls combined
-- Tertiary "extra damage" rolls for weapons that have alt damage rolls but also deal two types of damage (Such as using a longsword with the Paladin's Improved Divine Smite)
+- Dual roll improvements
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
