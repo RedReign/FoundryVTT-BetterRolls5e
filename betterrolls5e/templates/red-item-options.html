@@ -1,60 +1,89 @@
 <div class="tab item-betterRolls" data-tab="betterRolls5e">
-	{{#if flags.betterRolls5e.quickDesc}}
-	<div class="form-group">
-		<label>{{flags.betterRolls5e.quickDesc.label}}</label>
-		<input type="checkbox" name="flags.betterRolls5e.quickDesc.value" value="flags.betterRolls5e.quickDesc.value" data-dtype="{{flags.betterRolls5e.quickDesc.type}}" {{checked flags.betterRolls5e.quickDesc.value}}/>
-	</div>
-	{{/if}}
+	
 	
 	{{#if flags.betterRolls5e.critRange}}
 	<div class="form-group">
-		<label>{{flags.betterRolls5e.critRange.label}}</label>
+		<label>{{localize "br5e.settings.critThreshold"}}</label>
 		<input type="text" name="flags.betterRolls5e.critRange.value" value="{{flags.betterRolls5e.critRange.value}}" data-dtype="{{flags.betterRolls5e.critRange.type}}"/>
 	</div>
 	{{/if}}
 	
 	{{#if flags.betterRolls5e.extraDamage}}
 	<div class="form-group">
-		<label>{{flags.betterRolls5e.extraDamage.label}}</label>
+		<label>{{localize "br5e.settings.extraDamage"}}</label>
 		<input type="text" name="flags.betterRolls5e.extraDamage.value" value="{{flags.betterRolls5e.extraDamage.value}}" data-dtype="{{flags.betterRolls5e.extraDamage.type}}"/>
 	</div>
 	{{/if}}
 	
 	{{#if flags.betterRolls5e.extraType}}
 	<div class="form-group">
-		<label>{{flags.betterRolls5e.extraType.label}}</label>
+		<label>{{localize "br5e.settings.extraType"}}</label>
 		<select name="flags.betterRolls5e.extraType.value" data-dtype="{{flags.betterRolls5e.extraType.type}}">
 			{{#select flags.betterRolls5e.extraType.value}}
 			<option value=""></option>
 			{{#each damageTypes as |name type|}}
-			<option value="{{type}}">{{name}}</option>
+			<option value="{{type}}">{{localize name}}</option>
 			{{/each}}
 			{{/select}}
 		</select>
 	</div>
 	{{/if}}
 	
-	{{#if flags.betterRolls5e.quickExtra}}
-	<div class="form-group">
-		<label>{{flags.betterRolls5e.quickExtra.label}}</label>
-		<input type="checkbox" name="flags.betterRolls5e.quickExtra.value" value="flags.betterRolls5e.quickExtra.value" data-dtype="{{flags.betterRolls5e.quickExtra.type}}" {{checked flags.betterRolls5e.quickExtra.value}}/>
-	</div>
-	{{/if}}
-	
 	{{#if flags.betterRolls5e.addToBase}}
 	<div class="form-group">
-		<label>{{flags.betterRolls5e.addToBase.label}}</label>
+		<label>{{localize "br5e.settings.addExtraToBase"}}</label>
 		<input type="checkbox" name="flags.betterRolls5e.addToBase.value" value="flags.betterRolls5e.addToBase.value" data-dtype="{{flags.betterRolls5e.addToBase.type}}" {{checked flags.betterRolls5e.addToBase.value}}/>
 	</div>
 	{{/if}}
 	
 	{{#if flags.betterRolls5e.addToAlt}}
 	<div class="form-group">
-		<label>{{flags.betterRolls5e.addToAlt.label}}</label>
+		<label>{{localize "br5e.settings.addExtraToAlt"}}</label>
 		<input type="checkbox" name="flags.betterRolls5e.addToAlt.value" value="flags.betterRolls5e.addToAlt.value" data-dtype="{{flags.betterRolls5e.addToAlt.type}}" {{checked flags.betterRolls5e.addToAlt.value}}/>
 	</div>
 	{{/if}}
 	
+	<hr>
+	<h3><label>{{localize "br5e.settings.quickRollsLabel"}}</label></h3>
+	{{#if flags.betterRolls5e.quickDesc}}
+	<div class="form-group">
+		<label>{{localize "br5e.settings.description"}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickDesc.value" value="flags.betterRolls5e.quickDesc.value" data-dtype="{{flags.betterRolls5e.quickDesc.type}}" {{checked flags.betterRolls5e.quickDesc.value}}/>
+	</div>
+	{{/if}}
 	
+	{{#if flags.betterRolls5e.quickAttack}}
+	<div class="form-group">
+		<label>{{localize asString}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickAttack.value" value="flags.betterRolls5e.quickAttack.value" data-dtype="{{flags.betterRolls5e.quickAttack.type}}" {{checked flags.betterRolls5e.quickAttack.value}}/>
+	</div>
+	{{/if}}
 	
+	{{#if flags.betterRolls5e.quickBaseDamage}}
+	<div class="form-group">
+		<label>{{localize "br5e.settings.baseDamage"}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickBaseDamage.value" value="flags.betterRolls5e.quickBaseDamage.value" data-dtype="{{flags.betterRolls5e.quickBaseDamage.type}}" {{checked flags.betterRolls5e.quickBaseDamage.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.quickAltDamage}}
+	<div class="form-group">
+		<label>{{localize "br5e.settings.altDamage"}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickAltDamage.value" value="flags.betterRolls5e.quickAltDamage.value" data-dtype="{{flags.betterRolls5e.quickAltDamage.type}}" {{checked flags.betterRolls5e.quickAltDamage.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.quickExtraDamage}}
+	<div class="form-group">
+		<label>{{localize "br5e.settings.extraDamage"}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickExtraDamage.value" value="flags.betterRolls5e.quickExtraDamage.value" data-dtype="{{flags.betterRolls5e.quickExtraDamage.type}}" {{checked flags.betterRolls5e.quickExtraDamage.value}}/>
+	</div>
+	{{/if}}
+	
+	{{#if flags.betterRolls5e.quickProperties}}
+	<div class="form-group">
+		<label>{{localize "br5e.settings.properties"}}</label>
+		<input type="checkbox" name="flags.betterRolls5e.quickProperties.value" value="flags.betterRolls5e.quickProperties.value" data-dtype="{{flags.betterRolls5e.quickProperties.type}}" {{checked flags.betterRolls5e.quickProperties.value}}/>
+	</div>
+	{{/if}}
 </div>

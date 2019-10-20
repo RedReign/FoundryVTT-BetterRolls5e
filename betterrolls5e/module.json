@@ -2,9 +2,21 @@
 	"name": "betterrolls5e",
 	"title": "Better Rolls for 5e",
 	"description": "This module adds special roll functionality for the 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
-	"version": "0.3.1",
+	"version": "0.3.3",
 	"author": "Red Reign#5128",
-	"systems": ["dnd5e"],
+	"languages": [
+		{
+			"lang": "en",
+			"name": "English",
+			"path": "lang/en.json"
+		},
+		{
+			"lang": "ja",
+			"name": "日本語 (Japanese)",
+			"path": "lang/ja.json"
+		}
+	],
+	"systems": ["dnd5e", "dnd5eJP"],
 	"scripts": ["./scripts/betterrolls5e.js",
 				"./scripts/init.js"],
 	"styles": ["./css/betterrolls5e.css"],

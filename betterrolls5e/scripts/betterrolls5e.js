@@ -3,42 +3,72 @@ CONFIG.betterRolls5e = {
 	combinedDamageTypes: mergeObject(duplicate(CONFIG.damageTypes), CONFIG.healingTypes),
 	allFlags: {
 		weaponFlags: {
-			critRange: { label: "Critical Threshold", type: "String", value: "" },
-			extraDamage: { label: "Extra Damage", type: "String", value: "" },
-			extraType: { label: "Extra Type", type: "String", value: "" },
-			addToBase: { label: "Add Extra to Normal Damage Roll", type: "Boolean", value: false },
-			addToAlt: { label: "Add Extra to Alternate Damage Roll", type: "Boolean", value: false },
-			quickDesc: { label: "Show Description on Quick Rolls", type: "Boolean", value: false },
+			critRange: { type: "String", value: "" },
+			extraDamage: { type: "String", value: "" },
+			extraType: { type: "String", value: "" },
+			addToBase: { type: "Boolean", value: false },
+			addToAlt: { type: "Boolean", value: false },
+			quickDesc: { type: "Boolean", value: false },
+			quickAttack: { type: "Boolean", value: true },
+			quickBaseDamage: { type: "Boolean", value: true },
+			quickAltDamage: { type: "Boolean", value: false },
+			quickExtraDamage: { type: "Boolean", value: false },
+			quickProperties: { type: "Boolean", value: true },
 		},
 		spellFlags: {
-			critRange: { label: "Critical Threshold", type: "String", value: "" },
-			extraDamage: { label: "Extra Damage", type: "String", value: "" },
-			extraType: { label: "Extra Type", type: "String", value: "" },
-			addToBase: { label: "Add Extra to Normal Damage Roll", type: "Boolean", value: false },
+			critRange: { type: "String", value: "" },
+			extraDamage: { type: "String", value: "" },
+			extraType: { type: "String", value: "" },
+			addToBase: { type: "Boolean", value: false },
+			quickDesc: { type: "Boolean", value: true },
+			quickAttack: { type: "Boolean", value: true },
+			quickBaseDamage: { type: "Boolean", value: true },
+			quickExtraDamage: { type: "Boolean", value: false },
+			quickProperties: { type: "Boolean", value: true },
 		},
 		equipmentFlags: {
-			extraDamage: { label: "Extra Damage", type: "String", value: "" },
-			extraType: { label: "Extra Type", type: "String", value: "" },
-			quickDesc: { label: "Show Description on Quick Rolls", type: "Boolean", value: true },
+			extraDamage: { type: "String", value: "" },
+			extraType: { type: "String", value: "" },
+			quickDesc: { type: "Boolean", value: true },
+			quickExtraDamage: { type: "Boolean", value: false },
+			quickProperties: { type: "Boolean", value: true },
 		},
 		featFlags: {
-			critRange: { label: "Critical Threshold", type: "String", value: "" },
-			extraDamage: { label: "Extra Damage", type: "String", value: "" },
-			extraType: { label: "Extra Type", type: "String", value: "" },
-			addToBase: { label: "Add Extra to Normal Damage Roll", type: "Boolean", value: false },
-			addToAlt: { label: "Add Extra to Alternate Damage Roll", type: "Boolean", value: false },
-			quickDesc: { label: "Show Description on Quick Rolls", type: "Boolean", value: true },
+			critRange: { type: "String", value: "" },
+			extraDamage: { type: "String", value: "" },
+			extraType: { type: "String", value: "" },
+			addToBase: { type: "Boolean", value: false },
+			quickDesc: { type: "Boolean", value: true },
+			quickAttack: { type: "Boolean", value: true },
+			quickBaseDamage: { type: "Boolean", value: true },
+			quickExtraDamage: { type: "Boolean", value: false },
+			quickProperties: { type: "Boolean", value: true },
 		},
 		toolFlags: {
-			quickDesc: { label: "Show Description on Quick Rolls", type: "Boolean", value: true },
-			extraDamage: { label: "Extra Damage", type: "String", value: "" },
-			extraType: { label: "Extra Type", type: "String", value: "" },
-			quickExtra: { label: "Roll Extra Damage on Quick Rolls", type: "Boolean", value: false },
+			extraDamage: { type: "String", value: "" },
+			extraType: { type: "String", value: "" },
+			quickDesc: { type: "Boolean", value: true },
+			quickExtraDamage: { type: "Boolean", value: false },
+			quickProperties: { type: "Boolean", value: true },
 		},
 		consumableFlags: {
 		}
 	}
 };
+
+function i18n(key) {
+	return game.i18n.localize(key);
+}
+
+function hasProperty(object, key) {
+  if ( !key ) return false;
+  let target = object;
+  for ( let p of key.split('.') ) {
+    if ( target.hasOwnProperty(p) ) target = target[p];
+    else return false;
+  }
+  return true;
+}
 
 
 // Hook into different sheet via their rendering
@@ -90,7 +120,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 
     // adding an event for when the description is shown
     html.find(triggeringElement).click(event => {
-		console.log("Summary expanded!");
+		//console.log("Summary expanded!");
         let li = $(event.currentTarget).parents(".item");
         let item = app.object.getOwnedItem(Number(li.attr("data-item-id")));
         let chatData = item.getChatData();
@@ -104,48 +134,45 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 			extraDamage = true;
 		}
 		
-		//redUpdateFlags(item);
-		
-		//console.log(item);
-
         if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
-
+		
+		
         // Create the buttons
         let buttons = $(`<div class="item-buttons"></div>`);
         switch (item.data.type) {
             case 'weapon':
-				if ((diceEnabled) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="combinedWeaponRoll">Roll</button></span>`);
-                if ((diceEnabled) && item.data.data.damage2.value) buttons.append(`<span class="tag"><button data-action="combinedWeaponRoll2">Alt. Roll</button></span>`);
-                buttons.append(`<span class="tag"><button data-action="weaponAttack">Attack</button></span>`);
-                if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="weaponDamage">Damage</button></span>`);
-                if (item.data.data.damage2.value) buttons.append(`<span class="tag"><button data-action="weaponDamage2">Alt. Damage</button></span>`);
+				if ((diceEnabled) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="combinedWeaponRoll">${i18n("br5e.buttons.roll")}</button></span>`);
+                if ((diceEnabled) && item.data.data.damage2.value) buttons.append(`<span class="tag"><button data-action="combinedWeaponRoll2">${i18n("br5e.buttons.altRoll")}</button></span>`);
+				buttons.append(`<span class="tag"><button data-action="weaponAttack">${i18n("br5e.buttons.attack")}</button></span>`);
+                if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="weaponDamage">${i18n("br5e.buttons.damage")}</button></span>`);
+                if (item.data.data.damage2.value) buttons.append(`<span class="tag"><button data-action="weaponDamage2">${i18n("br5e.buttons.altDamage")}</button></span>`);
                 break;
             case 'spell':
-				if ((diceEnabled) && (chatData.isAttack) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellAttackDamage">Roll (Atk & Dmg)</button></span>`);
-				if ((diceEnabled) && (chatData.isSave) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellSaveDamage">Roll (Save & Dmg)</button></span>`);
-                if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="spellAttack">Attack</button></span>`);
-				if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="spellSave">Save DC ${chatData.save.dc} (${chatData.save.str})</button></span>`);
-                if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellDamage">${chatData.damageLabel}</button></span>`);
+				if ((diceEnabled) && (chatData.isAttack) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellAttackDamage">${i18n("br5e.buttons.attackAndDamage")}</button></span>`);
+				if ((diceEnabled) && (chatData.isSave) && item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellSaveDamage">${i18n("br5e.buttons.saveAndDamage")}</button></span>`);
+                if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="spellAttack">${i18n("br5e.buttons.attack")}</button></span>`);
+				if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="spellSave">${i18n("br5e.buttons.saveDC")} ${chatData.save.dc} (${i18n(chatData.save.str)})</button></span>`);
+                if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="spellDamage">${i18n(chatData.damageLabel)}</button></span>`);
                 break;
             case 'consumable':
-                if (chatData.hasCharges) buttons.append(`<span class="tag"><button data-action="consume">Use ${item.name}</button></span>`);
+                if (chatData.hasCharges) buttons.append(`<span class="tag"><button data-action="consume">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
                 break;
             case 'tool':
-                buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${chatData.ability.value}">Use ${item.name}</button></span>`);
+                buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${chatData.ability.value}">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
                 break;
 			case 'feat':
-				if ((diceEnabled) && (chatData.isAttack) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featAttackDamage">Roll (Atk & Dmg)</button></span>`);
-				if ((diceEnabled) && (chatData.isSave) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featSaveDamage">Roll (Save & Dmg)</button></span>`);
-				if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="featAttack">Attack</button></span>`);
-				if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="featSave">Save</button></span>`);
-				if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="featDamage">Damage</button></span>`);
+				if ((diceEnabled) && (chatData.isAttack) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featAttackDamage">${i18n("br5e.buttons.attackAndDamage")}</button></span>`);
+				if ((diceEnabled) && (chatData.isSave) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featSaveDamage">${i18n("br5e.buttons.saveAndDamage")}</button></span>`);
+				if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="featAttack">${i18n("br5e.buttons.attack")}</button></span>`);
+				if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="featSave">${i18n("br5e.buttons.save")}</button></span>`);
+				if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="featDamage">${i18n(chatData.damageLabel)}</button></span>`);
         }
 		
 		// Add Extra Damage button
-		if (extraDamage) buttons.append(`<span class="tag"><button data-action="extraDamage">Extra Damage</button></span>`);
+		if (extraDamage) buttons.append(`<span class="tag"><button data-action="extraDamage">${i18n("br5e.buttons.extraDamage")}</button></span>`);
 		
 		// Add info button
-		buttons.append(`<span class="tag"><button data-action="infoRoll">Info</button></span>`);
+		buttons.append(`<span class="tag"><button data-action="infoRoll">${i18n("br5e.buttons.info")}</button></span>`);
 		
 		let buttonsWereAdded = true;
 		//if (((item.data.data.damage !== undefined) && item.data.data.damage.value) || ((item.data.data.damage2 !== undefined) && item.data.data.damage2.value) || (chatData.isAttack) || (chatData.isSave) || (chatData.hasCharges)) {buttonsWereAdded = true;}
@@ -154,14 +181,14 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
         // adding the buttons to the sheet
         targetHTML = $(event.target.parentNode.parentNode)
         targetHTML.find(buttonContainer).prepend(buttons);
-
+		
         //html.find(buttonContainer).prepend(buttons);
-
+		
         // adding click event for all buttons
         buttons.find('button').click(ev => {
             ev.preventDefault();
             ev.stopPropagation();
-
+			
             // which function gets called depends on the type of button stored in the dataset attribute action
 			if (diceEnabled) {
 				// If better rolls are on
@@ -184,7 +211,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 					case 'spellAttackDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", attack: true, damage: true, info: true, properties: true}); break;
 					case 'spellSaveDamage': RedDice5e.fullRoll(item, ev, {itemType: "spell", save: true, damage: true, info: true, properties: true}); break;
 					case 'infoRoll': RedDice5e.fullRoll(item, ev, {info: true, properties:true}); break;
-					case 'extraDamage': RedDice5e.fullRoll(item, ev, {extraDamage:true, info: true, properties: true}); break;
+					case 'extraDamage': RedDice5e.fullRoll(item, ev, {extraDamage:true, properties: true}); break;
 				}
 			} else {
 				// If better rolls are off
@@ -205,7 +232,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 	});
 }
 
-function redUpdateFlags(item) {
+async function redUpdateFlags(item) {
 	if (["weapon", "spell", "equipment", "feat", "tool"].indexOf(item.data.type) == -1) { return; }
 	if (item.data.flags.betterRolls5e === undefined) {
 		item.data.flags.betterRolls5e = {};
@@ -217,6 +244,7 @@ function redUpdateFlags(item) {
 	// Uncomment the following line if flags are in "betterRolls" instead of betterRolls5e
 	//if (item.data.flags.betterRolls) item.data.flags.betterRolls = null;
 	//console.log(item);
+	return item.data.flags.betterRolls5e;
 }
 
 function redGetFlags(item) {
@@ -234,14 +262,16 @@ async function addBetterRollsTabs(app, html, data) {
 	
 	let tabSelector = html.find(`.sheet-body nav.sheet-tabs`),
 		settingsContainer = html.find(`.sheet-body`),
-		betterRollsTabString = `<a class="item" data-tab="betterRolls5e">Better Rolls</a>`,
+		betterRollsTabString = `<a class="item" data-tab="betterRolls5e">${i18n("Better Rolls")}</a>`,
 		tab = tabSelector.append($(betterRollsTabString));
 	
 	
-	let betterRollsTemplateString = `public/modules/betterrolls5e/templates/red-item-options.html`;
+	let betterRollsTemplateString = `public/modules/betterrolls5e/templates/red-item-options.html`,
+		asString = (item.data.type === "spell" || item.data.type === "feat") ? "br5e.settings.attackAndSave" : "br5e.settings.attackRoll";
 	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		flags: item.data.flags,
-		damageTypes: mergeObject(duplicate(CONFIG.damageTypes), CONFIG.healingTypes)
+		asString: i18n(asString),
+		damageTypes: CONFIG.betterRolls5e.combinedDamageTypes
 	});
 	let extraTab = settingsContainer.append(betterRollsTemplate);
 }
@@ -280,15 +310,15 @@ function changeRollsToDual (app, html, data, params) {
 				RedDice5e.fullRollAttribute(app.object, ability, "save");
 			} else {
 				new Dialog({
-					title: `${abl.label} Ability Roll`,
-					content: `<p>What type of ${abl.label} roll?</p>`,
+					title: `${i18n(abl.label)} ${i18n("Ability Roll")}`,
+					content: `<p>${i18n("What type of roll?")}</p>`,
 					buttons: {
 						test: {
-							label: "Ability Check",
+							label: i18n("Ability Check"),
 							callback: () => RedDice5e.fullRollAttribute(app.object, ability, "check")
 						},
 						save: {
-							label: "Saving Throw",
+							label: i18n("Saving Throw"),
 							callback: () => RedDice5e.fullRollAttribute(app.object, ability, "save")
 						}
 					}
@@ -297,7 +327,7 @@ function changeRollsToDual (app, html, data, params) {
 		});
 	}
 	
-	
+	// Assign new action to ability button
 	let checkName = html.find(paramRequests.checkButton);
 	checkName.off();
 	checkName.click(event => {
@@ -308,6 +338,7 @@ function changeRollsToDual (app, html, data, params) {
 		RedDice5e.fullRollAttribute(app.object, ability, "check");
 	});
 	
+	// Assign new action to save button
 	let saveName = html.find(paramRequests.saveButton);
 	saveName.off();
 	saveName.click(event => {
@@ -317,7 +348,6 @@ function changeRollsToDual (app, html, data, params) {
 		//console.log("Ability: ", ability);
 		RedDice5e.fullRollAttribute(app.object, ability, "save");
 	});
-	
 	
 	// Assign new action to skill button
 	let skillName = html.find(paramRequests.skillButton);
@@ -331,7 +361,7 @@ function changeRollsToDual (app, html, data, params) {
 	// Assign new action to item image button
 	let itemImage = html.find(paramRequests.itemButton);
 	itemImage.off();
-	itemImage.click(event => {
+	itemImage.click(async event => {
 		//console.log("EVENT:");
 		//console.log(event);
 		let li = $(event.currentTarget).parents(".item"),
@@ -341,10 +371,14 @@ function changeRollsToDual (app, html, data, params) {
 		}
 		else {
 			event.preventDefault();
+			await redUpdateFlags(item);
+			
 			let chatData = item.getChatData(),
 				itemData = item.data.data,
 				flags = item.data.flags,
+				brFlags = flags.betterRolls5e,
 				itemType = "weapon",
+				quickRoll = true,
 				attack = false,
 				check = false,
 				save = false,
@@ -354,66 +388,78 @@ function changeRollsToDual (app, html, data, params) {
 				info = false;
 				properties = false;
 			
-			redUpdateFlags(item);
-			
-			if (flags.betterRolls5e && flags.betterRolls5e.quickDesc && flags.betterRolls5e.quickDesc.value == true) info = true;
-			
-			// Assume new action of the button based on which properties it has
-			switch (item.data.type) {
-				case 'weapon':
-					itemType = "weapon";
-					properties = true;
-					attack = true;
-					if (itemData.damage.value) {damage = true;}
-					else if (itemData.damage2.value) {altDamage = true;}
-					break;
-				case 'spell':
-					itemType = "spell";
-					info = true;
-					properties = true;
-					if ((chatData.isAttack) && itemData.damage.value) {attack = true; damage = true;}
-					else if ((chatData.isSave) && itemData.damage.value) {save = true; damage = true;}
-					else if (chatData.isAttack) {attack = true;}
-					else if (chatData.isSave) {save = true;}
-					else if (itemData.damage.value) {damage = true;}
-					break;
-				case 'consumable':
-					item.rollConsumable(event); return;
-					break;
-				case 'tool':
-					itemType = "tool";
-					check = true;
-					properties = true;
-					if (flags.betterRolls5e.quickExtra.value === true) {extraDamage= true;}
-					break;
-				case 'feat':
-					itemType = "feat";
-					info = true;
-					properties = true;
-					if ((chatData.isAttack) && itemData.damage.value) {attack = true; damage = true;}
-					else if ((chatData.isSave) && itemData.damage.value) {save = true; damage = true;}
-					else if (chatData.isAttack) {attack = true;}
-					else if (chatData.isSave) {save = true;}
-					else if (itemData.damage.value) {damage = true;}
-					break;
-			}
-			
-			if (!attack && !save && !damage && !altDamage && !check) {
-				RedDice5e.fullRoll(item, event, {info:true, properties:true});
-			} else {
-				let params = {
-					itemType: itemType,
-					attack: attack,
-					check: check,
-					save: save,
-					damage: damage,
-					altDamage: altDamage,
-					extraDamage: extraDamage,
-					info: info,
-					properties: properties
+			if (brFlags) {
+				// Assume new action of the button based on which fields are enabled for Quick Rolls
+				
+				function flagIsTrue(flag) {
+					return (brFlags[flag] && (brFlags[flag].value == true));
 				}
-				RedDice5e.fullRoll(item, event, params);
+				
+				if (flagIsTrue("quickDesc")) info = true;
+				if (flagIsTrue("quickAttack")) {
+					if (chatData.isAttack || (item.data.type === "weapon")) attack = true;
+					if (chatData.isSave) save = true;
+				}
+				if (flagIsTrue("quickBaseDamage") && itemData.damage && itemData.damage.value) damage = true;
+				if (flagIsTrue("quickAltDamage") && itemData.damage2 && itemData.damage2.value) altDamage = true;
+				if (flagIsTrue("quickExtraDamage") && brFlags.extraDamage.value) extraDamage = true;
+				if (flagIsTrue("quickProperties")) properties = true;
+			} else {
+				// Assume new action of the button based on which properties it has
+				switch (item.data.type) {
+					case 'weapon':
+						itemType = "weapon";
+						properties = true;
+						attack = true;
+						if (itemData.damage.value) {damage = true;}
+						else if (itemData.damage2.value) {altDamage = true;}
+						break;
+					case 'spell':
+						itemType = "spell";
+						info = true;
+						properties = true;
+						if ((chatData.isAttack) && itemData.damage.value) {attack = true; damage = true;}
+						else if ((chatData.isSave) && itemData.damage.value) {save = true; damage = true;}
+						else if (chatData.isAttack) {attack = true;}
+						else if (chatData.isSave) {save = true;}
+						else if (itemData.damage.value) {damage = true;}
+						break;
+					case 'consumable':
+						item.rollConsumable(event); return;
+						break;
+					case 'tool':
+						itemType = "tool";
+						check = true;
+						properties = true;
+						if (flags.betterRolls5e.quickExtra.value === true) {extraDamage= true;}
+						break;
+					case 'feat':
+						itemType = "feat";
+						info = true;
+						properties = true;
+						if ((chatData.isAttack) && itemData.damage.value) {attack = true; damage = true;}
+						else if ((chatData.isSave) && itemData.damage.value) {save = true; damage = true;}
+						else if (chatData.isAttack) {attack = true;}
+						else if (chatData.isSave) {save = true;}
+						else if (itemData.damage.value) {damage = true;}
+						break;
+				}
 			}
+			
+			
+			let params = {
+				itemType: itemType,
+				attack: attack,
+				check: check,
+				save: save,
+				damage: damage,
+				altDamage: altDamage,
+				extraDamage: extraDamage,
+				info: info,
+				properties: properties,
+				quickRoll: quickRoll
+			}
+			RedDice5e.fullRoll(item, event, params);
 		}
 	});
 }
@@ -439,10 +485,10 @@ class RedDice5e extends Dice5e {
 		
 		if (rollType === "check") {
 			dualRoll = await RedDice5e.rollAbilityCheck(actor, abl);
-			titleString = `${abl.label} Check`;
+			titleString = `${i18n(abl.label)} ${i18n("br5e.chat.check")}`;
 		} else if (rollType === "save") {
 			dualRoll = await RedDice5e.rollAbilitySave(actor, abl);
-			titleString = `${abl.label} Save`;
+			titleString = `${i18n(abl.label)} ${i18n("br5e.chat.save")}`;
 		}
 		
 		
@@ -494,7 +540,7 @@ class RedDice5e extends Dice5e {
 		let titleTemplate = await renderTemplate("public/modules/betterrolls5e/templates/red-header.html", {
 			item: {
 				img: titleImage,
-				name: `${skl.label}`
+				name: `${i18n(skl.label)}`
 			}
 		});
 		
@@ -548,8 +594,13 @@ class RedDice5e extends Dice5e {
 			info: false,
 			properties: false,
 			forceCrit: false,
+			quickRoll: false,
 			sendMessage: true
 		},params || {});
+		
+		if (!item.data.flags.betterRolls5e) {
+			redUpdateFlags(item);
+		}
 		
 		let rollWhisper = null,
 			rollBlind = false;
@@ -586,9 +637,12 @@ class RedDice5e extends Dice5e {
 			extraDamageRoll = null;
 			
 		// Determine if extra damage needs to be displayed
-		if (((rollRequests.damage == true) && flags.betterRolls5e.addToBase.value == true) || ((rollRequests.altDamage == true) && flags.betterRolls5e.addToAlt.value == true)) {
-			rollRequests.extraDamage = true;
+		if (rollRequests.quickRoll === false) {
+			if (((rollRequests.damage == true) && flags.betterRolls5e.addToBase.value == true) || ((rollRequests.altDamage == true) && flags.betterRolls5e.addToAlt.value == true)){
+				rollRequests.extraDamage = true;
+			}
 		}
+		
 		if (rollRequests.extraDamage == true) {
 			extraDamageRoll = await RedDice5e.rollDamage(item, "extra", isCrit, showLabels);
 		}
@@ -600,7 +654,7 @@ class RedDice5e extends Dice5e {
 			//console.log(itemData);
 			//console.log(save);
 		}
-		let info = ((rollRequests["info"]) && (itemData["description"])) ? itemData["description"].value : null;
+		let info = ((rollRequests.info) && (itemData.description)) ? itemData.description.value : null;
 		//console.log("info: ", info);
 		//console.log("chatData:", chatData);
 		
@@ -646,7 +700,7 @@ class RedDice5e extends Dice5e {
 				properties = [
 					CONFIG.weaponTypes[data.weaponType.value],
 					data.range.value,
-					data.proficient.value ? "" : "Not Proficient",
+					data.proficient.value ? "" : i18n("Not Proficient"),
 				];
 				let weaponProps = data.properties.value ? data.properties.value.split(",") : [];
 				weaponProps.forEach( function(p) {
@@ -661,7 +715,7 @@ class RedDice5e extends Dice5e {
 				data.save.str = data.save.value ? ad.abilities[data.save.value].label : "";
 				
 				// Spell attack labels
-				data.damageLabel = data.spellType.value === "heal" ? "Healing" : "Damage";
+				data.damageLabel = data.spellType.value === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
 				data.isAttack = data.spellType.value === "attack";
 				
 				let components = data.components.value;
@@ -672,12 +726,12 @@ class RedDice5e extends Dice5e {
 				properties = [
 					CONFIG.spellSchools[data.school.value],
 					CONFIG.spellLevels[data.level.value],
-					data.ritual.value ? "Ritual" : null,
+					data.ritual.value ? i18n("Ritual") : null,
 					data.time.value,
-					((components.length !== 0) ? components : null),
+					(((components) && components.length !== 0) ? components : null),
 					data.range.value,
-					(data.target.value ? "Target: ".concat(data.target.value) : null),
-					data.concentration.value ? "Concentration" : null,
+					(data.target.value ? i18n("Target: ").concat(data.target.value) : null),
+					data.concentration.value ? i18n("Concentration") : null,
 					data.duration.value,
 				];
 				break;
@@ -693,9 +747,9 @@ class RedDice5e extends Dice5e {
 			case "equipment":
 				properties = [
 					CONFIG.armorTypes[data.armorType.value],
-					data.armor.value + " AC",
-					data.equipped.value ? "Equipped" : null,
-					data.stealth.value ? "Stealth Disadv." : null,
+					data.armor.vallue ? data.armor.value + " ".concat(i18n("AC")) : null,
+					data.equipped.value ? i18n("Equipped") : null,
+					data.stealth.value ? i18n("Stealth Disadv.") : null,
 				];
 				break;
 			case "tool":
@@ -703,7 +757,7 @@ class RedDice5e extends Dice5e {
 					prof = data.proficient.value || 0;
 					properties = [
 					abl,
-					CONFIG.proficiencyLevels[prof],
+					i18n(CONFIG.proficiencyLevels[prof]),
 				];
 				break;
 		}
@@ -795,15 +849,18 @@ class RedDice5e extends Dice5e {
 		// Prepare roll data
 		let itemData = itm.data.data,
 			actorData = itm.actor.data.data,
-			title = titleEnabled ? "Attack" : null,
+			title = titleEnabled ? i18n("br5e.chat.attack") : null,
 			parts = [],
 			rollData = duplicate(actorData);
 		
 		// Add critical threshold
-		let critThreshold = 20,
-			characterCrit = itm.actor.getFlag("dnd5e", "weaponCriticalThreshold") || 20,
-			itemCrit = itm.data.flags.betterRolls5e.critRange ? Number(itm.data.flags.betterRolls5e.critRange.value) : 20;
-			
+		let critThreshold = 20;
+		let characterCrit = 20;
+		try { characterCrit = itm.actor.getFlag("dnd5e", "weaponCriticalThreshold") || 20; }
+		catch(error) { characterCrit = itm.actor.getFlag("dnd5eJP", "weaponCriticalThreshold") || 20; }
+		
+		let itemCrit = itm.data.flags.betterRolls5e.critRange ? Number(itm.data.flags.betterRolls5e.critRange.value) : 20;
+		
 		if (itm.data.type == "weapon") {
 			critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
 		} else {
@@ -861,7 +918,7 @@ class RedDice5e extends Dice5e {
 			righttotal: (critRoll ? critRoll.total : null),
 			title: title,
 			formula: baseRoll.formula,
-			crittext: game.settings.get("betterrolls5e", "critString")
+			crittext: i18n(game.settings.get("betterrolls5e", "critString"))
 		};
 		
 		switch (labelPlacement) {
@@ -894,13 +951,13 @@ class RedDice5e extends Dice5e {
 		let damageTypes = {
 			false: itemData.damageType ? itemData.damageType.value : null,
 			true: itemData.damage2Type ? itemData.damage2Type.value : null,
-			"extra": flags.extraType ? flags.extraType.value : null
+			"extra": (flags && flags.extraType) ? flags.extraType.value : null
 		};
 		
 		let damageValues = {
 			false: itemData.damage ? itemData.damage.value : null,
 			true: itemData.damage2 ? itemData.damage2.value : null,
-			"extra": flags.extraDamage ? flags.extraDamage.value : null,
+			"extra": (flags && flags.extraDamage) ? flags.extraDamage.value : null,
 		};
 		
 			
@@ -925,11 +982,11 @@ class RedDice5e extends Dice5e {
 		// Prepare roll label
 		let title = [''];
 		if (showLabel) {
-			title[0] = ( (((itemData.type === "spell") && (itemData.spellType.value === "heal")) ? `Healing` : `Damage`) );
+			title[0] = ( (((itemData.type === "spell") && (itemData.spellType.value === "heal")) ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage")) );
 			if (alternate === true) {
-				title[0] = `Alt. `.concat(title[0]);
+				title[0] = i18n("br5e.chat.altPrefix").concat(" ").concat(title[0]);
 			} else if (alternate === "extra") {
-				title[0] = `Extra `.concat(title[0]);
+				title[0] = i18n("br5e.chat.extraPrefix").concat(" ").concat(title[0]);
 			}
 			
 		}
@@ -948,7 +1005,10 @@ class RedDice5e extends Dice5e {
 		if (isCrit) {
 			//console.log(baseDice);
 			let startCritRoll = new Roll(baseDice, rollData);
-			let add = (itm.actor && itm.actor.getFlag("dnd5e", "savageAttacks")) ? 1 : 0;
+			let savage = null;
+		try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
+		catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
+			let add = (itm.actor && savage) ? 1 : 0;
 			startCritRoll.alter(add);
 			let newTerms = RedDice5e.removeFlatBonus(startCritRoll.terms);
 			critRoll = new Roll(newTerms).roll();

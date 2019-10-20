@@ -1,11 +1,15 @@
+function i18n(key) {
+	return game.i18n.localize(key);
+}
+
 Hooks.once("init", () => {
 	
 	/**
 	* Register better rolls setting
 	*/
 	game.settings.register("betterrolls5e", "diceEnabled", {
-		name: "Enable Better Rolls",
-		hint: "Enables the improved dice outputs for DnD5e. Affects all ability checks, saving throws, items, spells, and features on the sheet. Requires reopening the sheet.",
+		name: i18n("br5e.diceEnabled.name"),
+		hint: i18n("br5e.diceEnabled.hint"),
 		scope: "world",
 		config: true,
 		default: true,
@@ -16,8 +20,8 @@ Hooks.once("init", () => {
 	* Register added roll buttons
 	*/
 	game.settings.register("betterrolls5e", "rollButtonsEnabled", {
-		name: "Add Roll Buttons to Sheet",
-		hint: "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
+		name: i18n("br5e.rollButtonsEnabled.name"),
+		hint: i18n("br5e.rollButtonsEnabled.hint"),
 		scope: "world",
 		config: true,
 		default: true,
@@ -28,8 +32,8 @@ Hooks.once("init", () => {
 	* Register better roll for icon
 	*/
 	game.settings.register("betterrolls5e", "imageButtonEnabled", {
-		name: "Make Item Image Auto-roll",
-		hint: "When clicking on an item's image, output a Better Roll message to chat instead of the normal chat output. Can be bypassed by holding Alt when clicking.",
+		name: i18n("br5e.imageButtonEnabled.name"),
+		hint: i18n("br5e.imageButtonEnabled.hint"),
 		scope: "world",
 		config: true,
 		default: true,
@@ -40,8 +44,8 @@ Hooks.once("init", () => {
 	* Register roll title options
 	*/
 	game.settings.register("betterrolls5e", "rollTitlesEnabled", {
-		name: "Show Roll Labels",
-		hint: "Adds small roll labels for messages with multiple sets of rolls, such as \"Attack\" and \"Damage\". Only works on Better Rolls. If a message only has one roll type, a label will still be applied.",
+		name: i18n("br5e.rollTitlesEnabled.name"),
+		hint: i18n("br5e.rollTitlesEnabled.hint"),
 		scope: "world",
 		config: true,
 		default: true,
@@ -49,35 +53,35 @@ Hooks.once("init", () => {
 	});
 	
 	game.settings.register("betterrolls5e", "damageRollPlacement", {
-		name: "Show Damage Labels",
-		hint: "Determines where the damage type label is placed, relative to a damage roll.",
+		name: i18n("br5e.damageRollPlacement.name"),
+		hint: i18n("br5e.damageRollPlacement.hint"),
 		scope: "world",
 		config: true,
 		default: "1",
 		type: String,
 		choices: {
-			"1": "Above",
-			"2": "Below & Inside",
-			"3": "Below & Outside"
+			"1": i18n("br5e.damageRollPlacement.choices.1"),
+			"2": i18n("br5e.damageRollPlacement.choices.2"),
+			"3": i18n("br5e.damageRollPlacement.choices.3")
 		}
 	});
 	
 	game.settings.register("betterrolls5e", "critString", {
-		name: "Critical Indicator",
-		hint: "Determines how criticals are labeled. Appears as text to the right of the critical damage roll. Only works on Better Rolls.",
+		name: i18n("br5e.critString.name"),
+		hint: i18n("br5e.critString.hint"),
 		scope: "world",
 		config: true,
 		default: "Crit",
 		type: String,
 		choices: {
-			"": "Blank",
-			"Crit": "'Crit'",
-			"Crit!": "'Crit!'",
-			"(Crit)": "'(Crit)'",
-			"Critical": "'Critical'",
-			"Critical!": "'Critical!'",
-			"(Critical)": "'(Critical)'",
-			"BAMMMM!" : "'BAMMMM!'"
+			" ": "",
+			"br5e.critString.choices.2": i18n("br5e.critString.choices.2"),
+			"br5e.critString.choices.3": i18n("br5e.critString.choices.3"),
+			"br5e.critString.choices.4": i18n("br5e.critString.choices.4"),
+			"br5e.critString.choices.5": i18n("br5e.critString.choices.5"),
+			"br5e.critString.choices.6": i18n("br5e.critString.choices.6"),
+			"br5e.critString.choices.7": i18n("br5e.critString.choices.7"),
+			"br5e.critString.choices.8": i18n("br5e.critString.choices.8")
 		}
 	});
 	
