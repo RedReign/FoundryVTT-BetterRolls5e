@@ -53,6 +53,8 @@ Clicking with/without the Alt key:
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
 - Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
+- Thank you, Felix#6196 for making a wonderful extension of Chat Damage Buttons reconfigured for this module.
+- Thank you, Brother Sharp#6921 for providing the Japanese localization for this module.
 - My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
 
 ## License
