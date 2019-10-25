@@ -49,6 +49,7 @@ Clicking with/without the Alt key:
 
 ## Planned Features
 - Dual roll improvements
+- FVTTES macro support, allowing quick rolls to have buttons in the macro toolbar
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
