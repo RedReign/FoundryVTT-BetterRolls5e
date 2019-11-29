@@ -42,7 +42,7 @@ Clicking with/without the Alt key:
 - ***New!*** ~~Per-item extra damage rolls.~~ Now supports dnd5e's additional damage rolls, which are fully configurable for appearing on Quick Rolls!
 
 ![](https://i.imgur.com/FkotJOG.png)
-- ~~ Natively supports the 'Sky5e' and 'Better NPC' sheets for 5e.~~ TBA
+- ~~Natively supports the 'Sky5e' and 'Better NPC' sheets for 5e.~~ TBA
 ![](https://i.imgur.com/qleIQsq.png)
 - Configurable options for disabling better rolls, changing sheet outputs, and labels for both roll sets and damage type.
 ![](https://i.imgur.com/Wd0iT0E.png)
