@@ -3,7 +3,7 @@ A module for modifying certain sheet functions on Foundry VTT Character sheets f
 
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
 
-Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) by Felix#6196, a fork of hooking#0492's module to add buttons to apply damage rolls to tokens. Very handy!
+*(Not yet updated)~~Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) by Felix#6196, a fork of hooking#0492's module to add buttons to apply damage rolls to tokens. Very handy!*~~
 
 ## Installation
 ### Method 1
@@ -33,13 +33,16 @@ Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebutt
 Clicking with/without the Alt key:
 
 ![](https://i.imgur.com/Od15JXz.png)
+
+- ***New!*** Alt Quick Rolls, which can be used by holding Alt when clicking the item's icon in the character sheet. These can be configured separately from normal Quick Rolls.
+![](https://i.imgur.com/yPzgzEe.png)
 - Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
-- ***New!*** Per-item options for showing the item's description on a quick roll.
-- ***New!*** Per-item critical threshold.
-- ***New!*** Per-item extra damage rolls.
+- Per-item options for showing the item's description on a quick roll.
+- Per-item critical threshold.
+- ***New!*** ~~Per-item extra damage rolls.~~ Now supports dnd5e's additional damage rolls, which are fully configurable for appearing on Quick Rolls!
+
 ![](https://i.imgur.com/FkotJOG.png)
-- Extra damage rolls can be configured and added separately to both normal and alternate damage rolls, allowing greater flexibility for weapons that deal damage in multiple ways.
-- Natively supports the 'Sky5e' and 'Better NPC' sheets for 5e.
+- ~~ Natively supports the 'Sky5e' and 'Better NPC' sheets for 5e.~~ TBA
 ![](https://i.imgur.com/qleIQsq.png)
 - Configurable options for disabling better rolls, changing sheet outputs, and labels for both roll sets and damage type.
 ![](https://i.imgur.com/Wd0iT0E.png)
