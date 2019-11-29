@@ -40,6 +40,15 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
+	game.settings.register("betterrolls5e", "altSecondaryEnabled", {
+		name: i18n("br5e.altSecondaryEnabled.name"),
+		hint: i18n("br5e.altSecondaryEnabled.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
+	
 	/**
 	* Register roll title options
 	*/

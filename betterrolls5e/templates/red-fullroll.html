@@ -2,12 +2,10 @@
 	{{#if title}} <div>{{{title}}}</div> {{/if}}
 	{{#if info}}<div class="card-content">{{{info}}}</div>{{/if}}
 	{{{dual}}}
-	{{#if save}}
-	<div class="card-buttons"><span>{{save}}</span></div>
-	{{/if}}
-	{{{damage}}}
-	{{{altdamage}}}
-	{{{extradamage}}}
+	{{{save}}}
+	{{#each damages}}
+	{{{this}}}
+	{{/each}}
 	{{{tags}}}
 	{{#if properties}}
 	<footer class="card-footer">
