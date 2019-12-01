@@ -14,21 +14,12 @@ function hasProperty(object, key) {
   }
   return true;
 }
+
 // Returns whether an item makes an attack roll
 function isAttack(item) {
 	let attacks = ["mwak", "rwak", "msak", "rsak"];
 	let output = (attacks.indexOf(item.data.data.actionType) !== -1) ? true : false;
 	return output;
-}
-
-// Returns the scene that the user is viewing.
-function getSceneByUser(user) {
-	const id = user.data.scene;
-	for (let scene in game.scenes.entities) {
-		if (scene.data._id === id) {
-			return scene;
-		}
-	}
 }
 
 // Returns whether an item requires a saving throw
@@ -215,7 +206,6 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 				if (isAttack(item)) buttons.append(`<span class="tag"><button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button></span>`);
 				if (isSave(item)) {
 					let saveData = getSave(item);
-					console.log(saveData);
 					buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}</button></span>`);
 				}
                 if (itemData.damage.parts.length > 0) {
@@ -513,6 +503,7 @@ function changeRollsToDual (app, html, data, params) {
 	// Assign new action to ability button
 	let checkName = html.find(paramRequests.checkButton);
 	checkName.off();
+	checkName.addClass("rollable");
 	checkName.click(event => {
 		event.preventDefault();
 		let ability = event.currentTarget.parentElement.parentElement.getAttribute("data-ability"),
@@ -524,6 +515,7 @@ function changeRollsToDual (app, html, data, params) {
 	// Assign new action to save button
 	let saveName = html.find(paramRequests.saveButton);
 	saveName.off();
+	saveName.addClass("rollable");
 	saveName.click(event => {
 		event.preventDefault();
 		let ability = event.currentTarget.parentElement.parentElement.getAttribute("data-ability"),
@@ -693,7 +685,6 @@ class BetterRollsDice {
 	*		{Boolean} sendMessage				Whether to send the message to chat, false simply returns the content of the roll
 	*/
 	static async fullRoll(item, event, params) {
-		//console.log("item:",item);
 		let rollRequests = mergeObject({
 			itemType: "weapon",
 			attack: false,
@@ -712,7 +703,6 @@ class BetterRollsDice {
 		},params || {});
 		
 		redUpdateFlags(item);
-		console.log(item);
 		
 		if (rollRequests.quickRoll) {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
@@ -734,15 +724,14 @@ class BetterRollsDice {
 			showLabels = true,
 			properties = (rollRequests.properties) ? BetterRollsDice.listProperties(item) : null;
 		if (game.settings.get("betterrolls5e", "rollTitlesEnabled") == false) {
-			if (rollRequests.attack) { labelsShown += 1; console.log("atk");}
-			if (rollRequests.save) { labelsShown += 1; console.log("sav"); }
-			if (rollRequests.check) { labelsShown += 1; console.log("chk");}
+			if (rollRequests.attack) { labelsShown += 1; }
+			if (rollRequests.save) { labelsShown += 1; }
+			if (rollRequests.check) { labelsShown += 1; }
 			if (rollRequests.damage) {
 				for (let i = 0; i < rollRequests.damage.length; i++) {
-					if (rollRequests.damage[i] === true) { labelsShown += 1; console.log("dmg", i); }
+					if (rollRequests.damage[i] === true) { labelsShown += 1; }
 				}
 			}
-			console.log(labelsShown);
 			showLabels = (labelsShown > 1) ? false : true;
 		}
 		
@@ -883,7 +872,7 @@ class BetterRollsDice {
 		let data = duplicate(item.data.data),
 			ad = duplicate(item.actor.data.data);
 		
-		let range = ((data.range) && (data.range.value || data.range.units)) ? (data.range.value || "") + (((data.range.long) && (data.range.long !== 0) && (data.rangelong != data.range.value)) ? "/"+data.range.long : "") + " " + dnd5e.distanceUnits[data.range.units] : null;
+		let range = ((data.range) && (data.range.value || data.range.units)) ? (data.range.value || "") + (((data.range.long) && (data.range.long !== 0) && (data.rangelong != data.range.value)) ? "/" +data.range.long : "") + " " + (data.range.units ? dnd5e.distanceUnits[data.range.units] : "") : null;
 		let target = (data.target && data.target.type) ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null;
 		let activation = (data.activation && (data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null;
 		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
@@ -905,11 +894,6 @@ class BetterRollsDice {
 				}
 				break;
 			case "spell":
-				// Spell saving throw text and DC
-				if ( data.ability.value ) data.save.dc = 8 + ad.abilities[data.ability.value].mod + ad.attributes.prof.value;
-				else data.save.dc = ad.attributes.spelldc.value;
-				data.save.str = data.save.value ? ad.abilities[data.save.value].label : "";
-				
 				// Spell attack labels
 				data.damageLabel = data.actionType === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
 				data.isAttack = data.actionType === "attack";
@@ -1085,7 +1069,7 @@ class BetterRollsDice {
 		if (abl.length > 0) {
 			parts.push(`@abl`);
 			rollData.abl = actorData.abilities[abl].mod;
-			console.log("Adding Ability mod", abl);
+			//console.log("Adding Ability mod", abl);
 		}
 		
 		// Add proficiency, expertise, or Jack of all Trades
@@ -1112,6 +1096,8 @@ class BetterRollsDice {
 		let labelPlacement = game.settings.get("betterrolls5e", "damageRollPlacement"),
 			baseTooltip = await baseRoll.getTooltip(),
 			templateTooltip = null;
+		
+		if (baseRoll.parts.length === 0) return;
 		
 		if (critRoll) {
 			let critTooltip = await critRoll.getTooltip();
@@ -1231,7 +1217,7 @@ class BetterRollsDice {
 			let critFormula = rollFormula.replace(/[+-]\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
 			let critRollData = duplicate(rollData);
 			critRollData.mod = 0;
-			critRoll = new Roll(baseDice, critRollData);
+			critRoll = new Roll(critFormula, critRollData);
 			let savage = null;
 			if (itm.data.type === "weapon") {
 				try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
@@ -1319,14 +1305,14 @@ class BetterRollsDice {
 	
 	static async rollAbilityCheck(actor, abl) {
 		let parts = ["@mod"],
-			data = {mod: abl.mod},
+			data = {mod: actor.data.data.abilities[abl].mod},
 			flavor = null;
 		
 		return await BetterRollsDice.rollDual20(parts, data, flavor);
 	}
 	
 	static async rollAbilitySave(actor, abl) {
-		console.log(abl);
+		//console.log(abl);
 		let parts = ["@mod"];
 		let data = {mod: actor.data.data.abilities[abl].save};
 		let flavor = null;
