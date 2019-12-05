@@ -94,4 +94,12 @@ Hooks.once("init", () => {
 		}
 	});
 	
+	game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {
+		name: i18n("br5e.chatDamageButtonsEnabled.name"),
+		hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
 });

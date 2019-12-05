@@ -77,7 +77,7 @@ CONFIG.betterRolls5e = {
 			quickDesc: { type: "Boolean", value: false, altValue: false },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: false, altValue: false },
-			quickDamage: { type: "Array", value: [], altValue: [] },
+			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
@@ -86,7 +86,7 @@ CONFIG.betterRolls5e = {
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
-			quickDamage: { type: "Array", value: [], altValue: [] },
+			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
@@ -95,7 +95,7 @@ CONFIG.betterRolls5e = {
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
-			quickDamage: { type: "Array", value: [], altValue: [] },
+			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
 		featFlags: {
@@ -103,7 +103,7 @@ CONFIG.betterRolls5e = {
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
-			quickDamage: { type: "Array", value: [], altValue: [] },
+			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
 		toolFlags: {
@@ -116,7 +116,7 @@ CONFIG.betterRolls5e = {
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
-			quickDamage: { type: "Array", value: [], altValue: [] },
+			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		}
 	}
@@ -869,6 +869,7 @@ class BetterRollsDice {
 	*/
 	static listProperties(item) {
 		let properties = [];
+		console.log(item);
 		let data = duplicate(item.data.data),
 			ad = duplicate(item.actor.data.data);
 		
@@ -913,7 +914,7 @@ class BetterRollsDice {
 					components.ritual ? i18n("Ritual") : null,
 					activation,
 					duration,
-					data.concentration.value ? i18n("Concentration") : null,
+					data.components.concentration ? i18n("Concentration") : null,
 					componentString ? componentString : null,
 					range,
 					target

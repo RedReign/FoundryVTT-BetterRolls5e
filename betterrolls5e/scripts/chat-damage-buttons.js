@@ -2,6 +2,7 @@ import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { Actor5e } from "../../../systems/dnd5e/module/actor/entity.js";
 
 Hooks.on('renderChatMessage', (message, html, data) => {
+	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
     let chatCard = html.find('.red-full');
     if (chatCard.length === 0) { return; }
 	
