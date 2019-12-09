@@ -3,7 +3,7 @@ A module for modifying certain sheet functions on Foundry VTT Character sheets f
 
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
 
-*(Not yet updated)~~Consider getting [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) by Felix#6196, a fork of hooking#0492's module to add buttons to apply damage rolls to tokens. Very handy!*~~
+Felix's [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) module has been implemented into core Better Rolls.
 
 ## Installation
 ### Method 1
