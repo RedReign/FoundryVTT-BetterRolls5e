@@ -21,6 +21,8 @@
 	"br5e.altSecondaryEnabled.hint": "When Alt-clicking on an item's image, output a second Better Roll message which can be configured separately per-item. Overwrites ability to bypass with default chat output.",
 	"br5e.chatDamageButtonsEnabled.name": "Enable Chat Damage Buttons",
 	"br5e.chatDamageButtonsEnabled.hint": "Renders buttons on Better Rolls damage rolls that apply damage to selected tokens. Requires refreshing Foundry.",
+	"br5e.playRollSounds.name": "Enable Roll Sounds",
+	"br5e.playRollSounds.hint": "Plays a dice-rolling sound when a Better Rolls message is sent to chat. Wlll not play if Maestro's Item Track are enabled.",
 	
 	"br5e.critString.name": "Critical Indicator",
 	"br5e.critString.hint": "Determines how criticals are labeled. Appears as text to the right of the critical damage roll. Only works on Better Rolls.",

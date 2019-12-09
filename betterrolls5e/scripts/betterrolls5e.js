@@ -15,6 +15,20 @@ function hasProperty(object, key) {
   return true;
 }
 
+// Checks for Maestro, allowing for cross-module compatibility
+function isMaestroOn() {
+	let output = false;
+	if (game.settings.get("maestro", "item-track_Enable Item Track")) {
+		output = true;
+	}
+	return output;
+}
+
+// Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
+function hasMaestroSound(item) {
+	return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
+}
+
 // Returns whether an item makes an attack roll
 function isAttack(item) {
 	let attacks = ["mwak", "rwak", "msak", "rsak"];
@@ -766,6 +780,8 @@ class BetterRollsDice {
 		let info = ((rollRequests.info) && (itemData.description)) ? itemData.description.value : null;
 		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+			item: item,
+			actor: actor,
 			title: title,
 			info: info,
 			dual: attackRoll || toolRoll,
@@ -785,7 +801,7 @@ class BetterRollsDice {
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
 			whisper: rollWhisper,
 			blind: rollBlind,
-			sound: CONFIG.sounds.dice
+			sound: (game.settings.get("betterrolls5e", "playRollSounds") && !hasMaestroSound(item)) ? CONFIG.sounds.dice : null,
 		};
 		
 		if (rollRequests.sendMessage == true) { ChatMessage.create(message); }
@@ -869,7 +885,6 @@ class BetterRollsDice {
 	*/
 	static listProperties(item) {
 		let properties = [];
-		console.log(item);
 		let data = duplicate(item.data.data),
 			ad = duplicate(item.actor.data.data);
 		

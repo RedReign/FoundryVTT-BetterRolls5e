@@ -102,4 +102,13 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
+	
+	game.settings.register("betterrolls5e", "playRollSounds", {
+		name: i18n("br5e.playRollSounds.name"),
+		hint: i18n("br5e.playRollSounds.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
 });
