@@ -18,9 +18,10 @@ function hasProperty(object, key) {
 // Checks for Maestro, allowing for cross-module compatibility
 function isMaestroOn() {
 	let output = false;
-	if (game.settings.get("maestro", "item-track_Enable Item Track")) {
+	try { if (game.settings.get("maestro", "item-track_Enable Item Track")) {
 		output = true;
-	}
+	} }
+	catch { return false; }
 	return output;
 }
 
@@ -634,6 +635,7 @@ class BetterRollsDice {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
 			whisper: rollWhisper,
+			rollMode: rollMode,
 			blind: rollBlind,
 			sound: CONFIG.sounds.dice
 		});
@@ -678,6 +680,7 @@ class BetterRollsDice {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
 			whisper: rollWhisper,
+			rollMode: rollMode,
 			blind: rollBlind,
 			sound: CONFIG.sounds.dice
 		});
@@ -750,7 +753,6 @@ class BetterRollsDice {
 		}
 		
 		let itemData = item.data.data,
-			chatData = item.getChatData(),
 			rollMode = game.settings.get("core", "rollMode");
 		if ( ["gmroll", "blindroll"].includes(rollMode) ) rollWhisper = ChatMessage.getWhisperIDs("GM");
 		if ( rollMode === "blindroll" ) rollBlind = true;
@@ -765,7 +767,7 @@ class BetterRollsDice {
 			damages = [];
 		
 		
-		
+		// Add damage rolls to the "damages" value to be rendered to template
 		for (let i=0; i < rollRequests.damage.length; i++) {
 			if ((rollRequests.damage[i] === true) && (item.data.data.damage.parts[i])) {
 				damages.push(await BetterRollsDice.rollDamage(item, i, rollRequests.alt, rollRequests.versatile, isCrit, showLabels, rollRequests.slotLevel));
@@ -790,7 +792,7 @@ class BetterRollsDice {
 			properties: properties
 		});
 		
-		let message = {
+		let chatData = {
 			user: game.user._id,
 			content: content,
 			speaker: {
@@ -800,11 +802,12 @@ class BetterRollsDice {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
 			whisper: rollWhisper,
+			rollMode: rollMode,
 			blind: rollBlind,
 			sound: (game.settings.get("betterrolls5e", "playRollSounds") && !hasMaestroSound(item)) ? CONFIG.sounds.dice : null,
 		};
 		
-		if (rollRequests.sendMessage == true) { ChatMessage.create(message); }
+		if (rollRequests.sendMessage == true) { ChatMessage.create(chatData); }
 		else return message;
 	}
 	
