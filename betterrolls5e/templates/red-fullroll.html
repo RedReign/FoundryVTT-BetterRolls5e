@@ -1,4 +1,4 @@
-<div class="dnd5e red-full chat-card" data-actor-id="{{actor._id}}" data-item-id="{{item.data.id}}">
+<div class="dnd5e red-full chat-card" data-actor-id="{{actor._id}}" {{#if item}}data-item-id="{{item.data.id}}"{{/if}}>
 	{{#if title}} <div>{{{title}}}</div> {{/if}}
 	{{#if info}}<div class="card-content">{{{info}}}</div>{{/if}}
 	{{{dual}}}
