@@ -720,7 +720,7 @@ class BetterRollsDice {
 		},params || {});
 		
 		redUpdateFlags(item);
-		console.log(item);
+		//console.log(item);
 		
 		if (rollRequests.quickRoll) {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
@@ -767,6 +767,7 @@ class BetterRollsDice {
 			isCrit = (rollRequests.forceCrit || (attackRoll ? attackRoll.isCrit : false)),
 			damages = [];
 		
+		let toolCrit = (toolRoll ? toolRoll.isCrit : false);
 		
 		// Add damage rolls to the "damages" value to be rendered to template
 		for (let i=0; i < rollRequests.damage.length; i++) {
@@ -787,12 +788,12 @@ class BetterRollsDice {
 		if (actor.token) {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
-		console.log(tokenId);
 		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
 			tokenId: tokenId,
+			isCritical: isCrit || toolCrit,
 			title: title,
 			info: info,
 			dual: attackRoll || toolRoll,
