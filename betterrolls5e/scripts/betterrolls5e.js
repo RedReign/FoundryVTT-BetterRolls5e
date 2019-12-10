@@ -720,6 +720,7 @@ class BetterRollsDice {
 		},params || {});
 		
 		redUpdateFlags(item);
+		console.log(item);
 		
 		if (rollRequests.quickRoll) {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
@@ -781,9 +782,17 @@ class BetterRollsDice {
 		}
 		let info = ((rollRequests.info) && (itemData.description)) ? itemData.description.value : null;
 		
+		// Add token's ID to chat roll, if valid
+		let tokenId = null;
+		if (actor.token) {
+			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
+		}
+		console.log(tokenId);
+		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
+			tokenId: tokenId,
 			title: title,
 			info: info,
 			dual: attackRoll || toolRoll,
