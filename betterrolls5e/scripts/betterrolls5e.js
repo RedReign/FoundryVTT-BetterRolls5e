@@ -1,7 +1,7 @@
 import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
-function i18n(key) {
+export function i18n(key) {
 	return game.i18n.localize(key);
 }
 
@@ -81,9 +81,6 @@ function isCheck(item) {
 let dnd5e = DND5E;
 
 CONFIG.betterRolls5e = {
-	// Make a combined damage type array that includes healing
-	combinedDamageTypes: mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes),
-	
 	validItemTypes: ["weapon", "spell", "equipment", "feat", "tool", "consumable"],
 	
 	allFlags: {
@@ -137,6 +134,10 @@ CONFIG.betterRolls5e = {
 	}
 };
 
+Hooks.on(`ready`, () => {
+	// Make a combined damage type array that includes healing
+	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
+});
 
 // Hook into different sheet via their rendering
 Hooks.on(`renderActorSheet5eNPC`, (app, html, data) => {
@@ -499,7 +500,7 @@ function changeRollsToDual (app, html, data, params) {
 			} else {
 				new Dialog({
 					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
-					content: `<p>${i18n("What type of roll?")}</p>`,
+					content: `<p><span style="font-weight: bold;">${i18n(dnd5e.abilities[ability])}:</span> ${i18n("What type of roll?")}</p>`,
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
@@ -763,7 +764,7 @@ class BetterRollsDice {
 			actor = item.actor,
 			title = (rollRequests.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html",{item:item})),
 			attackRoll = (rollRequests.attack == true) ? await BetterRollsDice.rollAttack(item, rollRequests.itemType, showLabels) : null,
-			toolRoll = (((rollRequests.itemType == "tool") || (item.data.type == "tool")) && rollRequests.check == true) ? await BetterRollsDice.rollTool(item) : null,
+			toolRoll = ((item.data.type == "tool") && rollRequests.check == true) ? await BetterRollsDice.rollTool(item) : null,
 			isCrit = (rollRequests.forceCrit || (attackRoll ? attackRoll.isCrit : false)),
 			damages = [];
 		
@@ -914,7 +915,7 @@ class BetterRollsDice {
 					range,
 					target,
 					data.proficient ? "" : i18n("Not Proficient"),
-					data.weight ? data.weight + " lbs." : null
+					data.weight ? data.weight + i18n(" lbs.") : null
 				];
 				for (const prop in data.properties) {
 					if (data.properties[prop] === true) {

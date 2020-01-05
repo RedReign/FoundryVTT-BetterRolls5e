@@ -77,6 +77,14 @@
 	"br5e.chat.abrSomatic": "S",
 	"br5e.chat.abrMaterial": "M",
 	
+	"br5e.chat.damageButtons.fullDamage.hint": "Click to apply full damage to selected token(s).",
+	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",
+	"br5e.chat.damageButtons.doubleDamage.hint": "Click to apply double damage to selected token(s).",
+	"br5e.chat.damageButtons.healing.hint": "Click to apply full healing to selected token(s).",
+	"br5e.chat.damageButtons.critPrompt.title": "Use Crit Damage?",
+	"br5e.chat.damageButtons.critPrompt.yes": "Yes",
+	"br5e.chat.damageButtons.critPrompt.no": "No",
+	
 	"Ability Roll": "Ability Roll",
 	"What type of roll?": "What type of roll?",
 	"Ability Check": "Ability Check",

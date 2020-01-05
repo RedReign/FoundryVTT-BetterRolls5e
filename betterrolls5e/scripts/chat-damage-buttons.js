@@ -1,5 +1,6 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { Actor5e } from "../../../systems/dnd5e/module/actor/entity.js";
+import { i18n } from "./betterrolls5e.js";
 
 Hooks.on('renderChatMessage', (message, html, data) => {
 	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
@@ -9,10 +10,10 @@ Hooks.on('renderChatMessage', (message, html, data) => {
     let dmgElements = html.find('.red-left-die').parents('.dice-total'); 
     for (let dmgElement of dmgElements) {
         // creating the buttons and container
-        let fullDamageButton = $(`<button data-modifier="1"><i class="fas fa-user-minus" title="Click to apply full damage to selected token(s)."></i></button>`);
-        let halfDamageButton = $(`<button data-modifier="0.5"><i class="fas fa-user-shield" title="Click to apply half damage to selected token(s)."></i></button>`);
-        let doubleDamageButton = $(`<button data-modifier="2"><i class="fas fa-user-injured" title="Click to apply double damage to selected token(s)."></i></button>`);
-        let fullHealingButton = $(`<button data-modifier="-1"><i class="fas fa-user-plus" title="Click to apply full healing to selected token(s)."></i></button>`);
+        let fullDamageButton = $(`<button data-modifier="1"><i class="fas fa-user-minus" title="${i18n("br5e.chat.damageButtons.fullDamage.hint")}"></i></button>`);
+	let halfDamageButton = $(`<button data-modifier="0.5"><i class="fas fa-user-shield" title="${i18n("br5e.chat.damageButtons.halfDamage.hint")}"></i></button>`);
+        let doubleDamageButton = $(`<button data-modifier="2"><i class="fas fa-user-injured" title="${i18n("br5e.chat.damageButtons.doubleDamage.hint")}"></i></button>`);
+        let fullHealingButton = $(`<button data-modifier="-1"><i class="fas fa-user-plus" title="${i18n("br5e.chat.damageButtons.healing.hint")}"></i></button>`);
 
         let btnContainer = $('<span class="dmgBtn-container-br"></span>');
 
@@ -75,17 +76,17 @@ async function applyCritDamage(dmg, critdmg, position) {
         options.width = 100;
         
         let d = new Dialog({
-            title: "Use Critical Damage?",
+            title: i18n("br5e.chat.damageButtons.critPrompt.title"),
             content: "",
             buttons: {
                 one: {
                     icon: '<i class="fas fa-check"></i>',
-                    label: "Yes",
+                    label: i18n("br5e.chat.damageButtons.critPrompt.yes"),
                     callback: () => { resolve(dmg + critdmg); }
                 },
                 two: {
                     icon: '<i class="fas fa-times"></i>',
-                    label: "No",
+                    label: i18n("br5e.chat.damageButtons.critPrompt.no"),
                     callback: () => { resolve(dmg); }
                 }
             },
