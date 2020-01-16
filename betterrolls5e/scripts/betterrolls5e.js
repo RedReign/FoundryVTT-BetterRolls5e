@@ -30,6 +30,26 @@ function hasMaestroSound(item) {
 	return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 }
 
+// Gets the IDs to send a message to
+function getWhisperData() {
+	let rollMode = null,
+		whisper = null,
+		blind = null;
+	
+	rollMode = game.settings.get("core", "rollMode");
+	if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperIDs("GM");
+	if ( rollMode === "blindroll" ) blind = true;
+	else if ( rollMode === "selfroll" ) whisper = [game.user._id];
+	
+	let output = {
+		rollMode: rollMode,
+		whisper: whisper,
+		blind: blind
+	}
+	
+	return output;
+}
+
 // Returns whether an item makes an attack roll
 function isAttack(item) {
 	let attacks = ["mwak", "rwak", "msak", "rsak"];
@@ -80,13 +100,16 @@ function isCheck(item) {
 
 let dnd5e = DND5E;
 
+function getQuickDescriptionDefault() {
+	return game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled");
+}
+
 CONFIG.betterRolls5e = {
 	validItemTypes: ["weapon", "spell", "equipment", "feat", "tool", "consumable"],
-	
 	allFlags: {
 		weaponFlags: {
 			critRange: { type: "String", value: "" },
-			quickDesc: { type: "Boolean", value: false, altValue: false },
+			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: false, altValue: false },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
@@ -119,7 +142,7 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
 		toolFlags: {
-			quickDesc: { type: "Boolean", value: false, altValue: false },
+			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickCheck: { type: "Boolean", value: true, altValue: true },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 		},
@@ -133,6 +156,8 @@ CONFIG.betterRolls5e = {
 		}
 	}
 };
+
+CONFIG.betterRolls5e
 
 Hooks.on(`ready`, () => {
 	// Make a combined damage type array that includes healing
@@ -193,7 +218,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
     html.find(triggeringElement).click(event => {
 		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
-        let item = app.object.getOwnedItem(Number(li.attr("data-item-id")));
+        let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
 		let itemData = item.data.data;
 		let flags = item.data.flags.betterRolls5e;
 		
@@ -556,7 +581,7 @@ function changeRollsToDual (app, html, data, params) {
 		//console.log("EVENT:");
 		//console.log(event);
 		let li = $(event.currentTarget).parents(".item"),
-			item = app.object.getOwnedItem(Number(li.attr("data-item-id")));
+			item = app.object.getOwnedItem(String(li.attr("data-item-id")));
 		if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 			item.actor.sheet._onItemRoll(event);
 		} else if (event.altKey) {
@@ -591,16 +616,12 @@ class BetterRollsDice {
 	*/
 	
 	static async fullRollAttribute(actor, ability, rollType) {
-		let rollWhisper = null,
-			rollBlind = false,
-			dualRoll = null,
+		let dualRoll = null,
 			titleString = null,
 			abl = ability,
 			label = dnd5e.abilities[ability];
-		let rollMode = game.settings.get("core", "rollMode");
-		if ( ["gmroll", "blindroll"].includes(rollMode) ) rollWhisper = ChatMessage.getWhisperIDs("GM");
-		if ( rollMode === "blindroll" ) rollBlind = true;
 		
+		let wd = getWhisperData();
 		
 		if (rollType === "check") {
 			dualRoll = await BetterRollsDice.rollAbilityCheck(actor, abl);
@@ -625,8 +646,7 @@ class BetterRollsDice {
 			dual: dualRoll["html"]
 		});
 		
-		// Output the rolls to chat
-		ChatMessage.create({
+		let chatData = {
 			user: game.user._id,
 			content: content,
 			speaker: {
@@ -635,24 +655,25 @@ class BetterRollsDice {
 				alias: actor.name
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-			whisper: rollWhisper,
-			rollMode: rollMode,
-			blind: rollBlind,
+			rollMode: wd.rollMode,
+			blind: wd.blind,
 			sound: CONFIG.sounds.dice
-		});
+		};
+		
+		if (wd.whisper) { chatData.whisper = wd.whisper; }
+		
+		// Output the rolls to chat
+		ChatMessage.create(chatData);
 	}
 	
 	/**
 	* Creates a chat message with the requested skill check.
 	*/
 	static async fullRollSkill(actor, skill) {
-		let rollWhisper = null,
-			rollBlind = false,
-			skl = actor.data.data.skills[skill],
+		let skl = actor.data.data.skills[skill],
 			label = dnd5e.skills[skill];
-		let rollMode = game.settings.get("core", "rollMode");
-		if ( ["gmroll", "blindroll"].includes(rollMode) ) rollWhisper = ChatMessage.getWhisperIDs("GM");
-		if ( rollMode === "blindroll" ) rollBlind = true;
+			
+		let wd = getWhisperData();
 		
 		let dualRoll = await BetterRollsDice.rollSkillCheck(actor, skl);
 		
@@ -670,8 +691,7 @@ class BetterRollsDice {
 			dual: dualRoll["html"]
 		});
 		
-		// Output the rolls to chat
-		ChatMessage.create({
+		let chatData = {
 			user: game.user._id,
 			content: content,
 			speaker: {
@@ -680,11 +700,15 @@ class BetterRollsDice {
 				alias: actor.name
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-			whisper: rollWhisper,
-			rollMode: rollMode,
-			blind: rollBlind,
+			rollMode: wd.rollMode,
+			blind: wd.blind,
 			sound: CONFIG.sounds.dice
-		});
+		};
+		
+		if (wd.whisper) { chatData.whisper = wd.whisper; }
+		
+		// Output the rolls to chat
+		ChatMessage.create(chatData);
 	}
 	
 	/**
@@ -727,9 +751,6 @@ class BetterRollsDice {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
 		}
 		
-		let rollWhisper = null,
-			rollBlind = false;
-		
 		// If damage is "all", all damages should be rolled
 		if (rollRequests.damage === "all") {
 			rollRequests.damage = [];
@@ -754,15 +775,14 @@ class BetterRollsDice {
 			showLabels = (labelsShown > 1) ? false : true;
 		}
 		
-		let itemData = item.data.data,
-			rollMode = game.settings.get("core", "rollMode");
-		if ( ["gmroll", "blindroll"].includes(rollMode) ) rollWhisper = ChatMessage.getWhisperIDs("GM");
-		if ( rollMode === "blindroll" ) rollBlind = true;
+		let itemData = item.data.data;
+		let wd = getWhisperData();
 		
 		let flags = item.data.flags,
 			save = null,
 			actor = item.actor,
-			title = (rollRequests.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html",{item:item})),
+			printedSlotLevel = ( item.data.type === "spell" && rollRequests.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[rollRequests.slotLevel] : null,
+			title = (rollRequests.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html",{item:item, slotLevel:printedSlotLevel})),
 			attackRoll = (rollRequests.attack == true) ? await BetterRollsDice.rollAttack(item, rollRequests.itemType, showLabels) : null,
 			toolRoll = ((item.data.type == "tool") && rollRequests.check == true) ? await BetterRollsDice.rollTool(item) : null,
 			isCrit = (rollRequests.forceCrit || (attackRoll ? attackRoll.isCrit : false)),
@@ -812,11 +832,12 @@ class BetterRollsDice {
 				alias: actor.name
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-			whisper: rollWhisper,
-			rollMode: rollMode,
-			blind: rollBlind,
+			rollMode: wd.rollMode,
+			blind: wd.blind,
 			sound: (game.settings.get("betterrolls5e", "playRollSounds") && !hasMaestroSound(item)) ? CONFIG.sounds.dice : null,
 		};
+		
+		if (wd.whisper) { chatData.whisper = wd.whisper; }
 		
 		if (rollRequests.sendMessage == true) { ChatMessage.create(chatData); }
 		else return message;
@@ -1291,11 +1312,12 @@ class BetterRollsDice {
 			const add = Math.floor((spellLevel - itemData.level)/(scaleInterval || 1));
 			if (add > 0) {
 				if ( scale && (scale !== formula) ) {
-					formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${add}d${d}`);
+					formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${add*nd}d${d}`);
 				} else {
 					formula = formula.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${parseInt(nd)+add}d${d}`);
 				}
 			}
+			
 			return formula;
 		}
 		

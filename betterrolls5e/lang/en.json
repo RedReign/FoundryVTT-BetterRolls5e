@@ -10,6 +10,8 @@
 	"br5e.rollButtonsEnabled.hint": "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
 	"br5e.imageButtonEnabled.name": "Make Item Image Auto-roll",
 	"br5e.imageButtonEnabled.hint": "When clicking on an item's image, output a Better Roll message to chat instead of the normal chat output. Can be bypassed by holding Alt when clicking.",
+	"br5e.quickDefaultDescriptionEnabled.name": "Quick Roll Description Enabled by Default",
+	"br5e.quickDefaultDescriptionEnabled.hint": "If enabled, weapons and tools will have their descriptions show by default on quick rolls. Only affects new weapons and tools, as other item types already have descriptions enabled by default.",
 	"br5e.rollTitlesEnabled.name": "Show Roll Labels",
 	"br5e.rollTitlesEnabled.hint": "Adds small roll labels for messages with multiple sets of rolls, such as \"Attack\" and \"Damage\". Only works on Better Rolls. If a message only has one roll type, a label will still be applied.",
 	"br5e.damageRollPlacement.name": "Show Damage Labels",

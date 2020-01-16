@@ -50,6 +50,18 @@ Hooks.once("init", () => {
 	});
 	
 	/**
+	* Register quick roll defaults for description
+	*/
+	game.settings.register("betterrolls5e", "quickDefaultDescriptionEnabled", {
+		name: i18n("br5e.quickDefaultDescriptionEnabled.name"),
+		hint: i18n("br5e.quickDefaultDescriptionEnabled.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean
+	});
+	
+	/**
 	* Register roll title options
 	*/
 	game.settings.register("betterrolls5e", "rollTitlesEnabled", {
