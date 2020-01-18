@@ -34,7 +34,7 @@ Clicking with/without the Alt key:
 
 ![](https://i.imgur.com/Od15JXz.png)
 
-- ***New!*** Alt Quick Rolls, which can be used by holding Alt when clicking the item's icon in the character sheet. These can be configured separately from normal Quick Rolls.
+- Alt Quick Rolls, which can be used by holding Alt when clicking the item's icon in the character sheet. These can be configured separately from normal Quick Rolls.
 ![](https://i.imgur.com/yPzgzEe.png)
 - Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
 - Per-item options for showing the item's description on a quick roll.
@@ -49,9 +49,14 @@ Clicking with/without the Alt key:
 - Localization support - now comes with a full Japanese translation!
 ![](https://cdn.discordapp.com/attachments/513918036919713802/635495803787542559/unknown.png)
 
+- ***New!*** Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
+- Script macros are also intuitive enough to be entered manually.
+- Try `BetterRolls.quickRoll("Shortbow");` on a creature with an item named "Shortbow" !
 
 ## Planned Features
 - Dual roll improvements
+- Configurable labels for damage rolls
+- Additional macro support
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
