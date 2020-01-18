@@ -36,6 +36,11 @@
 	"br5e.critString.choices.7": "(Critical)",
 	"br5e.critString.choices.8": "BAMMMM!",
 	
+	"br5e.error.noSelectedActor": "Must have a character selected to use this macro!",
+	"br5e.error.noKnownItemOnActor": "does not own an item named",
+	"br5e.error.noActorWithId": "No actor is known with that ID",
+	"br5e.error.noItemWithId": "No item is known with that ID on actor",
+	
 	"br5e.settings.critThreshold": "Critical Threshold",
 	"br5e.settings.extraDamage": "Extra Damage",
 	"br5e.settings.extraType": "Extra Type",

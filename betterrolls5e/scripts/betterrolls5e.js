@@ -97,7 +97,6 @@ function isCheck(item) {
 	return output;
 }
 
-
 let dnd5e = DND5E;
 
 function getQuickDescriptionDefault() {
@@ -364,7 +363,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 				}
 				
 				if (ev.target.dataset.action !== 'vanillaRoll') {
-					BetterRollsDice.fullRoll(item, ev, roll);
+					BetterRollsDice.fullRoll(item, roll);
 				}
 			// If better rolls are off
 			} else {
@@ -378,7 +377,7 @@ function addItemSheetButtons(app, html, data, triggeringElement = '', buttonCont
 					case 'featDamage': item.rollFeatDamage(ev); break;
 					case 'consume': item.rollConsumable(ev); break;
 					case 'toolCheck': item.rollToolCheck(ev); break;
-					case 'infoRoll': BetterRollsDice.fullRoll(item, ev, {info: true, properties:true}); break;
+					case 'infoRoll': BetterRollsDice.fullRoll(item, {info: true, properties:true}); break;
 				}
 			}
 		});
@@ -591,7 +590,7 @@ function changeRollsToDual (app, html, data, params) {
 				if (item.data.type === "spell") {
 					slotLevel = await BetterRollsDice.configureSpell(item);
 				}
-				BetterRollsDice.fullRoll(item, event, {quickRoll: true, alt: true, slotLevel: slotLevel});
+				BetterRollsDice.fullRoll(item, {quickRoll: true, alt: true, slotLevel: slotLevel});
 			} else {
 				item.actor.sheet._onItemRoll(event);
 			}
@@ -601,11 +600,73 @@ function changeRollsToDual (app, html, data, params) {
 			if (item.data.type === "spell") {
 				slotLevel = await BetterRollsDice.configureSpell(item);
 			}
-			BetterRollsDice.fullRoll(item, event, {quickRoll: true, slotLevel: slotLevel});
+			BetterRollsDice.fullRoll(item, {quickRoll: true, slotLevel: slotLevel});
 		}
 	});
 }
 
+// Frontend for macros
+var BetterRolls = function() {
+	var assignMacro = async function(item, slot, mode) {
+		function command() {
+			switch (mode) {
+				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
+				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`; break;
+			}
+		}
+		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
+		if (!macro) {
+			macro = await Macro.create({
+				name: item.data.name,
+				type: "script",
+				img: item.data.img,
+				command: command(),
+				flags: {"dnd5e.itemMacro": true}
+			}, {displaySheet: false});
+		}
+		game.user.assignHotbarMacro(macro, slot);
+	};
+	
+	var quickRoll = function(itemName) {
+		const speaker = ChatMessage.getSpeaker();
+		let actor;
+		if (speaker.token) actor = game.actors.tokens[speaker.token];
+		if (!actor) actor = game.actors.get(speaker.actor);
+		const item = actor ? actor.items.find(i => i.name === itemName) : null;
+		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noSelectedActor")}`); }
+		else if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
+		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
+	};
+	
+	var quickRollById = function(actorId, itemId) {
+		let actor = game.actors.get(actorId);
+		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
+		let item = actor.getOwnedItem(itemId);
+		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
+		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
+		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
+	};
+	
+	function isAlt(event) {
+		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { console.log("true!"); return true; }
+		else { return false; }
+	}
+	
+	let oldHotBarHook = Hooks._hooks[0];
+	Hooks._hooks.hotbarDrop.splice(0,1)
+	Hooks.on("hotbarDrop", (bar, data, slot) => {
+		if ( data.type !== "Item" ) return;
+		assignMacro(data, slot, "id");
+		return true;
+	});
+	
+	return {
+		assignMacro:assignMacro,
+		quickRoll:quickRoll,
+		quickRollById:quickRollById
+	}
+}
+window.BetterRolls = BetterRolls();
 
 class BetterRollsDice {
 	/**
@@ -616,8 +677,8 @@ class BetterRollsDice {
 	*/
 	
 	static async fullRollAttribute(actor, ability, rollType) {
-		let dualRoll = null,
-			titleString = null,
+		let dualRoll,
+			titleString,
 			abl = ability,
 			label = dnd5e.abilities[ability];
 		
@@ -726,7 +787,7 @@ class BetterRollsDice {
 	*		{Boolean} forceCrit					Whether to force a critical damage roll
 	*		{Boolean} sendMessage				Whether to send the message to chat, false simply returns the content of the roll
 	*/
-	static async fullRoll(item, event, params) {
+	static async fullRoll(item, params) {
 		let rollRequests = mergeObject({
 			itemType: "weapon",
 			attack: false,
@@ -779,7 +840,7 @@ class BetterRollsDice {
 		let wd = getWhisperData();
 		
 		let flags = item.data.flags,
-			save = null,
+			save,
 			actor = item.actor,
 			printedSlotLevel = ( item.data.type === "spell" && rollRequests.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[rollRequests.slotLevel] : null,
 			title = (rollRequests.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html",{item:item, slotLevel:printedSlotLevel})),
@@ -805,7 +866,7 @@ class BetterRollsDice {
 		let info = ((rollRequests.info) && (itemData.description)) ? itemData.description.value : null;
 		
 		// Add token's ID to chat roll, if valid
-		let tokenId = null;
+		let tokenId;
 		if (actor.token) {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
@@ -1146,7 +1207,7 @@ class BetterRollsDice {
 	static async damageTemplate (baseRoll, critRoll, title, damType) {
 		let labelPlacement = game.settings.get("betterrolls5e", "damageRollPlacement"),
 			baseTooltip = await baseRoll.getTooltip(),
-			templateTooltip = null;
+			templateTooltip;
 		
 		if (baseRoll.parts.length === 0) return;
 		
@@ -1188,7 +1249,7 @@ class BetterRollsDice {
 			rollData = duplicate(itm.actor.data.data),
 			abl = itemData.ability,
 			flags = itm.data.flags.betterRolls5e,
-			damageFormula = null,
+			damageFormula,
 			damageType = itemData.damage.parts[damageIndex][1],
 			isVersatile = false;
 		
@@ -1263,13 +1324,13 @@ class BetterRollsDice {
 		let rollFormula = baseWithParts.join("+");
 		
 		let baseRoll = new Roll(rollFormula, rollData).roll();
-		let critRoll = null;
+		let critRoll;
 		if (isCrit) {
 			let critFormula = rollFormula.replace(/[+-]\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
 			let critRollData = duplicate(rollData);
 			critRollData.mod = 0;
 			critRoll = new Roll(critFormula, critRollData);
-			let savage = null;
+			let savage;
 			if (itm.data.type === "weapon") {
 				try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
 				catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
