@@ -1,5 +1,6 @@
 import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/combat.js";
 
 export function i18n(key) {
 	return game.i18n.localize(key);
@@ -18,7 +19,7 @@ function hasProperty(object, key) {
 // Checks for Maestro, allowing for cross-module compatibility
 function isMaestroOn() {
 	let output = false;
-	try { if (game.settings.get("maestro", "item-track_Enable Item Track")) {
+	try { if (game.settings.get("maestro", "enableItemTrack")) {
 		output = true;
 	} }
 	catch { return false; }
@@ -114,6 +115,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickCharges: { type: "Boolean", value: true, altValue: true },
 		},
 		spellFlags: {
 			critRange: { type: "String", value: "" },
@@ -123,6 +125,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickCharges: { type: "Boolean", value: true, altValue: true },
 		},
 		equipmentFlags: {
 			critRange: { type: "String", value: "" },
@@ -131,6 +134,7 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickCharges: { type: "Boolean", value: true, altValue: true },
 		},
 		featFlags: {
 			critRange: { type: "String", value: "" },
@@ -139,6 +143,7 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickCharges: { type: "Boolean", value: true, altValue: true },
 		},
 		toolFlags: {
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
@@ -152,11 +157,10 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickCharges: { type: "Boolean", value: true, altValue: true },
 		}
 	}
 };
-
-CONFIG.betterRolls5e
 
 Hooks.on(`ready`, () => {
 	// Make a combined damage type array that includes healing
@@ -454,6 +458,25 @@ async function addBetterRollsContent(app, protoHtml, data) {
 		altSecondaryEnabled: altSecondaryEnabled
 	});
 	let extraTab = settingsContainer.append(betterRollsTemplate);
+	
+	// Add damage context input
+	if (game.settings.get("betterrolls5e", "damageContextEnabled")) {
+		let damageRolls = html.find(`.tab.details .damage-parts .damage-part input`);
+		// Placeholder is either "Context" or "Label" depending on system settings
+		let placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
+		for (let i = 0; i < damageRolls.length; i++) {
+			let contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
+			damageRolls[i].after(contextField[0]);
+			// Add event listener to delete context when damage is deleted
+			$($($(damageRolls[i])[0].parentElement).find(`a.delete-damage`)).click(async event => {
+				let contextFlags = Object.values(item.data.flags.betterRolls5e.quickDamage.context);
+				contextFlags.splice(i, 1);
+				item.update({
+					[`flags.betterRolls5e.quickDamage.context`]: contextFlags,
+				});
+			});
+		}
+	}
 }
 
 function updateSaveButtons(html) {
@@ -586,28 +609,20 @@ function changeRollsToDual (app, html, data, params) {
 		} else if (event.altKey) {
 			if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
 				event.preventDefault();
-				let slotLevel = null;
-				if (item.data.type === "spell") {
-					slotLevel = await BetterRollsDice.configureSpell(item);
-				}
-				BetterRollsDice.fullRoll(item, {quickRoll: true, alt: true, slotLevel: slotLevel});
+				BetterRollsDice.fullRoll(item, {quickRoll: true, alt: true});
 			} else {
 				item.actor.sheet._onItemRoll(event);
 			}
 		} else {
 			event.preventDefault();
-			let slotLevel = null;
-			if (item.data.type === "spell") {
-				slotLevel = await BetterRollsDice.configureSpell(item);
-			}
-			BetterRollsDice.fullRoll(item, {quickRoll: true, slotLevel: slotLevel});
+			BetterRollsDice.fullRoll(item, {quickRoll: true});
 		}
 	});
 }
 
 // Frontend for macros
-var BetterRolls = function() {
-	var assignMacro = async function(item, slot, mode) {
+function BetterRolls() {
+	async function assignMacro(item, slot, mode) {
 		function command() {
 			switch (mode) {
 				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
@@ -627,18 +642,18 @@ var BetterRolls = function() {
 		game.user.assignHotbarMacro(macro, slot);
 	};
 	
-	var quickRoll = function(itemName) {
-		const speaker = ChatMessage.getSpeaker();
+	function quickRoll(itemName) {
+		let speaker = ChatMessage.getSpeaker();
 		let actor;
 		if (speaker.token) actor = game.actors.tokens[speaker.token];
 		if (!actor) actor = game.actors.get(speaker.actor);
-		const item = actor ? actor.items.find(i => i.name === itemName) : null;
+		let item = actor ? actor.items.find(i => i.name === itemName) : null;
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noSelectedActor")}`); }
 		else if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
 		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
 	};
 	
-	var quickRollById = function(actorId, itemId) {
+	function quickRollById(actorId, itemId) {
 		let actor = game.actors.get(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
 		let item = actor.getOwnedItem(itemId);
@@ -647,8 +662,17 @@ var BetterRolls = function() {
 		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
 	};
 	
+	function quickRollByName(actorName, itemName) {
+		let actor = game.actors.entities.find(i => i.name === actorName);
+		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noKnownActorWithName")}`); }
+		let item = actor.items.find(i => i.name === itemName);
+		if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
+		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
+		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
+	}
+	
 	function isAlt(event) {
-		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { console.log("true!"); return true; }
+		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
 		else { return false; }
 	}
 	
@@ -663,7 +687,8 @@ var BetterRolls = function() {
 	return {
 		assignMacro:assignMacro,
 		quickRoll:quickRoll,
-		quickRollById:quickRollById
+		quickRollById:quickRollById,
+		quickRollByName:quickRollByName,
 	}
 }
 window.BetterRolls = BetterRolls();
@@ -802,7 +827,8 @@ class BetterRollsDice {
 			forceCrit: false,
 			quickRoll: false,
 			sendMessage: true,
-			slotLevel: null
+			slotLevel: null,
+			useCharge: false,
 		},params || {});
 		
 		redUpdateFlags(item);
@@ -810,6 +836,14 @@ class BetterRollsDice {
 		
 		if (rollRequests.quickRoll) {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
+		}
+		
+		// Check to consume charges. Prevents the roll if charges are required and none are left.
+		if (rollRequests.useCharge) {
+			let consumedCharge = await BetterRollsDice.consumeCharge(item);
+			if (consumedCharge === "noCharges") {
+				return "error";
+			}
 		}
 		
 		// If damage is "all", all damages should be rolled
@@ -837,6 +871,12 @@ class BetterRollsDice {
 		}
 		
 		let itemData = item.data.data;
+		if (!rollRequests.slotLevel) {
+			if (item.data.type === "spell") {
+				rollRequests.slotLevel = await BetterRollsDice.configureSpell(item);
+			}
+		}
+		
 		let wd = getWhisperData();
 		
 		let flags = item.data.flags,
@@ -875,6 +915,7 @@ class BetterRollsDice {
 			item: item,
 			actor: actor,
 			tokenId: tokenId,
+			itemId: item.id,
 			isCritical: isCrit || toolCrit,
 			title: title,
 			info: info,
@@ -919,7 +960,8 @@ class BetterRollsDice {
 			save = false,
 			damage = [false],
 			info = false,
-			properties = false;
+			properties = false,
+			useCharge = false;
 		
 		
 		if (brFlags) {
@@ -955,12 +997,12 @@ class BetterRollsDice {
 				}
 			}
 			if (flagIsTrue("quickProperties")) properties = true;
+			if (flagIsTrue("quickCharges")) useCharge = true;
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
 			info = true;
 			properties = true;
 		}
-		
 		
 		let rollRequests = {
 			itemType: itemType,
@@ -970,7 +1012,8 @@ class BetterRollsDice {
 			save: save,
 			damage: damage,
 			info: info,
-			properties: properties
+			properties: properties,
+			useCharge: useCharge
 		}
 		return rollRequests;
 	}
@@ -1299,13 +1342,23 @@ class BetterRollsDice {
 		//console.log(rollData.mod);
 		
 		// Prepare roll label
-		let title = [];
+		let title = [""];
 		if (showLabel) {
 			// Show "Healing" prefix only if it's not inherently a heal action
-			if (itemData.actionType === "heal" && !dnd5e.healingTypes[damageType]) { title.push(i18n("br5e.chat.healing")); }
+			if (itemData.actionType === "heal" && !dnd5e.healingTypes[damageType]) { title[0] = (i18n("br5e.chat.healing")); }
 			// Show "Damage" prefix if it's a damage roll
-			else if (dnd5e.damageTypes[damageType]) { title.push(i18n("br5e.chat.damage")); }
+			else if (dnd5e.damageTypes[damageType]) { title[0] = (i18n("br5e.chat.damage")); }
 		}
+		
+		// Modify label for context
+		if (game.settings.get("betterrolls5e", "damageContextEnabled") && flags.quickDamage.context[damageIndex]) {
+			if (game.settings.get("betterrolls5e", "contextReplacesDamage") === false) {
+				title[0] += " " + flags.quickDamage.context[damageIndex];
+			} else {
+				title[0] = flags.quickDamage.context[damageIndex];
+			}
+		}
+		
 		if (labelPlacement == '1') {
 			title.push(dtype);
 		}
@@ -1510,5 +1563,22 @@ class BetterRollsDice {
 			});
 		}
 		return lvl;
+	}
+	
+	// Consumes one charge on an item. Will do nothing if item.data.data.uses.per is blank. Will warn the user if there are no charges left.
+	static async consumeCharge(item) {
+		let itemData = item.data.data;
+		if (itemData.uses && itemData.uses.per) {
+			let charges = itemData.uses;
+			if (charges.value > 0) {
+				await item.update({
+					[`data.uses.value`]: charges.value - 1
+				});
+				return "success";
+			} else {
+				ui.notifications.warn(`${i18n("br5e.error.noChargesLeft")}`);
+				return "noCharges";
+			}
+		}
 	}
 }

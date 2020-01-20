@@ -53,7 +53,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
         // applying dmg to the targeted token and sending only the span that the button sits in 
         Actor5e.applyDamage(dmgHtml, modifier);
 		setTimeout(() => { 
-			if (canvas.hud.token._displayState !== 0) {
+			if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
 				canvas.hud.token.render();
 			}
 		}, 50);
@@ -62,7 +62,9 @@ Hooks.on('renderChatMessage', (message, html, data) => {
     // logic to only show the buttons when the mouse is within the chatcard
     html.find('.dmgBtn-container-br').hide();
     $(html).hover(evIn => {
-        html.find('.dmgBtn-container-br').show();
+		if (canvas.tokens.controlledTokens.length > 0) {
+			html.find('.dmgBtn-container-br').show();
+		}
     }, evOut => {
         html.find('.dmgBtn-container-br').hide();
     });

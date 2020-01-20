@@ -73,6 +73,24 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
+	game.settings.register("betterrolls5e", "damageContextEnabled", {
+		name: i18n("br5e.damageContextEnabled.name"),
+		hint: i18n("br5e.damageContextEnabled.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
+	
+	game.settings.register("betterrolls5e", "contextReplacesDamage", {
+		name: i18n("br5e.contextReplacesDamage.name"),
+		hint: i18n("br5e.contextReplacesDamage.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean
+	});
+	
 	game.settings.register("betterrolls5e", "damageRollPlacement", {
 		name: i18n("br5e.damageRollPlacement.name"),
 		hint: i18n("br5e.damageRollPlacement.hint"),
@@ -123,4 +141,12 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
+});
+
+// Disable context menu for damage rolls (they break)
+Hooks.on("getChatLogEntryContext", (html, options) => {
+	if (game.settings.get("betterrolls5e", "diceEnabled")) {
+		options.splice(0,4);
+		console.log("Deleted context menu for dnd5e chat cards!");
+	}
 });
