@@ -51,7 +51,10 @@ Clicking with/without the Alt key:
 
 - ***New!*** Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
 - Script macros are also intuitive enough to be entered manually.
-- Try `BetterRolls.quickRoll("Shortbow");` on a creature with an item named "Shortbow" !
+- Try `BetterRolls.quickRoll("Shortbow");` on a creature with an item named "Shortbow", or `BetterRolls.quickRollByName("Sharon", "Shortbow");` to fire Sharon's shortbow.
+![](https://i.imgur.com/fMMWz3m.gif)
+- ***New!*** Custom damage labels! Add written context to damage rolls to convey what the damage comes from, or when it occurs.
+![](https://i.imgur.com/L9NTE7G.png)
 
 ## Planned Features
 - Dual roll improvements
