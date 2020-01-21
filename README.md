@@ -58,8 +58,10 @@ Clicking with/without the Alt key:
 
 ## Planned Features
 - Dual roll improvements
-- Configurable labels for damage rolls
 - Additional macro support
+
+## Known Issues
+- Right-click context menu to apply damage is not supported. Better Rolls removes this functionality. Consider using the Chat Damage Buttons instead.
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
