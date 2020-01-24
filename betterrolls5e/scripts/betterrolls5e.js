@@ -1,6 +1,7 @@
-import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/combat.js";
+import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
+import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 export function i18n(key) {
 	return game.i18n.localize(key);
@@ -839,9 +840,10 @@ class BetterRollsDice {
 		}
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
+		let consumedCharge = {value:"", destroy:false};
 		if (rollRequests.useCharge) {
-			let consumedCharge = await BetterRollsDice.consumeCharge(item);
-			if (consumedCharge === "noCharges") {
+			consumedCharge = await BetterRollsDice.consumeCharge(item);
+			if (consumedCharge.value === "noCharges") {
 				return "error";
 			}
 		}
@@ -874,6 +876,7 @@ class BetterRollsDice {
 		if (!rollRequests.slotLevel) {
 			if (item.data.type === "spell") {
 				rollRequests.slotLevel = await BetterRollsDice.configureSpell(item);
+				if (rollRequests.slotLevel === "error") { return "spellPromptClosed"; }
 			}
 		}
 		
@@ -940,6 +943,8 @@ class BetterRollsDice {
 		};
 		
 		if (wd.whisper) { chatData.whisper = wd.whisper; }
+		
+		if (consumedCharge.destroy === true) { setTimeout(() => {item.actor.deleteOwnedItem(item.id);}, 100);}
 		
 		if (rollRequests.sendMessage == true) { ChatMessage.create(chatData); }
 		else return message;
@@ -1426,13 +1431,13 @@ class BetterRollsDice {
 			const add = Math.floor((spellLevel - itemData.level)/(scaleInterval || 1));
 			if (add > 0) {
 				if ( scale && (scale !== formula) ) {
-					formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${add*nd}d${d}`);
+					formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${Math.floor(add*nd)}d${d}`);
 				} else {
-					formula = formula.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${parseInt(nd)+add}d${d}`);
+					formula = formula.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${Math.floor(parseInt(nd)+add)}d${d}`);
 				}
 			}
 			
-			return formula;
+			return output;
 		}
 		
 		return null;
@@ -1542,14 +1547,20 @@ class BetterRollsDice {
 	
 	static async configureSpell(item) {
 		let actor = item.actor;
-		let lvl = 0;
+		let lvl = null;
 		let consume = false;
+		let placeTemplate = false;
 		
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
-			const spellFormData = await SpellCastDialog.create(actor, item);
-			lvl = parseInt(spellFormData.get("level"));
-			consume = Boolean(spellFormData.get("consume"));
+			try {
+				const spellFormData = await SpellCastDialog.create(actor, item);
+				console.log(spellFormData);
+				lvl = parseInt(spellFormData.get("level"));
+				consume = Boolean(spellFormData.get("consume"));
+				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
+			}
+			catch(error) { return "error"; }
 		}
 		
 		if ( lvl !== item.data.data.level ) {
@@ -1562,23 +1573,71 @@ class BetterRollsDice {
 				[`data.spells.spell${lvl}.value`]: Math.max(parseInt(actor.data.data.spells["spell"+lvl].value) - 1, 0)
 			});
 		}
+		
+		// Initiate ability template placement workflow if selected
+		if (item.hasAreaTarget && placeTemplate) {
+			const template = AbilityTemplate.fromItem(item);
+			if ( template ) template.drawPreview(event);
+			if (this.sheet) this.sheet.minimize();
+		}
+		
 		return lvl;
 	}
 	
 	// Consumes one charge on an item. Will do nothing if item.data.data.uses.per is blank. Will warn the user if there are no charges left.
-	static async consumeCharge(item) {
-		let itemData = item.data.data;
-		if (itemData.uses && itemData.uses.per) {
-			let charges = itemData.uses;
-			if (charges.value > 0) {
-				await item.update({
-					[`data.uses.value`]: charges.value - 1
-				});
-				return "success";
-			} else {
-				ui.notifications.warn(`${i18n("br5e.error.noChargesLeft")}`);
-				return "noCharges";
+	static async consumeCharge(itm, chargesToConsume = 1) {
+		let item = duplicate(itm);
+		let itemData = item.data;
+		let output = {value: "success", destroy: false};
+		
+		function noChargesLeft() {
+			ui.notifications.warn(`${i18n("br5e.error.noChargesLeft")}`);
+			output.value = "noCharges";
+		}
+		
+		function checkQuantity() {
+			let autoUse = itemData.uses.autoUse;
+			let autoDestroy = itemData.uses.autoDestroy;
+			if (autoUse && itemData.uses.value <= 0) { // If the item should reduce in quantity when out of charges
+				console.log("autoUse!");
+				if (itemData.quantity <= 1 && autoDestroy) {
+					output.destroy = true;
+				} else if (itemData.quantity <= 1 && itemData.uses.value < 0 && !autoDestroy) {
+					noChargesLeft();
+				} else if (itemData.quantity > 1 &&  itemData.uses.value >= 0 && !autoDestroy) {
+					itemData.quantity -= 1;
+					itemData.uses.value += itemData.uses.max;
+				} else if (itemData.quantity > 1) {
+					itemData.quantity -= 1;
+					itemData.uses.value += itemData.uses.max;
+				} else if (itemData.quantity == 1 && itemData.uses.value >= 0) {
+					itemData.quantity = 0;
+				} else {
+					noChargesLeft();
+				}
+			} else if (itemData.uses.value < 0) {
+				noChargesLeft();
 			}
 		}
+		
+		if (itemData.uses && itemData.uses.per) {
+			let itemCharges = itemData.uses.value;
+			let itemChargesMax = itemData.uses.max;
+			
+			if (itemCharges >= chargesToConsume) {
+				itemData.uses.value -= chargesToConsume;
+				checkQuantity();
+			} else if (item.type !== "consumable") {
+				noChargesLeft();
+			} else {
+				itemData.uses.value -= chargesToConsume;	
+				checkQuantity();
+			}
+		}
+		itm.update({
+			[`data.uses.value`]: Math.max(itemData.uses.value, 0),
+			[`data.quantity`]: itemData.quantity,
+		});
+		return output;
 	}
 }
