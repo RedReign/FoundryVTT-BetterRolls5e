@@ -1437,7 +1437,7 @@ class BetterRollsDice {
 				}
 			}
 			
-			return output;
+			return formula;
 		}
 		
 		return null;
@@ -1578,7 +1578,7 @@ class BetterRollsDice {
 		if (item.hasAreaTarget && placeTemplate) {
 			const template = AbilityTemplate.fromItem(item);
 			if ( template ) template.drawPreview(event);
-			if (this.sheet) this.sheet.minimize();
+			if (item.actor && item.actor.sheet) item.sheet.minimize();
 		}
 		
 		return lvl;
