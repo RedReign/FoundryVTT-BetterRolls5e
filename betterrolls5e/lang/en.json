@@ -20,6 +20,7 @@
 	"br5e.contextReplacesDamage.hint": "If a context label exists for a damage roll, \"Damage\" or \"Healing\" in the roll title will replace it instead of adding onto it. Requires Damage Context Labels to be enabled.",
 	"br5e.damageRollPlacement.name": "Show Damage Type Labels",
 	"br5e.damageRollPlacement.hint": "Determines where the damage type label is placed, relative to a damage roll.",
+	"br5e.damageRollPlacement.choices.0": "Don't Show",
 	"br5e.damageRollPlacement.choices.1": "Above",
 	"br5e.damageRollPlacement.choices.2": "Below & Inside",
 	"br5e.damageRollPlacement.choices.3": "Below & Outside",

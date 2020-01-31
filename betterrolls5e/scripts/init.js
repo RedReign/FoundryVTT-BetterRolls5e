@@ -91,6 +91,21 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
+	game.settings.register("betterrolls5e", "rollTitlePlacement", {
+		name: i18n("br5e.rollTitlePlacement.name"),
+		hint: i18n("br5e.rollTitlePlacement.hint"),
+		scope: "world",
+		config: true,
+		default: "1",
+		type: String,
+		choices: {
+			"0": i18n("br5e.damageRollPlacement.choices.0"),
+			"1": i18n("br5e.damageRollPlacement.choices.1"),
+			"2": i18n("br5e.damageRollPlacement.choices.2"),
+			"3": i18n("br5e.damageRollPlacement.choices.3")
+		}
+	});
+	
 	game.settings.register("betterrolls5e", "damageRollPlacement", {
 		name: i18n("br5e.damageRollPlacement.name"),
 		hint: i18n("br5e.damageRollPlacement.hint"),
@@ -99,6 +114,7 @@ Hooks.once("init", () => {
 		default: "1",
 		type: String,
 		choices: {
+			"0": i18n("br5e.damageRollPlacement.choices.0"),
 			"1": i18n("br5e.damageRollPlacement.choices.1"),
 			"2": i18n("br5e.damageRollPlacement.choices.2"),
 			"3": i18n("br5e.damageRollPlacement.choices.3")
