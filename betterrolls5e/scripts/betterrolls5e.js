@@ -1245,6 +1245,11 @@ class BetterRollsDice {
 			//console.log("Adding Bonus mod!", itemData);
 		}
 		
+		if (actorData.bonuses && isAttack(itm)) {
+			parts.push(`@${itemData.actionType}`);
+			rollData[`${itemData.actionType}`] = actorData.bonuses[`${itemData.actionType}`];
+		}
+		
 		
 		let dualRoll = BetterRollsDice.rollDual20(parts, rollData, title, critThreshold);
 		//console.log(dualRoll);
@@ -1352,7 +1357,7 @@ class BetterRollsDice {
 		
 		if (showLabel) {
 			// Show "Healing" prefix only if it's not inherently a heal action
-			if (itemData.actionType === "heal" && !dnd5e.healingTypes[damageType]) { titleString += i18n("br5e.chat.healing"); }
+			if (dnd5e.healingTypes[damageType]) { titleString = ""; }
 			// Show "Damage" prefix if it's a damage roll
 			else if (dnd5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
 		
@@ -1368,7 +1373,7 @@ class BetterRollsDice {
 			
 			if (isVersatile) { damageStrings.push("(" + dnd5e.weaponProperties.ver + ")"); }
 			
-			if (titlePlacement !== "0") {
+			if (titlePlacement !== "0" && titleString) {
 				labels[titlePlacement].push(titleString);
 			}
 			
@@ -1486,6 +1491,12 @@ class BetterRollsDice {
 			data = {mod: actor.data.data.abilities[abl].mod},
 			flavor = null;
 		
+		const checkBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilityCheck;
+		if (checkBonus && parseInt(checkBonus) !== 0) {
+			parts.push("@checkBonus");
+			data["checkBonus"] = checkBonus;
+		}
+		
 		return await BetterRollsDice.rollDual20(parts, data, flavor);
 	}
 	
@@ -1496,14 +1507,16 @@ class BetterRollsDice {
 		let flavor = null;
 		
 		// Support global save bonus
-		// ALREADY ADDED TO THE SAVE MODIFIER - Do not use
-		/*
+		const ablSaveBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilitySave;
 		const saveBonus = actor.data.flags.dnd5e && actor.data.flags.dnd5e.saveBonus;
-		if ( Number.isFinite(saveBonus) && parseInt(saveBonus) !== 0 ) {
-			parts.push("@savebonus");
-			data["savebonus"] = saveBonus;
+		
+		if (ablSaveBonus && parseInt(ablSaveBonus) !== 0) {
+			parts.push("@ablSaveBonus");
+			data["ablSaveBonus"] = ablSaveBonus;
+		} else if ( Number.isFinite(saveBonus) && parseInt(saveBonus) !== 0 ) {
+			parts.push("@saveBonus");
+			data["saveBonus"] = saveBonus;
 		}
-		*/
 		
 		return await BetterRollsDice.rollDual20(parts, data, flavor);
 	}

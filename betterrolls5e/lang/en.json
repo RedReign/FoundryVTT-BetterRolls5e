@@ -18,6 +18,8 @@
 	"br5e.damageContextEnabled.hint": "Allows entering context for damage labels, which precede the damage type. Only works on Better Rolls.",
 	"br5e.contextReplacesDamage.name": "Context Replaces \"Damage\"/\"Healing\" in Title",
 	"br5e.contextReplacesDamage.hint": "If a context label exists for a damage roll, \"Damage\" or \"Healing\" in the roll title will replace it instead of adding onto it. Requires Damage Context Labels to be enabled.",
+	"br5e.rollTitlePlacement.name": "Show Damage Title Labels",
+	"br5e.rollTitlePlacement.hint": "Determines where the damage title is placed, relative to a damage roll.",
 	"br5e.damageRollPlacement.name": "Show Damage Type Labels",
 	"br5e.damageRollPlacement.hint": "Determines where the damage type label is placed, relative to a damage roll.",
 	"br5e.damageRollPlacement.choices.0": "Don't Show",
