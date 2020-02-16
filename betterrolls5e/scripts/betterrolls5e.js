@@ -193,6 +193,24 @@ Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
 	}, 50);
 });
+Hooks.on(`renderActorSheet5eNPCDark`, (app, html, data) => {
+	setTimeout(() => {
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
+});
+Hooks.on(`renderActorSheet5eCharacterDark`, (app, html, data) => {
+	setTimeout(() => {
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
+});
+Hooks.on(`renderBetterNPCActor5eSheetDark`, (app, html, data) => {
+	setTimeout(() => {
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
+	}, 50);
+});
 
 // Hook into the item sheets via their rendering
 Hooks.on(`renderItemSheet5e`, (app, html, data) => {
