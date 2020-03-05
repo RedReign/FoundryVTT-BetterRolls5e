@@ -3,6 +3,8 @@ import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat
 import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
+import { Utils } from "./utils.js";
+
 export function i18n(key) {
 	return game.i18n.localize(key);
 }
@@ -1440,7 +1442,7 @@ class BetterRollsDice {
 		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
 			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = item.actor.data.type === "character" ? actorData.details.level.value : actorData.details.cr;
+			let level = item.actor.data.type === "character" ? Utils.getCharacterLevel(item.actor) : actorData.details.cr;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
 			const add = Math.floor((level + 1) / 6);
