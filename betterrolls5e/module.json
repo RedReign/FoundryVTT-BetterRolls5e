@@ -3,7 +3,7 @@
 	"title": "Better Rolls for 5e",
 	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
 	"minimumCoreVersion": "0.4.7",
-	"version": "0.4.17",
+	"version": "0.4.18",
 	"author": "Red Reign#5128",
 	"languages": [
 		{
@@ -21,7 +21,8 @@
 	"esmodules": ["./scripts/betterrolls5e.js",
 	              "./scripts/init.js",
 				  "./scripts/chat-damage-buttons.js",
-				  "./scripts/utils.js"],
+				  "./scripts/utils.js",
+				  "./scripts/hooks.js"],
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],
 	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",

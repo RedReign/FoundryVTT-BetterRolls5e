@@ -170,53 +170,6 @@ Hooks.on(`ready`, () => {
 	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
 });
 
-// Hook into different sheet via their rendering
-Hooks.on(`renderActorSheet5eNPC`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
-	}, 50);
-});
-Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
-	}, 50);
-});
-Hooks.on(`renderSky5eSheet`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
-	}, 50);
-});
-Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
-	}, 50);
-});
-
-Hooks.on(`renderBetterNPCActor5eSheetDark`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
-	}, 50);
-});
-Hooks.on(`renderActorSheet5eCharacterDark`, (app, html, data) => {
-	setTimeout(() => {
-	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
-	}, 50);
-});
-
-// Hook into the item sheets via their rendering
-Hooks.on(`renderItemSheet5e`, (app, html, data) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
-});
-Hooks.on(`renderItemSheet5eDark`, (app, html, data) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
-});	
-
 // Create flags for item when it's first created
 Hooks.on(`createOwnedItem`, (outerData, id, innerData) => {
 	game.settings.get("betterrolls5e", "diceEnabled") ? redUpdateFlags(outerData) : null;
@@ -231,7 +184,7 @@ Hooks.on(`renderChatMessage`, (message, html, data) => {
  * @param {String} triggeringElement - this is the html selector string that opens the description - mostly optional for different sheetclasses
  * @param {String} buttonContainer - this is the html selector string to which the buttons will be prepended - mostly optional for different sheetclasses
  */
-function addItemSheetButtons(app, html, data, triggeringElement = '', buttonContainer = '') {
+export function addItemSheetButtons(app, html, data, triggeringElement = '', buttonContainer = '') {
     // Setting default element selectors
     if (triggeringElement === '') triggeringElement = '.item .item-name h4';
     if (buttonContainer === '') buttonContainer = '.item-properties';
@@ -446,7 +399,7 @@ async function redUpdateFlags(item) {
 /**
  * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
  */
-async function addBetterRollsContent(app, protoHtml, data) {
+export async function addBetterRollsContent(app, protoHtml, data) {
 	let item = app.object;
 	//console.log(item);
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
@@ -498,7 +451,7 @@ async function addBetterRollsContent(app, protoHtml, data) {
 	}
 }
 
-function updateSaveButtons(html) {
+export function updateSaveButtons(html) {
 	html.find(".card-buttons").off()
 	html.find(".card-buttons button").off().click(event => {
 		const button = event.currentTarget;
@@ -535,7 +488,7 @@ function getTargetActors() {
  * Replaces the sheet's d20 rolls for ability checks, skill checks, and saving throws into dual d20s.
  * Also replaces the default button on items with a "standard" roll.
  */
-function changeRollsToDual (app, html, data, params) {
+export function changeRollsToDual (app, html, data, params) {
 	let paramRequests = mergeObject({
 			abilityButton: '.ability-name',
 			checkButton: '.ability-mod',
