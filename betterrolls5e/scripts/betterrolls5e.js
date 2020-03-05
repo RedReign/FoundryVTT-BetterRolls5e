@@ -194,10 +194,26 @@ Hooks.on(`renderBetterNPCActor5eSheet`, (app, html, data) => {
 	}, 50);
 });
 
+Hooks.on(`renderBetterNPCActor5eSheetDark`, (app, html, data) => {
+	setTimeout(() => {
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, '.item .npc-item-name') : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, {itemButton: '.item .npc-item-header > .rollable'}) : null;
+	}, 50);
+});
+Hooks.on(`renderActorSheet5eCharacterDark`, (app, html, data) => {
+	setTimeout(() => {
+	game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+	}, 50);
+});
+
 // Hook into the item sheets via their rendering
 Hooks.on(`renderItemSheet5e`, (app, html, data) => {
 	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
 });
+Hooks.on(`renderItemSheet5eDark`, (app, html, data) => {
+	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
+});	
 
 // Create flags for item when it's first created
 Hooks.on(`createOwnedItem`, (outerData, id, innerData) => {
@@ -670,12 +686,12 @@ function BetterRolls() {
 		if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
 		BetterRollsDice.fullRoll(item, {quickRoll: true, alt: isAlt(event)});
-	}
+	};
 	
 	function isAlt(event) {
 		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
 		else { return false; }
-	}
+	};
 	
 	let oldHotBarHook = Hooks._hooks[0];
 	Hooks._hooks.hotbarDrop.splice(0,1)
@@ -1239,15 +1255,18 @@ class BetterRollsDice {
 		}
 		
 		// Add item's bonus
-		if ( (itemData.attackBonus != 0) && (itemData.attackBonus !== "") ) {
+		if ( itemData.attackBonus ) {
 			parts.push(`@bonus`);
 			rollData.bonus = itemData.attackBonus;
 			//console.log("Adding Bonus mod!", itemData);
 		}
 		
 		if (actorData.bonuses && isAttack(itm)) {
-			parts.push(`@${itemData.actionType}`);
-			rollData[`${itemData.actionType}`] = actorData.bonuses[`${itemData.actionType}`];
+			let actionType = `${itemData.actionType}`;
+			if (actorData.bonuses[actionType]) {
+				parts.push(actionType);
+				rollData[actionType] = actorData.bonuses[actionType];
+			}
 		}
 		
 		
