@@ -186,11 +186,14 @@ Hooks.on(`renderChatMessage`, (message, html, data) => {
  */
 export function addItemSheetButtons(app, html, data, triggeringElement = '', buttonContainer = '') {
     // Setting default element selectors
+	
     if (triggeringElement === '') triggeringElement = '.item .item-name h4';
     if (buttonContainer === '') buttonContainer = '.item-properties';
-
+	
     // adding an event for when the description is shown
     html.find(triggeringElement).click(event => {
+		console.log("HEYO");
+		console.log(triggeringElement, buttonContainer);
 		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
         let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
@@ -265,6 +268,7 @@ export function addItemSheetButtons(app, html, data, triggeringElement = '', but
 		if (buttonsWereAdded) {buttons.append(`<br><header style="margin-top:6px"></header>`);}
 		
         // adding the buttons to the sheet
+		
         let targetHTML = $(event.target.parentNode.parentNode)
         targetHTML.find(buttonContainer).prepend(buttons);
 		

@@ -25,8 +25,8 @@ export class BetterRollsHooks {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
 			setTimeout(() => {
-				game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data) : null;
-				game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data) : null;
+				game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, triggeringElement, buttonContainer) : null;
+				game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, params) : null;
 			}, 50);
 		});
 	}
@@ -42,8 +42,8 @@ export class BetterRollsHooks {
 
 BetterRollsHooks.addActorSheet("ActorSheet5eNPC");
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacter");
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item .npc-item-header > .rollable");
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item .npc-item-header > .rollable");
+BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable'});
+BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable'});
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacterDark");
 BetterRollsHooks.addActorSheet("ActorSheet5eNPCDark");
 BetterRollsHooks.addActorSheet("Alt5eSheet");
