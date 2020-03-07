@@ -192,8 +192,6 @@ export function addItemSheetButtons(app, html, data, triggeringElement = '', but
 	
     // adding an event for when the description is shown
     html.find(triggeringElement).click(event => {
-		console.log("HEYO");
-		console.log(triggeringElement, buttonContainer);
 		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
         let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
