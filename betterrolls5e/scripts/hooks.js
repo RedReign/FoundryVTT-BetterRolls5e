@@ -42,7 +42,7 @@ export class BetterRollsHooks {
 
 BetterRollsHooks.addActorSheet("ActorSheet5eNPC");
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacter");
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable'});
+BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable', abilityButton: ".ability h4.ability-name.rollable", checkButton: ".ability div span.ability-mod", saveButton: ".saves-div .save >"});
 BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable'});
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacterDark");
 BetterRollsHooks.addActorSheet("ActorSheet5eNPCDark");

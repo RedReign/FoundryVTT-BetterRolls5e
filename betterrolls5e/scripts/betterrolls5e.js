@@ -503,15 +503,27 @@ export function changeRollsToDual (app, html, data, params) {
 	let actor = app.object;
 	//console.log(paramRequests);
 	
+	function getAbility(target) {
+		let ability = null;
+		for (let i=0; i <= 3; i++) {
+			ability = target.getAttribute("data-ability");
+			if (ability) { break; }
+			else {
+				target = target.parentElement;
+			}
+		}
+		return ability;
+	}
+	
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
+	//console.log(abilityName);
 	if (paramRequests.singleAbilityButton === true) {
 		//console.log(abilityName);
-		//console.log(paramRequests.singleAbilityButton);
 		abilityName.off();
 		abilityName.click(event => {
 			event.preventDefault();
-			let ability = event.currentTarget.parentElement.getAttribute("data-ability"),
+			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
 			//console.log("Ability: ", ability);
 			if ( event.ctrlKey ) {
@@ -543,7 +555,7 @@ export function changeRollsToDual (app, html, data, params) {
 	checkName.addClass("rollable");
 	checkName.click(event => {
 		event.preventDefault();
-		let ability = event.currentTarget.parentElement.parentElement.getAttribute("data-ability"),
+		let ability = getAbility(event.currentTarget),
 			abl = actor.data.data.abilities[ability];
 		//console.log("Ability: ", ability);
 		BetterRollsDice.fullRollAttribute(app.object, ability, "check");
@@ -555,7 +567,7 @@ export function changeRollsToDual (app, html, data, params) {
 	saveName.addClass("rollable");
 	saveName.click(event => {
 		event.preventDefault();
-		let ability = event.currentTarget.parentElement.parentElement.getAttribute("data-ability"),
+		let ability = getAbility(event.currentTarget),
 			abl = actor.data.data.abilities[ability];
 		//console.log("Ability: ", ability);
 		BetterRollsDice.fullRollAttribute(app.object, ability, "save");
@@ -1220,11 +1232,11 @@ class BetterRollsDice {
 		
 		if (actorData.bonuses && isAttack(itm)) {
 			let actionType = `${itemData.actionType}`;
-			if (actorData.bonuses[actionType]) {
+			if (actorData.bonuses[actionType].attack) {
 				parts.push(actionType);
-				rollData[actionType] = actorData.bonuses[actionType];
+				rollData[actionType] = actorData.bonuses[actionType].attack;
 			}
-		}
+		}		
 		
 		
 		let dualRoll = BetterRollsDice.rollDual20(parts, rollData, title, critThreshold);
@@ -1468,9 +1480,14 @@ class BetterRollsDice {
 			flavor = null;
 		
 		const checkBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilityCheck;
+		const secondCheckBonus = actor.data.data.bonuses && actor.data.data.bonuses.ability.check;
+		
 		if (checkBonus && parseInt(checkBonus) !== 0) {
 			parts.push("@checkBonus");
 			data["checkBonus"] = checkBonus;
+		} else if (secondCheckBonus && parseInt(secondCheckBonus) !== 0) {
+			parts.push("@secondCheckBonus");
+			data["secondCheckBonus"] = secondCheckBonus;
 		}
 		
 		return await BetterRollsDice.rollDual20(parts, data, flavor);
@@ -1484,11 +1501,15 @@ class BetterRollsDice {
 		
 		// Support global save bonus
 		const ablSaveBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilitySave;
+		const secondAblSaveBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilities.save;
 		const saveBonus = actor.data.flags.dnd5e && actor.data.flags.dnd5e.saveBonus;
 		
 		if (ablSaveBonus && parseInt(ablSaveBonus) !== 0) {
 			parts.push("@ablSaveBonus");
 			data["ablSaveBonus"] = ablSaveBonus;
+		} else if (secondAblSaveBonus && parseInt(secondAblSaveBonus) !== 0) {
+			parts.push("@secondAblSaveBonus");
+			data["secondAblSaveBonus"] = secondAblSaveBonus;
 		} else if ( Number.isFinite(saveBonus) && parseInt(saveBonus) !== 0 ) {
 			parts.push("@saveBonus");
 			data["saveBonus"] = saveBonus;
