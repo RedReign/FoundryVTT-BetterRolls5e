@@ -1332,8 +1332,7 @@ class BetterRollsDice {
 		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
 			let actionType = `${itemData.actionType}`;
 			if (rollData.bonuses[actionType].damage) {
-				parts.push(`@`+actionType);
-				rollData[actionType] = rollData.bonuses[actionType].damage;
+				damageFormula = damageFormula + rollData.bonuses[actionType].damage;
 			}
 		}
 		
