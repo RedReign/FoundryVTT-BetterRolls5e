@@ -835,6 +835,7 @@ class BetterRollsDice {
 		
 		// If damage is "all", all damages should be rolled
 		if (rollRequests.damage === "all") {
+			rollRequests.allDamage = true;
 			rollRequests.damage = [];
 			for (let i = 0; i < item.data.data.damage.parts.length; i++) {
 				rollRequests.damage[i] = true;
@@ -1236,7 +1237,7 @@ class BetterRollsDice {
 				parts.push(actionType);
 				rollData[actionType] = actorData.bonuses[actionType].attack;
 			}
-		}		
+		}	
 		
 		
 		let dualRoll = BetterRollsDice.rollDual20(parts, rollData, title, critThreshold);
@@ -1280,6 +1281,7 @@ class BetterRollsDice {
 	
 	static rollDamage(itm, damageIndex = 0, isAlt = false, forceVersatile = false, isCrit = false, showLabel = true, slotLevel = null) {
 		let itemData = itm.data.data,
+			
 			rollData = duplicate(itm.actor.data.data),
 			abl = itemData.ability,
 			flags = itm.data.flags.betterRolls5e,
@@ -1324,6 +1326,14 @@ class BetterRollsDice {
 					if (rollData.abilities.str.mod >= rollData.abilities.dex.mod) { abl = "str"; }
 					else { abl = "dex"; }
 				}
+			}
+		}
+		
+		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
+			let actionType = `${itemData.actionType}`;
+			if (rollData.bonuses[actionType].damage) {
+				parts.push(`@`+actionType);
+				rollData[actionType] = rollData.bonuses[actionType].damage;
 			}
 		}
 		
