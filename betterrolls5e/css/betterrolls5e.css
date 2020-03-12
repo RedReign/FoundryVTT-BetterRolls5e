@@ -15,26 +15,16 @@
 
 .red-dual .dice-row {
 	clear: both;
+	display: flex;
+	justify-content: space-between;
 }
 
-.red-dual .dice-row .dual-left {
-	float: left;
-	width: 50%;
-	display: inline;
+.red-dual .dice-row .dice-row-item {
+	flex: 1;
 }
 
-.red-dual .dice-row .dual-right {
-	float: right;
-	width: 50%;
-	display: inline;
-}
-
-.red-dual .dice-row .tooltip.dual-left {
-	width: 45%;
-}
-
-.red-dual .dice-row .tooltip.dual-right {
-	width: 45%;
+.red-dual .tooltip.dice-row-item {
+	padding: 0px 4px 0px 4px;
 }
 
 .red-dual .dice-row .failure {

@@ -662,13 +662,11 @@ function BetterRolls() {
 		else { return false; }
 	};
 	
-	let oldHotBarHook = Hooks._hooks[0];
-	Hooks._hooks.hotbarDrop.splice(0,1)
-	Hooks.on("hotbarDrop", (bar, data, slot) => {
-		if ( data.type !== "Item" ) return;
+	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
+		if ( data.type !== "Item" ) return true;
 		assignMacro(data, slot, "id");
-		return true;
-	});
+		return false;
+    }].concat(Hooks._hooks.hotbarDrop || []);
 	
 	return {
 		assignMacro:assignMacro,
@@ -677,7 +675,10 @@ function BetterRolls() {
 		quickRollByName:quickRollByName,
 	}
 }
-window.BetterRolls = BetterRolls();
+
+Hooks.on(`ready`, () => {
+	window.BetterRolls = BetterRolls();
+});
 
 class BetterRollsDice {
 	/**
@@ -1100,40 +1101,46 @@ class BetterRollsDice {
 	/**
 	* A function for returning a roll template with crits and fumbles appropriately colored.
 	* @param {Object} array			Object containing the html for the roll and whether or not the roll is a crit
-	*	{HTMLElement} html
-	*	{Boolean} isCrit
 	* @param {Roll} roll			The desired roll to check for crits or fumbles
 	* @param {String} selector		The CSS class selection to add the colors to
 	*/
-	static tagCrits(array, roll, selector, critThreshold, debug=false) {
-		if (!roll) {return array;}
-		let $html = $(array.html),
-			high = 0,
-			low = 0;
-		roll.dice.forEach( function(d) {
-			// Add crit for improved crit threshold
-			let threshold = critThreshold || d.faces;
-			if (debug) {
-				//console.log("SIZE",d.faces,"VALUE",d.total);
-			}
-			if (d.faces > 1) {
-				d.results.forEach( function(result) {
-					if (result >= threshold) { high += 1; }
-					else if (result == 1) { low += 1; }
-				});
-			}
-		});
-		if (debug) {
-			//console.log("CRITS",high);
-			//console.log("FUMBLES",low);
-		}
-		
-		if ((high > 0) && (low == 0)) $html.find(selector).addClass("success");
-		else if ((high == 0) && (low > 0)) $html.find(selector).addClass("failure");
-		else if ((high > 0) && (low > 0)) $html.find(selector).addClass("mixed");
+	static tagCrits(array, rolls, selector, critThreshold, critChecks=true, debug=false) {
+		/*console.log(array);
+		console.log(rolls);
+		console.log(selector);
+		console.log(critThreshold);
+		*/
+		if (!rolls) {return array;}
+		if (!Array.isArray(rolls)) {rolls = [rolls];}
+		let $html = $(array.html);
+		let rollHtml = $html.find(selector);
 		let isCrit = false;
-		if ((high > 0) || (array.isCrit == true)) isCrit = true;
-		
+		for (let i=0; i<rollHtml.length; i++) {
+			let high = 0,
+				low = 0;
+			rolls[i].dice.forEach( function(d) {
+				// Add crit for improved crit threshold
+				let threshold = critThreshold || d.faces;
+				if (debug) {
+					//console.log("SIZE",d.faces,"VALUE",d.total);
+				}
+				if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
+					d.results.forEach( function(result) {
+						if (result >= threshold) { high += 1; }
+						else if (result == 1) { low += 1; }
+					});
+				}
+			});
+			if (debug) {
+				console.log("CRITS", high);
+				console.log("FUMBLES", low);
+			}
+			
+			if ((high > 0) && (low == 0)) $($html.find(selector)[i]).addClass("success");
+			else if ((high == 0) && (low > 0)) $($html.find(selector)[i]).addClass("failure");
+			else if ((high > 0) && (low > 0)) $($html.find(selector)[i]).addClass("mixed");
+			if ((high > 0) || (array.isCrit == true)) isCrit = true;
+		}
 		let output = {
 			html: $html[0].outerHTML,
 			isCrit: isCrit
@@ -1142,17 +1149,43 @@ class BetterRollsDice {
 	}
 	
 	/**
-	* A function for rolling dual d20 rolls
-	* @param {Array} parts			An array of parts for the Roll object
-	* @param {Object} data			The data to compare to for the Roll object
-	* @param {String} title			The title of the dual roll. By default, appears as small text centered above the rolls.
+	* A function for rolling multiple rolls. Returns the html code to inject into the chat message.
+	* @param {Integer} numRolls			The number of rolls to put in the template.
+	* @param {String} dice				The dice formula.
+	* @param {Array} parts				The array of additional parts to add to the dice formula.
+	* @param {Object} data				The actor's data to use as reference
+	* @param {String} title				The roll's title.
+	* @param {Boolean} critThreshold	The minimum roll on the dice to cause a critical roll.
 	*/
-	static async rollDual20(parts, data, title, critThreshold) {
-		let d20parts = ["1d20"].concat(parts);
+	static async multiRoll(numRolls = 2, dice = "1d20", parts = [], data, title, critThreshold) {
+		let formula = [dice].concat(parts);
+		let rolls = [];
+		let tooltips = [];
+		
+		// Step 1 - Get all rolls
+		for (i=0; i<numRolls; i++) {
+			rolls.push(new Roll(formula.join("+"), data).roll());
+			tooltips.push(rolls[0].getTooltip());
+		}
+		
+		// Step 2 - Setup chatData
+	}
+	
+	/**
+	* A function for rolling dual d20 rolls
+	* @param {Array} parts				An array of parts for the Roll object
+	* @param {Object} data				The data to compare to for the Roll object
+	* @param {String} title				The title of the dual roll. By default, appears as small text centered above the rolls.
+	* @param {Integer} critThreshold	The minimum roll on the d20 to result in a critical roll.
+	*/
+	static async rollDual20(parts, data, title, critThreshold=20) {
+		let formula = ["1d20"].concat(parts);
 		
 		// Step 1 - Roll left and right die
-		let leftRoll = new Roll(d20parts.join("+"), data).roll();
+		let leftRoll = new Roll(formula.join("+"), data).roll();
 		let rightRoll = leftRoll.reroll();
+		
+		let rolls = [leftRoll, rightRoll];
 		
 		// Step 2 - Setup chatData
 		let leftTooltip = await leftRoll.getTooltip(),
@@ -1169,10 +1202,10 @@ class BetterRollsDice {
 		// Step 3 - Create HTML using custom template
 		let html = {
 			html: await renderTemplate("modules/betterrolls5e/templates/red-dualroll.html", chatData),
-			crit: false
+			isCrit: false
 		};
-		html = BetterRollsDice.tagCrits(html, leftRoll, ".dice-total.dual-left", critThreshold);
-		html = BetterRollsDice.tagCrits(html, rightRoll, ".dice-total.dual-right", critThreshold);
+		html = BetterRollsDice.tagCrits(html, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+		//html = BetterRollsDice.tagCrits(html, rightRoll, ".dice-total.dual-right", critThreshold);
 		return html;
 	}
 	
@@ -1187,10 +1220,11 @@ class BetterRollsDice {
 		// Add critical threshold
 		let critThreshold = 20;
 		let characterCrit = 20;
-		try { characterCrit = itm.actor.getFlag("dnd5e", "weaponCriticalThreshold") || 20; }
-		catch(error) { characterCrit = itm.actor.getFlag("dnd5eJP", "weaponCriticalThreshold") || 20; }
+		try { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
+		catch(error) { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
 		
-		let itemCrit = itm.data.flags.betterRolls5e.critRange ? Number(itm.data.flags.betterRolls5e.critRange.value) : 20;
+		let itemCrit = Number(getProperty(itm.data.flags.betterRolls5e, "critRange.value")) || 20;
+		console.log(critThreshold, characterCrit, itemCrit);
 		
 		if (itm.data.type == "weapon") {
 			critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
@@ -1234,7 +1268,7 @@ class BetterRollsDice {
 		if (actorData.bonuses && isAttack(itm)) {
 			let actionType = `${itemData.actionType}`;
 			if (actorData.bonuses[actionType].attack) {
-				parts.push(actionType);
+				parts.push("@" + actionType);
 				rollData[actionType] = actorData.bonuses[actionType].attack;
 			}
 		}	
@@ -1332,7 +1366,7 @@ class BetterRollsDice {
 		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
 			let actionType = `${itemData.actionType}`;
 			if (rollData.bonuses[actionType].damage) {
-				damageFormula = damageFormula + rollData.bonuses[actionType].damage;
+				damageFormula = damageFormula + "+" + rollData.bonuses[actionType].damage;
 			}
 		}
 		
@@ -1489,7 +1523,7 @@ class BetterRollsDice {
 			flavor = null;
 		
 		const checkBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilityCheck;
-		const secondCheckBonus = actor.data.data.bonuses && actor.data.data.bonuses.ability.check;
+		const secondCheckBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilities.check;
 		
 		if (checkBonus && parseInt(checkBonus) !== 0) {
 			parts.push("@checkBonus");
