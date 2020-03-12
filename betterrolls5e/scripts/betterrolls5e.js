@@ -1220,11 +1220,11 @@ class BetterRollsDice {
 		// Add critical threshold
 		let critThreshold = 20;
 		let characterCrit = 20;
-		try { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
+		try { characterCrit = Number(getProperty(itm, "actor.data.flags.dnd5e.weaponCriticalThreshold")) || 20;  }
 		catch(error) { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
 		
 		let itemCrit = Number(getProperty(itm.data.flags.betterRolls5e, "critRange.value")) || 20;
-		console.log(critThreshold, characterCrit, itemCrit);
+		//	console.log(critThreshold, characterCrit, itemCrit);
 		
 		if (itm.data.type == "weapon") {
 			critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
@@ -1363,13 +1363,6 @@ class BetterRollsDice {
 			}
 		}
 		
-		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
-			let actionType = `${itemData.actionType}`;
-			if (rollData.bonuses[actionType].damage) {
-				damageFormula = damageFormula + "+" + rollData.bonuses[actionType].damage;
-			}
-		}
-		
 		// Users may add "+ @mod" to their rolls to manually add the ability modifier to their rolls.
 		rollData.mod = (abl !== "") ? rollData.abilities[abl].mod : 0;
 		//console.log(rollData.mod);
@@ -1418,7 +1411,17 @@ class BetterRollsDice {
 		};
 		
 		if (damageIndex === 0) { damageFormula = BetterRollsDice.scaleDamage(itm, damageIndex, slotLevel) || damageFormula; }
-		let baseDice = damageFormula;
+		
+		let bonusAdd = "";
+		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
+			let actionType = `${itemData.actionType}`;
+			if (rollData.bonuses[actionType].damage) {
+				bonusAdd = "+" + rollData.bonuses[actionType].damage;
+			}
+		}
+		
+		
+		let baseDice = damageFormula + bonusAdd;
 		let baseWithParts = [baseDice];
 		if (parts) {baseWithParts = [baseDice].concat(parts);}
 		
@@ -1427,7 +1430,7 @@ class BetterRollsDice {
 		let baseRoll = new Roll(rollFormula, rollData).roll();
 		let critRoll;
 		if (isCrit) {
-			let critFormula = rollFormula.replace(/[+-]\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
+			let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
 			let critRollData = duplicate(rollData);
 			critRollData.mod = 0;
 			critRoll = new Roll(critFormula, critRollData);
