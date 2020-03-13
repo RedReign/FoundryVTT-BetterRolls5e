@@ -62,38 +62,39 @@ Hooks.once("init", () => {
 	});
 	
 	/**
-	* Register roll title options
+	* Register roll label options
 	*/
-	game.settings.register("betterrolls5e", "rollTitlesEnabled", {
-		name: i18n("br5e.rollTitlesEnabled.name"),
-		hint: i18n("br5e.rollTitlesEnabled.hint"),
-		scope: "world",
-		config: true,
-		default: true,
-		type: Boolean
-	});
-	
-	game.settings.register("betterrolls5e", "damageContextEnabled", {
-		name: i18n("br5e.damageContextEnabled.name"),
-		hint: i18n("br5e.damageContextEnabled.hint"),
-		scope: "world",
-		config: true,
-		default: true,
-		type: Boolean
-	});
-	
-	game.settings.register("betterrolls5e", "contextReplacesDamage", {
-		name: i18n("br5e.contextReplacesDamage.name"),
-		hint: i18n("br5e.contextReplacesDamage.hint"),
-		scope: "world",
-		config: true,
-		default: false,
-		type: Boolean
-	});
-	
 	game.settings.register("betterrolls5e", "rollTitlePlacement", {
 		name: i18n("br5e.rollTitlePlacement.name"),
 		hint: i18n("br5e.rollTitlePlacement.hint"),
+		scope: "world",
+		config: true,
+		default: "1",
+		type: String,
+		choices: {
+			"0": i18n("br5e.damageRollPlacement.choices.0"),
+			"1": i18n("br5e.damageRollPlacement.choices.1")
+		}
+	});
+	
+	game.settings.register("betterrolls5e", "damageTitlePlacement", {
+		name: i18n("br5e.damageTitlePlacement.name"),
+		hint: i18n("br5e.damageTitlePlacement.hint"),
+		scope: "world",
+		config: true,
+		default: "1",
+		type: String,
+		choices: {
+			"0": i18n("br5e.damageRollPlacement.choices.0"),
+			"1": i18n("br5e.damageRollPlacement.choices.1"),
+			"2": i18n("br5e.damageRollPlacement.choices.2"),
+			"3": i18n("br5e.damageRollPlacement.choices.3")
+		}
+	});
+	
+	game.settings.register("betterrolls5e", "damageContextPlacement", {
+		name: i18n("br5e.damageContextEnabled.name"),
+		hint: i18n("br5e.damageContextEnabled.hint"),
 		scope: "world",
 		config: true,
 		default: "1",
@@ -118,6 +119,39 @@ Hooks.once("init", () => {
 			"1": i18n("br5e.damageRollPlacement.choices.1"),
 			"2": i18n("br5e.damageRollPlacement.choices.2"),
 			"3": i18n("br5e.damageRollPlacement.choices.3")
+		}
+	});
+	
+	game.settings.register("betterrolls5e", "contextReplacesTitle", {
+		name: i18n("br5e.contextReplacesTitle.name"),
+		hint: i18n("br5e.contextReplacesTitle.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean
+	});
+	
+	game.settings.register("betterrolls5e", "contextReplacesDamage", {
+		name: i18n("br5e.contextReplacesDamage.name"),
+		hint: i18n("br5e.contextReplacesDamage.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean
+	});
+	
+	game.settings.register("betterrolls5e", "critBehavior", {
+		name: i18n("br5e.critBehavior.name"),
+		hint: i18n("br5e.critBehavior.hint"),
+		scope: "world",
+		config: true,
+		default: "1",
+		type: String,
+		choices: {
+			"0": i18n("br5e.critBehavior.choices.0"), // No Extra Damage
+			"1": i18n("br5e.critBehavior.choices.1"), // Roll Critical Damage Dice
+			"2": i18n("br5e.critBehavior.choices.2"), // Max Base Damage & Roll Critical
+			"3": i18n("br5e.critBehavior.choices.3"), // Max Base & Critical Damage
 		}
 	});
 	

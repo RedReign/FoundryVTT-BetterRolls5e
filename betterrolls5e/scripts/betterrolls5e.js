@@ -434,7 +434,7 @@ export async function addBetterRollsContent(app, protoHtml, data) {
 	let extraTab = settingsContainer.append(betterRollsTemplate);
 	
 	// Add damage context input
-	if (game.settings.get("betterrolls5e", "damageContextEnabled")) {
+	if (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") {
 		let damageRolls = html.find(`.tab.details .damage-parts .damage-part input`);
 		// Placeholder is either "Context" or "Label" depending on system settings
 		let placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
@@ -845,19 +845,7 @@ class BetterRollsDice {
 		
 		// Figure out if roll labels are necessary
 		let labelsShown = 0,
-			showLabels = game.settings.get("betterrolls5e", "rollTitlesEnabled"),
 			properties = (rollRequests.properties) ? BetterRollsDice.listProperties(item) : null;
-		/*if (game.settings.get("betterrolls5e", "rollTitlesEnabled") == false) {
-			if (rollRequests.attack) { labelsShown += 1; }
-			if (rollRequests.save) { labelsShown += 1; }
-			if (rollRequests.check) { labelsShown += 1; }
-			if (rollRequests.damage) {
-				for (let i = 0; i < rollRequests.damage.length; i++) {
-					if (rollRequests.damage[i] === true) { labelsShown += 1; }
-				}
-			}
-			showLabels = (labelsShown > 1) ? false : true;
-		}*/
 		
 		let itemData = item.data.data;
 		if (!rollRequests.slotLevel) {
@@ -874,7 +862,7 @@ class BetterRollsDice {
 			actor = item.actor,
 			printedSlotLevel = ( item.data.type === "spell" && rollRequests.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[rollRequests.slotLevel] : null,
 			title = (rollRequests.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html",{item:item, slotLevel:printedSlotLevel})),
-			attackRoll = (rollRequests.attack == true) ? await BetterRollsDice.rollAttack(item, rollRequests.itemType, showLabels) : null,
+			attackRoll = (rollRequests.attack == true) ? await BetterRollsDice.rollAttack(item, rollRequests.itemType) : null,
 			toolRoll = ((item.data.type == "tool") && rollRequests.check == true) ? await BetterRollsDice.rollTool(item) : null,
 			isCrit = (rollRequests.forceCrit || (attackRoll ? attackRoll.isCrit : false)),
 			damages = [];
@@ -884,7 +872,7 @@ class BetterRollsDice {
 		// Add damage rolls to the "damages" value to be rendered to template
 		for (let i=0; i < rollRequests.damage.length; i++) {
 			if ((rollRequests.damage[i] === true) && (item.data.data.damage.parts[i])) {
-				damages.push(await BetterRollsDice.rollDamage(item, i, rollRequests.alt, rollRequests.versatile, isCrit, showLabels, rollRequests.slotLevel));
+				damages.push(await BetterRollsDice.rollDamage(item, i, rollRequests.alt, rollRequests.versatile, isCrit, rollRequests.slotLevel));
 			}
 		}
 		
@@ -1209,11 +1197,11 @@ class BetterRollsDice {
 		return html;
 	}
 	
-	static rollAttack(itm, type, titleEnabled) {
+	static rollAttack(itm, type) {
 		// Prepare roll data
 		let itemData = itm.data.data,
 			actorData = itm.actor.data.data,
-			title = titleEnabled ? i18n("br5e.chat.attack") : null,
+			title = (game.settings.get("betterrolls5e", "rollTitlePlacement") != "0") ? i18n("br5e.chat.attack") : null,
 			parts = [],
 			rollData = duplicate(actorData);
 		
@@ -1279,7 +1267,7 @@ class BetterRollsDice {
 		return dualRoll;
 	}
 	
-	static async damageTemplate (baseRoll, critRoll, labels) {
+	static async damageTemplate ({baseRoll, critRoll, labels}) {
 		let baseTooltip = await baseRoll.getTooltip(),
 			templateTooltip;
 		
@@ -1313,9 +1301,8 @@ class BetterRollsDice {
 		return output;
 	}
 	
-	static rollDamage(itm, damageIndex = 0, isAlt = false, forceVersatile = false, isCrit = false, showLabel = true, slotLevel = null) {
+	static rollDamage(itm, damageIndex = 0, isAlt = false, forceVersatile = false, isCrit = false, slotLevel = null) {
 		let itemData = itm.data.data,
-			
 			rollData = duplicate(itm.actor.data.data),
 			abl = itemData.ability,
 			flags = itm.data.flags.betterRolls5e,
@@ -1368,42 +1355,47 @@ class BetterRollsDice {
 		//console.log(rollData.mod);
 		
 		// Prepare roll label
-		let titlePlacement = game.settings.get("betterrolls5e", "rollTitlePlacement"),
+		let titlePlacement = game.settings.get("betterrolls5e", "damageTitlePlacement"),
 			damagePlacement = game.settings.get("betterrolls5e", "damageRollPlacement"),
+			contextPlacement = game.settings.get("betterrolls5e", "damageContextPlacement"),
+			replaceTitle = game.settings.get("betterrolls5e", "contextReplacesTitle"),
+			replaceDamage = game.settings.get("betterrolls5e", "contextReplacesDamage"),
 			labels = {
 				"1": [],
 				"2": [],
 				"3": []
 			};
-		
-		let titleString = "";
-		let damageStrings = [dtype];
-		
-		if (showLabel) {
-			// Show "Healing" prefix only if it's not inherently a heal action
-			if (dnd5e.healingTypes[damageType]) { titleString = ""; }
-			// Show "Damage" prefix if it's a damage roll
-			else if (dnd5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
-		
-		
-			// Modify label for context
-			if (game.settings.get("betterrolls5e", "damageContextEnabled") && flags.quickDamage.context[damageIndex]) {
-				if (game.settings.get("betterrolls5e", "contextReplacesDamage") === false) {
-					titleString = titleString + " " + flags.quickDamage.context[damageIndex];
-				} else {
-					titleString = flags.quickDamage.context[damageIndex];
-				}
-			}
 			
-			if (isVersatile) { damageStrings.push("(" + dnd5e.weaponProperties.ver + ")"); }
-			
-			if (titlePlacement !== "0" && titleString) {
-				labels[titlePlacement].push(titleString);
+		let titleString = "",
+			damageString = [dtype],
+			contextString = flags.quickDamage.context[damageIndex];
+		
+		// Show "Healing" prefix only if it's not inherently a heal action
+		if (dnd5e.healingTypes[damageType]) { titleString = ""; }
+		// Show "Damage" prefix if it's a damage roll
+		else if (dnd5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
+		
+		// Title
+		let pushedTitle = false;
+		if (titlePlacement !== "0" && titleString && !(replaceTitle && contextString && titlePlacement == contextPlacement)) {
+			labels[titlePlacement].push(titleString);
+			pushedTitle = true;
+		}
+		
+		// Context
+		if (contextString) {
+			if (contextPlacement === titlePlacement && pushedTitle) {
+				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + contextString + ")";
+			} else {
+				labels[contextPlacement].push(contextString);
 			}
-			
-			if (damagePlacement !== "0") {
-				labels[damagePlacement].push(damageStrings.join(" "));
-			}
+		}
+		
+		// Damage type
+		if (isVersatile) { damageString.push("(" + dnd5e.weaponProperties.ver + ")"); }
+		damageString = damageString.join(" ");
+		if (damagePlacement !== "0" && !(replaceDamage && contextString && damagePlacement == contextPlacement)) {
+			labels[damagePlacement].push(damageString);
 		}
 		
 		for (let p in labels) {
@@ -1420,16 +1412,18 @@ class BetterRollsDice {
 			}
 		}
 		
-		
 		let baseDice = damageFormula + bonusAdd;
 		let baseWithParts = [baseDice];
 		if (parts) {baseWithParts = [baseDice].concat(parts);}
 		
 		let rollFormula = baseWithParts.join("+");
 		
-		let baseRoll = new Roll(rollFormula, rollData).roll();
-		let critRoll;
-		if (isCrit) {
+		let baseRoll = new Roll(rollFormula, rollData).roll(),
+			critRoll = null,
+			baseMaxRoll = null,
+			critBehavior = game.settings.get("betterrolls5e", "critBehavior");
+			
+		if (isCrit && critBehavior !== "0") {
 			let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
 			let critRollData = duplicate(rollData);
 			critRollData.mod = 0;
@@ -1442,9 +1436,21 @@ class BetterRollsDice {
 			let add = (itm.actor && savage) ? 1 : 0;
 			critRoll.alter(add);
 			critRoll.roll();
+			
+			// If critBehavior = 2, maximize base dice
+			if (critBehavior === "2") {
+				critRoll = Roll.maximize(critRoll.formula);
+			}
+			
+			// If critBehavior = 3, maximize base and crit dice
+			else if (critBehavior === "3") {
+				let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
+				let newFormula = critRoll.formula + "+" + maxDifference.toString();
+				critRoll = Roll.maximize(newFormula);
+			}
 		}
 			
-		let damageRoll = BetterRollsDice.damageTemplate(baseRoll, critRoll, labels);
+		let damageRoll = BetterRollsDice.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
 		return damageRoll;
 	}
 	
