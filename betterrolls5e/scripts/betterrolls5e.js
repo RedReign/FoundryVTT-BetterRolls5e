@@ -622,7 +622,7 @@ export function changeRollsToDual (app, html, data, params) {
 }
 
 // Frontend for macros
-function BetterRolls() {
+export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
 			switch (mode) {
