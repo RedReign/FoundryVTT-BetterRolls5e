@@ -46,7 +46,7 @@ Clicking with/without the Alt key:
 ![](https://i.imgur.com/qleIQsq.png)
 - Configurable options for disabling better rolls, changing sheet outputs, and labels for both roll sets and damage type.
 ![](https://i.imgur.com/Wd0iT0E.png)
-- Localization support - now comes with a full Japanese translation!
+- Localization support - now comes with full Japanese and Korean translations!
 ![](https://cdn.discordapp.com/attachments/513918036919713802/635495803787542559/unknown.png)
 
 - Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
