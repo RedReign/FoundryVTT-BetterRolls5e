@@ -150,7 +150,7 @@ Hooks.once("init", () => {
 		choices: {
 			"0": i18n("br5e.critBehavior.choices.0"), // No Extra Damage
 			"1": i18n("br5e.critBehavior.choices.1"), // Roll Critical Damage Dice
-			"2": i18n("br5e.critBehavior.choices.2"), // Max Base Damage & Roll Critical
+			"2": i18n("br5e.critBehavior.choices.2"), // Roll Base Damage, Max Critical
 			"3": i18n("br5e.critBehavior.choices.3"), // Max Base & Critical Damage
 		}
 	});
@@ -161,17 +161,7 @@ Hooks.once("init", () => {
 		scope: "world",
 		config: true,
 		default: "Crit",
-		type: String,
-		choices: {
-			" ": "",
-			"br5e.critString.choices.2": i18n("br5e.critString.choices.2"),
-			"br5e.critString.choices.3": i18n("br5e.critString.choices.3"),
-			"br5e.critString.choices.4": i18n("br5e.critString.choices.4"),
-			"br5e.critString.choices.5": i18n("br5e.critString.choices.5"),
-			"br5e.critString.choices.6": i18n("br5e.critString.choices.6"),
-			"br5e.critString.choices.7": i18n("br5e.critString.choices.7"),
-			"br5e.critString.choices.8": i18n("br5e.critString.choices.8")
-		}
+		type: String
 	});
 	
 	game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {

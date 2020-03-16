@@ -168,6 +168,13 @@ CONFIG.betterRolls5e = {
 Hooks.on(`ready`, () => {
 	// Make a combined damage type array that includes healing
 	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
+	
+	// Updates crit text from the dropdown.
+	let critText = game.settings.get("betterrolls5e", "critString")
+	if (critText.includes("br5e.critString")) {
+		critText = i18n(critText);
+		game.settings.set("betterrolls5e", "critString", critText);
+	}
 });
 
 // Create flags for item when it's first created
@@ -194,172 +201,181 @@ export function addItemSheetButtons(app, html, data, triggeringElement = '', but
     html.find(triggeringElement).click(event => {
 		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
-        let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
-		let itemData = item.data.data;
-		let flags = item.data.flags.betterRolls5e;
-		
-		// Check settings
-		let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled"),
-			extraDamage = false;
-		
-		if (flags && (flags.extraDamage) && (flags.extraDamage.value)) {
-			extraDamage = true;
-		}
-		
-        if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
-		
-		
-        // Create the buttons
-        let buttons = $(`<div class="item-buttons"></div>`);
-		let buttonsWereAdded = false;
-        switch (item.data.type) {
-			case 'weapon':
-			case 'feat':
-            case 'spell':
-			case 'consumable':
-				buttonsWereAdded = true;
-				if (diceEnabled) buttons.append(`<span class="tag"><button data-action="quickRoll">${i18n("br5e.buttons.roll")}</button></span>`);
-                if (diceEnabled) buttons.append(`<span class="tag"><button data-action="altRoll">${i18n("br5e.buttons.altRoll")}</button></span>`);
-				if (isAttack(item)) buttons.append(`<span class="tag"><button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button></span>`);
-				if (isSave(item)) {
-					let saveData = getSave(item);
-					buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}</button></span>`);
-				}
-                if (itemData.damage.parts.length > 0) {
-					buttons.append(`<span class="tag"><button data-action="damageRoll" data-value="all">${i18n("br5e.buttons.damage")}</button></span>`);
-					if (itemData.damage.versatile) {
-						buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value="all">${i18n("br5e.buttons.verDamage")}</button></span>`);
-					}
-					// Make a damage button for each damage type
-					for (let i = 0; i < itemData.damage.parts.length; i++) {
-						if (i === 0) { buttons.append(`<br>`); }
-						buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]}</button></span>`);
-						if (i === 0 && itemData.damage.versatile) {
-							buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]} (${dnd5e.weaponProperties.ver})</button></span>`);
-						}
-					}
-				}
-                break;
-            case 'tool':
-				buttonsWereAdded = true;
-                buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${itemData.ability.value}">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
-                break;
-			/*case 'feat':
-				if ((diceEnabled) && (chatData.isAttack) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featAttackDamage">${i18n("br5e.buttons.attackAndDamage")}</button></span>`);
-				if ((diceEnabled) && (chatData.isSave) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featSaveDamage">${i18n("br5e.buttons.saveAndDamage")}</button></span>`);
-				if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="featAttack">${i18n("br5e.buttons.attack")}</button></span>`);
-				if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="featSave">${i18n("br5e.buttons.save")}</button></span>`);
-				if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="featDamage">${i18n(chatData.damageLabel)}</button></span>`);
-				break;
-				*/
+        addButtonsToItemLi(li, app, buttonContainer);
+    });
+
+    for (let element of html.find(triggeringElement)) {
+        let li = $(element).parents('.item');
+        addButtonsToItemLi(li, app, buttonContainer);
+    }
+}
+
+function addButtonsToItemLi(li, app, buttonContainer) {
+    let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
+    let itemData = item.data.data;
+    let flags = item.data.flags.betterRolls5e;
+
+    // Check settings
+    let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled"),
+        extraDamage = false;
+
+    if (flags && (flags.extraDamage) && (flags.extraDamage.value)) {
+        extraDamage = true;
+    }
+
+    if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
+
+
+    // Create the buttons
+    let buttons = $(`<div class="item-buttons"></div>`);
+    let buttonsWereAdded = false;
+    switch (item.data.type) {
+        case 'weapon':
+        case 'feat':
+        case 'spell':
+        case 'consumable':
+            buttonsWereAdded = true;
+            if (diceEnabled) buttons.append(`<span class="tag"><button data-action="quickRoll">${i18n("br5e.buttons.roll")}</button></span>`);
+            if (diceEnabled) buttons.append(`<span class="tag"><button data-action="altRoll">${i18n("br5e.buttons.altRoll")}</button></span>`);
+            if (isAttack(item)) buttons.append(`<span class="tag"><button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button></span>`);
+            if (isSave(item)) {
+                let saveData = getSave(item);
+                buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}</button></span>`);
+            }
+            if (itemData.damage.parts.length > 0) {
+                buttons.append(`<span class="tag"><button data-action="damageRoll" data-value="all">${i18n("br5e.buttons.damage")}</button></span>`);
+                if (itemData.damage.versatile) {
+                    buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value="all">${i18n("br5e.buttons.verDamage")}</button></span>`);
+                }
+                // Make a damage button for each damage type
+                for (let i = 0; i < itemData.damage.parts.length; i++) {
+                    if (i === 0) { buttons.append(`<br>`); }
+                    buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]}</button></span>`);
+                    if (i === 0 && itemData.damage.versatile) {
+                        buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]} (${dnd5e.weaponProperties.ver})</button></span>`);
+                    }
+                }
+            }
+            break;
+        case 'tool':
+            buttonsWereAdded = true;
+            buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${itemData.ability.value}">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
+            break;
+        /*case 'feat':
+            if ((diceEnabled) && (chatData.isAttack) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featAttackDamage">${i18n("br5e.buttons.attackAndDamage")}</button></span>`);
+            if ((diceEnabled) && (chatData.isSave) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featSaveDamage">${i18n("br5e.buttons.saveAndDamage")}</button></span>`);
+            if (chatData.isAttack) buttons.append(`<span class="tag"><button data-action="featAttack">${i18n("br5e.buttons.attack")}</button></span>`);
+            if (chatData.isSave) buttons.append(`<span class="tag"><button data-action="featSave">${i18n("br5e.buttons.save")}</button></span>`);
+            if (item.data.data.damage.value) buttons.append(`<span class="tag"><button data-action="featDamage">${i18n(chatData.damageLabel)}</button></span>`);
+            break;
+            */
+    }
+
+    if (buttonsWereAdded) { buttons.append(`<br>`); }
+
+    // Add info button
+    buttons.append(`<span class="tag"><button data-action="infoRoll">${i18n("br5e.buttons.info")}</button></span>`);
+
+    // Add default roll button
+    buttons.append(`<span class="tag"><button data-action="vanillaRoll">${i18n("br5e.buttons.defaultSheetRoll")}</button></span>`);
+
+    //if (((item.data.data.damage !== undefined) && item.data.data.damage.value) || ((item.data.data.damage2 !== undefined) && item.data.data.damage2.value) || (chatData.isAttack) || (chatData.isSave) || (chatData.hasCharges)) {buttonsWereAdded = true;}
+    if (buttonsWereAdded) { buttons.append(`<br><header style="margin-top:6px"></header>`); }
+
+    // adding the buttons to the sheet
+
+    let targetHTML = li; //$(event.target.parentNode.parentNode)
+    targetHTML.find(buttonContainer).prepend(buttons);
+
+    //html.find(buttonContainer).prepend(buttons);
+
+    // adding click event for all buttons
+    buttons.find('button').click(ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        // which function gets called depends on the type of button stored in the dataset attribute action
+        // If better rolls are on
+        if (diceEnabled) {
+            // The arguments compounded into a table, to be served to the fullRoll function as the rollRequests argument
+            let roll = {};
+
+            // Sets the damage roll in the argument to the value of the button
+            function setDamage() {
+                let damage = [];
+                if (ev.target.dataset.value === "all") {
+                    damage = "all";
+                } else {
+                    for (let i = 0; i < itemData.damage.parts.length; i++) {
+                        if (ev.target.dataset.value == i) { damage[i] = true; }
+                        else { damage[i] = false; }
+                    }
+                }
+                roll.damage = damage;
+            }
+
+
+            switch (ev.target.dataset.action) {
+                case 'quickRoll':
+                    roll.quickRoll = true; break;
+                case 'altRoll':
+                    roll.quickRoll = true; roll.alt = true; break;
+                case 'attackRoll':
+                    roll.attack = true; break;
+                case 'save':
+                    roll.save = true; break;
+                case 'damageRoll':
+                    setDamage(); break;
+                case 'verDamageRoll':
+                    setDamage(); roll.versatile = true; break;
+                case 'toolCheck':
+                    roll.check = true; roll.properties = true; break;
+
+                /*
+                case 'spellAttack': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", attack: true}); break;
+                case 'spellSave': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", save:true, info:true}); break;
+                case 'spellDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", damage:true, info:true}); break;
+                case 'featAttack': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", attack:true, info:true}); break;
+                case 'featDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", damage:true}); break;
+                case 'featAttackDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", attack:true, damage:true, info:true}); break;
+                case 'featSave': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", save:true, info:true}); break;
+                case 'featSaveDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", save:true, damage:true, info:true}); break;
+                case 'combinedWeaponRoll': BetterRollsDice.fullRoll(item, ev, {attack: true, damage: true, properties: true}); break;
+                case 'combinedWeaponRoll2': BetterRollsDice.fullRoll(item, ev, {attack: true, altDamage: true, properties: true}); break;
+                case 'spellAttackDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", attack: true, damage: true, info: true, properties: true}); break;
+                case 'spellSaveDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", save: true, damage: true, info: true, properties: true}); break;
+                */
+
+                case 'infoRoll':
+                    roll.info = true; roll.properties = true; break;
+
+                case 'vanillaRoll':
+                    item.actor.sheet._onItemRoll(event); break;
+            }
+
+            if (ev.altKey) {
+                roll.forceCrit = true;
+            }
+
+            if (ev.target.dataset.action !== 'vanillaRoll') {
+                BetterRollsDice.fullRoll(item, roll);
+            }
+            // If better rolls are off
+        } else {
+            switch (ev.target.dataset.action) {
+                case 'weaponAttack': item.rollWeaponAttack(ev); break;
+                case 'weaponDamage': item.rollWeaponDamage(ev); break;
+                case 'weaponDamage2': item.rollWeaponDamage(ev, true); break;
+                case 'spellAttack': item.rollSpellAttack(ev); break;
+                case 'spellDamage': item.rollSpellDamage(ev); break;
+                case 'featAttack': item.rollFeatAttack(ev); break;
+                case 'featDamage': item.rollFeatDamage(ev); break;
+                case 'consume': item.rollConsumable(ev); break;
+                case 'toolCheck': item.rollToolCheck(ev); break;
+                case 'infoRoll': BetterRollsDice.fullRoll(item, { info: true, properties: true }); break;
+            }
         }
-		
-		if (buttonsWereAdded) { buttons.append(`<br>`); }
-		
-		// Add info button
-		buttons.append(`<span class="tag"><button data-action="infoRoll">${i18n("br5e.buttons.info")}</button></span>`);
-		
-		// Add default roll button
-		buttons.append(`<span class="tag"><button data-action="vanillaRoll">${i18n("br5e.buttons.defaultSheetRoll")}</button></span>`);
-		
-		//if (((item.data.data.damage !== undefined) && item.data.data.damage.value) || ((item.data.data.damage2 !== undefined) && item.data.data.damage2.value) || (chatData.isAttack) || (chatData.isSave) || (chatData.hasCharges)) {buttonsWereAdded = true;}
-		if (buttonsWereAdded) {buttons.append(`<br><header style="margin-top:6px"></header>`);}
-		
-        // adding the buttons to the sheet
-		
-        let targetHTML = $(event.target.parentNode.parentNode)
-        targetHTML.find(buttonContainer).prepend(buttons);
-		
-        //html.find(buttonContainer).prepend(buttons);
-		
-        // adding click event for all buttons
-        buttons.find('button').click(ev => {
-            ev.preventDefault();
-            ev.stopPropagation();
-			
-            // which function gets called depends on the type of button stored in the dataset attribute action
-			// If better rolls are on
-			if (diceEnabled) {
-				// The arguments compounded into a table, to be served to the fullRoll function as the rollRequests argument
-				let roll = {};
-				
-				// Sets the damage roll in the argument to the value of the button
-				function setDamage() {
-					let damage = [];
-					if (ev.target.dataset.value === "all") {
-						damage = "all";
-					} else {
-						for (let i = 0; i < itemData.damage.parts.length; i++) {
-							if (ev.target.dataset.value == i) { damage[i] = true; }
-							else { damage[i] = false; }
-						}
-					}
-					roll.damage = damage;
-				}
-				
-				
-				switch (ev.target.dataset.action) {
-					case 'quickRoll': 
-						roll.quickRoll = true; break;
-					case 'altRoll': 
-						roll.quickRoll = true; roll.alt = true; break;
-					case 'attackRoll': 
-						roll.attack = true; break;
-					case 'save': 
-						roll.save = true; break;
-					case 'damageRoll': 
-						setDamage(); break;
-					case 'verDamageRoll':
-						setDamage(); roll.versatile = true; break;
-					case 'toolCheck' :
-						roll.check = true; roll.properties = true; break;
-					
-					/*
-					case 'spellAttack': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", attack: true}); break;
-					case 'spellSave': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", save:true, info:true}); break;
-					case 'spellDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", damage:true, info:true}); break;
-					case 'featAttack': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", attack:true, info:true}); break;
-					case 'featDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", damage:true}); break;
-					case 'featAttackDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", attack:true, damage:true, info:true}); break;
-					case 'featSave': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", save:true, info:true}); break;
-					case 'featSaveDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "feat", save:true, damage:true, info:true}); break;
-					case 'combinedWeaponRoll': BetterRollsDice.fullRoll(item, ev, {attack: true, damage: true, properties: true}); break;
-					case 'combinedWeaponRoll2': BetterRollsDice.fullRoll(item, ev, {attack: true, altDamage: true, properties: true}); break;
-					case 'spellAttackDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", attack: true, damage: true, info: true, properties: true}); break;
-					case 'spellSaveDamage': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", save: true, damage: true, info: true, properties: true}); break;
-					*/
-					
-					case 'infoRoll':
-						roll.info = true; roll.properties = true; break;
-					
-					case 'vanillaRoll':
-						item.actor.sheet._onItemRoll(event); break;
-				}
-				
-				if (ev.altKey) {
-					roll.forceCrit = true;
-				}
-				
-				if (ev.target.dataset.action !== 'vanillaRoll') {
-					BetterRollsDice.fullRoll(item, roll);
-				}
-			// If better rolls are off
-			} else {
-				switch (ev.target.dataset.action) {
-					case 'weaponAttack': item.rollWeaponAttack(ev); break;
-					case 'weaponDamage': item.rollWeaponDamage(ev); break;
-					case 'weaponDamage2': item.rollWeaponDamage(ev, true); break;
-					case 'spellAttack': item.rollSpellAttack(ev); break;
-					case 'spellDamage': item.rollSpellDamage(ev); break;
-					case 'featAttack': item.rollFeatAttack(ev); break;
-					case 'featDamage': item.rollFeatDamage(ev); break;
-					case 'consume': item.rollConsumable(ev); break;
-					case 'toolCheck': item.rollToolCheck(ev); break;
-					case 'infoRoll': BetterRollsDice.fullRoll(item, {info: true, properties:true}); break;
-				}
-			}
-		});
-	});
+    });
 }
 
 async function redUpdateFlags(item) {
@@ -517,7 +533,6 @@ export function changeRollsToDual (app, html, data, params) {
 	
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
-	//console.log(abilityName);
 	if (paramRequests.singleAbilityButton === true) {
 		//console.log(abilityName);
 		abilityName.off();
@@ -1276,7 +1291,8 @@ class BetterRollsDice {
 		if (critRoll) {
 			let critTooltip = await critRoll.getTooltip();
 			templateTooltip = await renderTemplate("modules/betterrolls5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
-		} else {templateTooltip = baseTooltip;}
+		} else { templateTooltip = baseTooltip; }
+		
 		
 		let chatData = {
 			tooltip: templateTooltip,
@@ -1286,7 +1302,7 @@ class BetterRollsDice {
 			damagemid: labels[2],
 			damagebottom: labels[3],
 			formula: baseRoll.formula,
-			crittext: i18n(game.settings.get("betterrolls5e", "critString"))
+			crittext: game.settings.get("betterrolls5e", "critString")
 		};
 		
 		let html = {
@@ -1367,7 +1383,7 @@ class BetterRollsDice {
 			};
 			
 		let titleString = "",
-			damageString = [dtype],
+			damageString = [],
 			contextString = flags.quickDamage.context[damageIndex];
 		
 		// Show "Healing" prefix only if it's not inherently a heal action
@@ -1392,9 +1408,10 @@ class BetterRollsDice {
 		}
 		
 		// Damage type
+		if (dtype) { damageString.push(dtype); }
 		if (isVersatile) { damageString.push("(" + dnd5e.weaponProperties.ver + ")"); }
 		damageString = damageString.join(" ");
-		if (damagePlacement !== "0" && !(replaceDamage && contextString && damagePlacement == contextPlacement)) {
+		if (damagePlacement !== "0" && damageString.length > 0 && !(replaceDamage && contextString && damagePlacement == contextPlacement)) {
 			labels[damagePlacement].push(damageString);
 		}
 		
