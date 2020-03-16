@@ -39,7 +39,7 @@ Clicking with/without the Alt key:
 - Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
 - Per-item options for showing the item's description on a quick roll.
 - Per-item critical threshold.
-- ***New!*** ~~Per-item extra damage rolls.~~ Now supports dnd5e's additional damage rolls, which are fully configurable for appearing on Quick Rolls!
+- Supports dnd5e's additional damage rolls, which are fully configurable for appearing on Quick Rolls!
 
 ![](https://i.imgur.com/FkotJOG.png)
 - Natively supports the Better NPC Sheet
@@ -49,11 +49,11 @@ Clicking with/without the Alt key:
 - Localization support - now comes with a full Japanese translation!
 ![](https://cdn.discordapp.com/attachments/513918036919713802/635495803787542559/unknown.png)
 
-- ***New!*** Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
+- Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
 - Script macros are also intuitive enough to be entered manually.
 - Try `BetterRolls.quickRoll("Shortbow");` on a creature with an item named "Shortbow", or `BetterRolls.quickRollByName("Sharon", "Shortbow");` to fire Sharon's shortbow.
 ![](https://i.imgur.com/fMMWz3m.gif)
-- ***New!*** Custom damage labels! Add written context to damage rolls to convey what the damage comes from, or when it occurs.
+- Custom damage labels. Add written context to damage rolls to convey what the damage comes from, or when it occurs.
 ![](https://i.imgur.com/L9NTE7G.png)
 
 ## Planned Features
@@ -68,6 +68,7 @@ Clicking with/without the Alt key:
 - Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
 - Thank you, Felix#6196 for making a wonderful extension of Chat Damage Buttons reconfigured for this module.
 - Thank you, Brother Sharp#6921 for providing the Japanese localization for this module.
+- Thank you, KLO#1490 for providing the Korean localization for this module.
 - My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
 
 ## License
