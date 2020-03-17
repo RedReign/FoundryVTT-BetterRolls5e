@@ -26,7 +26,7 @@ Felix's [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-bette
 ![](https://i.imgur.com/XO2JUjB.png)
 - Added sheet buttons when expanding an item's summary in the sheet, allowing the sheet to quickly output whatever is needed (Attack & damage rolls combined, attack & alternate damage, just attack, just damage...)
 ![](https://i.imgur.com/uFvpDPw.png)
-- Clicking an item/feat/spell's icon will give a quick roll, based on the fields present in the item clicked. Hold Alt while clicking to bypass this and do the default chat message.
+- Clicking an item/feat/spell's icon will give a quick roll, based on the fields present in the item clicked.
 
 ![](https://i.imgur.com/2kNCHdZ.png)
 
