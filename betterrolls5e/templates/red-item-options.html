@@ -54,6 +54,15 @@
 		{{localize "br5e.settings.consumeCharge"}}</label>
 		{{/if}}
 		{{/if}}
+		
+		{{#if itemHasTemplate}}
+		{{#if flags.betterRolls5e.quickTemplate}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickTemplate.value" value="flags.betterRolls5e.quickTemplate.value" data-dtype="{{flags.betterRolls5e.quickTemplate.type}}" {{checked flags.betterRolls5e.quickTemplate.value}}/>
+		{{localize "br5e.settings.useTemplate"}}</label>
+		{{/if}}
+		{{/if}}
+		
 	</div>
 	<div class="form-group stacked">
 		{{#if flags.betterRolls5e.quickDamage}}
@@ -112,6 +121,14 @@
 		<label class="checkbox">
 		<input type="checkbox" name="flags.betterRolls5e.quickCharges.altValue" value="flags.betterRolls5e.quickCharges.altValue" data-dtype="{{flags.betterRolls5e.quickCharges.type}}" {{checked flags.betterRolls5e.quickCharges.altValue}}/>
 		{{localize "br5e.settings.consumeCharge"}}</label>
+		{{/if}}
+		{{/if}}
+		
+		{{#if itemHasTemplate}}
+		{{#if flags.betterRolls5e.quickTemplate}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickTemplate.altValue" value="flags.betterRolls5e.quickTemplate.altValue" data-dtype="{{flags.betterRolls5e.quickTemplate.type}}" {{checked flags.betterRolls5e.quickTemplate.altValue}}/>
+		{{localize "br5e.settings.useTemplate"}}</label>
 		{{/if}}
 		{{/if}}
 	</div>

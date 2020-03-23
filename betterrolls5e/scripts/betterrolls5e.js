@@ -119,6 +119,7 @@ CONFIG.betterRolls5e = {
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 		},
 		spellFlags: {
 			critRange: { type: "String", value: "" },
@@ -129,6 +130,7 @@ CONFIG.betterRolls5e = {
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 		},
 		equipmentFlags: {
 			critRange: { type: "String", value: "" },
@@ -147,6 +149,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
+			quickTemplate: { type: "Boolean", value: false, altValue: false },
 		},
 		toolFlags: {
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
@@ -161,6 +164,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
+			quickTemplate: { type: "Boolean", value: false, altValue: false },
 		}
 	}
 };
@@ -229,6 +233,7 @@ function addButtonsToItemLi(li, app, buttonContainer) {
     // Create the buttons
     let buttons = $(`<div class="item-buttons"></div>`);
     let buttonsWereAdded = false;
+	let contextEnabled = (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") ? true : false;
     switch (item.data.type) {
         case 'weapon':
         case 'feat':
@@ -248,14 +253,17 @@ function addButtonsToItemLi(li, app, buttonContainer) {
                     buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value="all">${i18n("br5e.buttons.verDamage")}</button></span>`);
                 }
                 // Make a damage button for each damage type
-                for (let i = 0; i < itemData.damage.parts.length; i++) {
-                    if (i === 0) { buttons.append(`<br>`); }
-                    buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]}</button></span>`);
-                    if (i === 0 && itemData.damage.versatile) {
-                        buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]]} (${dnd5e.weaponProperties.ver})</button></span>`);
-                    }
-                }
-            }
+				if (itemData.damage.parts.length > 1) {
+					buttons.append(`<br>`);
+					for (let i = 0; i < itemData.damage.parts.length; i++) {
+						let damageString = (contextEnabled && flags.quickDamage.context[i]) || CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]];
+						buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${damageString}</button></span>`);
+						if (i === 0 && itemData.damage.versatile) {
+							buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${damageString} (${dnd5e.weaponProperties.ver})</button></span>`);
+						}
+					}
+				}
+			}
             break;
         case 'tool':
             buttonsWereAdded = true;
@@ -379,7 +387,7 @@ function addButtonsToItemLi(li, app, buttonContainer) {
 }
 
 async function redUpdateFlags(item) {
-	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
+	if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 	if (item.data.flags.betterRolls5e === undefined) {
 		item.data.flags.betterRolls5e = {};
 	}
@@ -445,7 +453,8 @@ export async function addBetterRollsContent(app, protoHtml, data) {
 		isSave: isSave(item),
 		flags: item.data.flags,
 		damageTypes: CONFIG.betterRolls5e.combinedDamageTypes,
-		altSecondaryEnabled: altSecondaryEnabled
+		altSecondaryEnabled: altSecondaryEnabled,
+		itemHasTemplate: item.hasAreaTarget
 	});
 	let extraTab = settingsContainer.append(betterRollsTemplate);
 	
@@ -831,10 +840,12 @@ class BetterRollsDice {
 			sendMessage: true,
 			slotLevel: null,
 			useCharge: false,
+			useTemplate: false,
 		},params || {});
 		
 		redUpdateFlags(item);
 		//console.log(item);
+		
 		
 		if (rollRequests.quickRoll) {
 			rollRequests = mergeObject(rollRequests, BetterRollsDice.updateForQuickRoll(item, rollRequests.alt));
@@ -904,6 +915,10 @@ class BetterRollsDice {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
 		
+		if (rollRequests.useTemplate) {
+			BetterRollsDice.placeTemplate(item);
+		}
+		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
@@ -956,7 +971,8 @@ class BetterRollsDice {
 			damage = [false],
 			info = false,
 			properties = false,
-			useCharge = false;
+			useCharge = false,
+			useTemplate = false;
 		
 		
 		if (brFlags) {
@@ -993,6 +1009,7 @@ class BetterRollsDice {
 			}
 			if (flagIsTrue("quickProperties")) properties = true;
 			if (flagIsTrue("quickCharges")) useCharge = true;
+			if (flagIsTrue("quickTemplate")) useTemplate = true;
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
 			info = true;
@@ -1008,7 +1025,8 @@ class BetterRollsDice {
 			damage: damage,
 			info: info,
 			properties: properties,
-			useCharge: useCharge
+			useCharge: useCharge,
+			useTemplate: useTemplate
 		}
 		return rollRequests;
 	}
@@ -1071,7 +1089,8 @@ class BetterRollsDice {
 				break;
 			case "feat":
 				properties = [
-					((data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null,
+					data.requirements,
+					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
 					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
 					range,
 					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
@@ -1103,19 +1122,19 @@ class BetterRollsDice {
 	
 	/**
 	* A function for returning a roll template with crits and fumbles appropriately colored.
-	* @param {Object} array			Object containing the html for the roll and whether or not the roll is a crit
+	* @param {Object} args			Object containing the html for the roll and whether or not the roll is a crit
 	* @param {Roll} roll			The desired roll to check for crits or fumbles
 	* @param {String} selector		The CSS class selection to add the colors to
 	*/
-	static tagCrits(array, rolls, selector, critThreshold, critChecks=true, debug=false) {
+	static tagCrits(args, rolls, selector, critThreshold, critChecks=true, debug=false) {
 		/*console.log(array);
 		console.log(rolls);
 		console.log(selector);
 		console.log(critThreshold);
 		*/
-		if (!rolls) {return array;}
+		if (!rolls) {return args;}
 		if (!Array.isArray(rolls)) {rolls = [rolls];}
-		let $html = $(array.html);
+		let $html = $(args.html);
 		let rollHtml = $html.find(selector);
 		let isCrit = false;
 		for (let i=0; i<rollHtml.length; i++) {
@@ -1142,7 +1161,7 @@ class BetterRollsDice {
 			if ((high > 0) && (low == 0)) $($html.find(selector)[i]).addClass("success");
 			else if ((high == 0) && (low > 0)) $($html.find(selector)[i]).addClass("failure");
 			else if ((high > 0) && (low > 0)) $($html.find(selector)[i]).addClass("mixed");
-			if ((high > 0) || (array.isCrit == true)) isCrit = true;
+			if ((high > 0) || (args.isCrit == true)) isCrit = true;
 		}
 		let output = {
 			html: $html[0].outerHTML,
@@ -1160,18 +1179,35 @@ class BetterRollsDice {
 	* @param {String} title				The roll's title.
 	* @param {Boolean} critThreshold	The minimum roll on the dice to cause a critical roll.
 	*/
-	static async multiRoll(numRolls = 2, dice = "1d20", parts = [], data, title, critThreshold) {
+	static async rollMultiple(numRolls = 2, dice = "1d20", parts = [], data, title, critThreshold) {
 		let formula = [dice].concat(parts);
 		let rolls = [];
 		let tooltips = [];
 		
 		// Step 1 - Get all rolls
-		for (i=0; i<numRolls; i++) {
+		for (let i=0; i<numRolls; i++) {
 			rolls.push(new Roll(formula.join("+"), data).roll());
-			tooltips.push(rolls[0].getTooltip());
+			tooltips.push(await rolls[i].getTooltip());
 		}
 		
+		let chatFormula = rolls[0].formula;
+		
 		// Step 2 - Setup chatData
+		let chatData = {
+			title: title,
+			formula: chatFormula,
+			tooltips: tooltips,
+			rolls: rolls
+		}
+		
+		// Step 3 - Create HTML using custom template
+		let output = {
+			html: await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData),
+			isCrit: false
+		}
+		
+		output = BetterRollsDice.tagCrits(output, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+		return output;
 	}
 	
 	/**
@@ -1276,10 +1312,19 @@ class BetterRollsDice {
 			}
 		}	
 		
+		// Elven Accuracy check
+		let numRolls = 2;
+		if (getProperty(itm, "actor.data.flags.dnd5e.elvenAccuracy") && ["dex", "int", "wis", "cha"].includes(abl)) {
+			numRolls = 3;
+		}
 		
-		let dualRoll = BetterRollsDice.rollDual20(parts, rollData, title, critThreshold);
-		//console.log(dualRoll);
-		return dualRoll;
+		let d20String = "1d20";
+		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+			d20String = "1d20r<2";
+		}
+		
+		//return dualRoll = BetterRollsDice.rollDual20(parts, rollData, title, critThreshold);
+		return BetterRollsDice.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold);
 	}
 	
 	static async damageTemplate ({baseRoll, critRoll, labels}) {
@@ -1548,8 +1593,8 @@ class BetterRollsDice {
 			data = {mod: actor.data.data.abilities[abl].mod},
 			flavor = null;
 		
-		const checkBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilityCheck;
-		const secondCheckBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilities.check;
+		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
+		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
 		
 		if (checkBonus && parseInt(checkBonus) !== 0) {
 			parts.push("@checkBonus");
@@ -1559,7 +1604,13 @@ class BetterRollsDice {
 			data["secondCheckBonus"] = secondCheckBonus;
 		}
 		
-		return await BetterRollsDice.rollDual20(parts, data, flavor);
+		let d20String = "1d20";
+		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+			d20String = "1d20r<2";
+		}
+		
+		// return await BetterRollsDice.rollDual20(parts, data, flavor);
+		return await BetterRollsDice.rollMultiple(2, d20String, parts, data, flavor);
 	}
 	
 	static async rollAbilitySave(actor, abl) {
@@ -1569,9 +1620,9 @@ class BetterRollsDice {
 		let flavor = null;
 		
 		// Support global save bonus
-		const ablSaveBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilitySave;
-		const secondAblSaveBonus = actor.data.data.bonuses && actor.data.data.bonuses.abilities.save;
-		const saveBonus = actor.data.flags.dnd5e && actor.data.flags.dnd5e.saveBonus;
+		const ablSaveBonus = getProperty(actor, "data.data.bonuses.abilitySave");
+		const secondAblSaveBonus = getProperty(actor, "data.data.bonuses.abilities.save");
+		const saveBonus = getProperty(actor, "data.flags.dnd5e.saveBonus");
 		
 		if (ablSaveBonus && parseInt(ablSaveBonus) !== 0) {
 			parts.push("@ablSaveBonus");
@@ -1584,15 +1635,33 @@ class BetterRollsDice {
 			data["saveBonus"] = saveBonus;
 		}
 		
-		return await BetterRollsDice.rollDual20(parts, data, flavor);
+		let d20String = "1d20";
+		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+			d20String = "1d20r<2";
+		}
+		
+		//return await BetterRollsDice.rollDual20(parts, data, flavor);
+		return await BetterRollsDice.rollMultiple(2, d20String, parts, data, flavor);
 	}
 	
 	static async rollSkillCheck(actor, skill) {
 		let parts = ["@mod"],
 			data = {mod: skill.mod},
 			flavor = null;
+			
+		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
+		if (skillBonus) {
+			parts.push("@skillBonus");
+			data["skillBonus"] = skillBonus;
+		}
 		
-		return await BetterRollsDice.rollDual20(parts, data, flavor);
+		let d20String = "1d20";
+		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+			d20String = "1d20r<2";
+		}
+		
+		//return await BetterRollsDice.rollDual20(parts, data, flavor);
+		return await BetterRollsDice.rollMultiple(2, d20String, parts, data, flavor);
 	}
 	
 	static async rollTool(itm) {
@@ -1627,8 +1696,13 @@ class BetterRollsDice {
 			//console.log("Adding Bonus mod!");
 		}
 		
-		let dualRoll = await BetterRollsDice.rollDual20(parts, rollData, title);
-		return dualRoll;
+		let d20String = "1d20";
+		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+			d20String = "1d20r<2";
+		}
+		
+		// return await BetterRollsDice.rollDual20(parts, rollData, title);
+		return await BetterRollsDice.rollMultiple(2, d20String, parts, rollData, title);
 	}
 	
 	static async configureSpell(item) {
@@ -1660,14 +1734,23 @@ class BetterRollsDice {
 			});
 		}
 		
-		// Initiate ability template placement workflow if selected
-		if (item.hasAreaTarget && placeTemplate) {
-			const template = AbilityTemplate.fromItem(item);
-			if ( template ) template.drawPreview(event);
-			if (item.actor && item.actor.sheet) item.sheet.minimize();
+		if (placeTemplate) {
+			BetterRollsDice.placeTemplate(item);
 		}
 		
 		return lvl;
+	}
+	
+	// Places a template if the item has an area of effect
+	static placeTemplate(item) {
+		if (item.hasAreaTarget) {
+			const template = AbilityTemplate.fromItem(item);
+			if ( template ) template.drawPreview(event);
+			if (item.actor && item.actor.sheet) {
+				item.sheet.minimize();
+				item.actor.sheet.minimize();
+			}
+		}
 	}
 	
 	// Consumes one charge on an item. Will do nothing if item.data.data.uses.per is blank. Will warn the user if there are no charges left.

@@ -102,3 +102,7 @@
 .dmgBtn-container-br button i {
     margin-left: -2.5px;
 }
+
+.better-npc-sheet .item.expanded .item-summary .item-buttons {
+    line-height: 22px;
+}
