@@ -578,9 +578,9 @@ export function changeRollsToDual (actor, html, data, params) {
 				abl = actor.data.data.abilities[ability];
 			//console.log("Ability: ", ability);
 			if ( event.ctrlKey ) {
-				BetterRollsDice.fullRollAttribute(app.object, ability, "check");
+				BetterRollsDice.fullRollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
-				BetterRollsDice.fullRollAttribute(app.object, ability, "save");
+				BetterRollsDice.fullRollAttribute(actor, ability, "save");
 			} else {
 				new Dialog({
 					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
@@ -588,11 +588,11 @@ export function changeRollsToDual (actor, html, data, params) {
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
-							callback: () => BetterRollsDice.fullRollAttribute(app.object, ability, "check")
+							callback: () => BetterRollsDice.fullRollAttribute(actor, ability, "check")
 						},
 						save: {
 							label: i18n("Saving Throw"),
-							callback: () => BetterRollsDice.fullRollAttribute(app.object, ability, "save")
+							callback: () => BetterRollsDice.fullRollAttribute(actor, ability, "save")
 						}
 					}
 				}).render(true);
@@ -610,7 +610,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
 			//console.log("Ability: ", ability);
-			BetterRollsDice.fullRollAttribute(app.object, ability, "check");
+			BetterRollsDice.fullRollAttribute(actor, ability, "check");
 		});
 	}
 	
@@ -624,7 +624,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
 			//console.log("Ability: ", ability);
-			BetterRollsDice.fullRollAttribute(app.object, ability, "save");
+			BetterRollsDice.fullRollAttribute(actor, ability, "save");
 		});
 	}
 	
@@ -635,7 +635,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		skillName.click(event => {
 			event.preventDefault();
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
-			BetterRollsDice.fullRollSkill(app.object, skill);
+			BetterRollsDice.fullRollSkill(actor, skill);
 		});
 	}
 	
