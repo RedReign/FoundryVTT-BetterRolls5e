@@ -63,6 +63,18 @@
 		{{/if}}
 		{{/if}}
 		
+		{{#if flags.betterRolls5e.quickOther}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickOther.value" value="flags.betterRolls5e.quickOther.value" data-dtype="{{flags.betterRolls5e.quickOther.type}}" {{checked flags.betterRolls5e.quickOther.value}}/>
+		{{localize "br5e.settings.otherFormula"}}</label>
+		{{/if}}
+		
+		{{#if flags.betterRolls5e.quickFlavor}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickFlavor.value" value="flags.betterRolls5e.quickFlavor.value" data-dtype="{{flags.betterRolls5e.quickFlavor.type}}" {{checked flags.betterRolls5e.quickFlavor.value}}/>
+		{{localize "br5e.settings.quickFlavor"}}</label>
+		{{/if}}
+		
 	</div>
 	<div class="form-group stacked">
 		{{#if flags.betterRolls5e.quickDamage}}
@@ -131,6 +143,19 @@
 		{{localize "br5e.settings.useTemplate"}}</label>
 		{{/if}}
 		{{/if}}
+		
+		{{#if flags.betterRolls5e.quickOther}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickOther.altValue" value="flags.betterRolls5e.quickOther.altValue" data-dtype="{{flags.betterRolls5e.quickOther.type}}" {{checked flags.betterRolls5e.quickOther.altValue}}/>
+		{{localize "br5e.settings.otherFormula"}}</label>
+		{{/if}}
+		
+		{{#if flags.betterRolls5e.quickFlavor}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickFlavor.altValue" value="flags.betterRolls5e.quickFlavor.altValue" data-dtype="{{flags.betterRolls5e.quickFlavor.type}}" {{checked flags.betterRolls5e.quickFlavor.altValue}}/>
+		{{localize "br5e.settings.quickFlavor"}}</label>
+		{{/if}}
+		
 	</div>
 	<div class="form-group stacked">
 		{{#if flags.betterRolls5e.quickDamage}}

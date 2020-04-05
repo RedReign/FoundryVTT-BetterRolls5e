@@ -4,6 +4,7 @@ import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-d
 import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 import { Utils } from "./utils.js";
+import { BetterRollsHooks } from "./hooks.js";
 
 export function i18n(key) {
 	return game.i18n.localize(key);
@@ -70,21 +71,26 @@ function isSave(item) {
 	return output;
 }
 
-// Returns an array with the save of the item. If no save is written in, one is calculated.
+// Returns an array with the save DC of the item. If no save is written in, one is calculated.
 function getSave(item) {
 	if (isSave(item)) {
 		let itemData = item.data.data,
 			output = {};
-		output.ability = itemData.save.ability;
+		output.ability = getProperty(itemData, "save.ability");
 		// If a DC is written in, use that by default
-		if (itemData.save.dc && itemData.save.dc != 0) { output.dc = itemData.save.dc }
+		if (itemData.save.dc && itemData.save.dc != 0 && itemData.save.scaling !== "spell") { output.dc = itemData.save.dc }
 		// Otherwise, calculate one
 		else {
-			if (item.data.type === "spell") { output.dc = item.actor.data.data.attributes.spelldc; }
+			// If spell DC is calculated with normal spellcasting DC, use that
+			if (item.data.type === "spell" && itemData.save.scaling == "spell") {
+				output.dc = getProperty(item.actor,"data.data.attributes.spelldc");
+			}
+			// Otherwise, calculate one
 			else {
 				let mod = null,
 					abl = null,
 					prof = item.actor.data.data.attributes.prof;
+				
 				abl = itemData.ability;
 				if (abl) { mod = item.actor.data.data.abilities[abl].mod; }
 				else { mod = 0; }
@@ -120,6 +126,8 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
+			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		},
 		spellFlags: {
 			critRange: { type: "String", value: "" },
@@ -131,6 +139,8 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
+			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		},
 		equipmentFlags: {
 			critRange: { type: "String", value: "" },
@@ -140,6 +150,8 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
+			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		},
 		featFlags: {
 			critRange: { type: "String", value: "" },
@@ -150,11 +162,14 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		},
 		toolFlags: {
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickCheck: { type: "Boolean", value: true, altValue: true },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		},
 		consumableFlags: {
 			critRange: { type: "String", value: "" },
@@ -165,6 +180,8 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickCharges: { type: "Boolean", value: true, altValue: true },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
+			quickFlavor: { type: "Boolean", value: true, altValue: true },
 		}
 	}
 };
@@ -195,9 +212,8 @@ Hooks.on(`renderChatMessage`, (message, html, data) => {
  * @param {String} triggeringElement - this is the html selector string that opens the description - mostly optional for different sheetclasses
  * @param {String} buttonContainer - this is the html selector string to which the buttons will be prepended - mostly optional for different sheetclasses
  */
-export function addItemSheetButtons(app, html, data, triggeringElement = '', buttonContainer = '') {
+export function addItemSheetButtons(actor, html, data, triggeringElement = '', buttonContainer = '') {
     // Setting default element selectors
-	
     if (triggeringElement === '') triggeringElement = '.item .item-name h4';
     if (buttonContainer === '') buttonContainer = '.item-properties';
 	
@@ -205,17 +221,17 @@ export function addItemSheetButtons(app, html, data, triggeringElement = '', but
     html.find(triggeringElement).click(event => {
 		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
-        addButtonsToItemLi(li, app, buttonContainer);
+        addButtonsToItemLi(li, actor, buttonContainer);
     });
 
     for (let element of html.find(triggeringElement)) {
         let li = $(element).parents('.item');
-        addButtonsToItemLi(li, app, buttonContainer);
+        addButtonsToItemLi(li, actor, buttonContainer);
     }
 }
 
-function addButtonsToItemLi(li, app, buttonContainer) {
-    let item = app.object.getOwnedItem(String(li.attr("data-item-id")));
+function addButtonsToItemLi(li, actor, buttonContainer) {
+    let item = actor.getOwnedItem(String(li.attr("data-item-id")));
     let itemData = item.data.data;
     let flags = item.data.flags.betterRolls5e;
 
@@ -264,10 +280,20 @@ function addButtonsToItemLi(li, app, buttonContainer) {
 					}
 				}
 			}
+			if (itemData.formula.length > 0) {
+				let otherString = contextEnabled && flags.quickOther.context;
+				if (!otherString) { otherString = "br5e.settings.otherFormula"; }
+				buttons.append(`<span class="tag"><button data-action="otherFormulaRoll">${otherString}</button></span>`);
+			}
             break;
         case 'tool':
             buttonsWereAdded = true;
             buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${itemData.ability.value}">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
+			if (itemData.formula.length > 0) {
+				let otherString = contextEnabled && flags.quickOther.context;
+				if (!otherString) { otherString = "br5e.settings.otherFormula"; }
+				buttons.append(`<span class="tag"><button data-action="otherFormulaRoll">${otherString}</button></span>`);
+			}
             break;
         /*case 'feat':
             if ((diceEnabled) && (chatData.isAttack) && (item.data.data.damage.value)) buttons.append(`<span class="tag"><button data-action="featAttackDamage">${i18n("br5e.buttons.attackAndDamage")}</button></span>`);
@@ -338,7 +364,8 @@ function addButtonsToItemLi(li, app, buttonContainer) {
                     setDamage(); roll.versatile = true; break;
                 case 'toolCheck':
                     roll.check = true; roll.properties = true; break;
-
+				case 'otherFormulaRoll':
+					roll.other = true; break;
                 /*
                 case 'spellAttack': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", attack: true}); break;
                 case 'spellSave': BetterRollsDice.fullRoll(item, ev, {itemType: "spell", save:true, info:true}); break;
@@ -425,8 +452,7 @@ async function redUpdateFlags(item) {
 /**
  * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
  */
-export async function addBetterRollsContent(app, protoHtml, data) {
-	let item = app.object;
+export async function addBetterRollsContent(item, protoHtml, data) {
 	//console.log(item);
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 	redUpdateFlags(item);
@@ -475,6 +501,9 @@ export async function addBetterRollsContent(app, protoHtml, data) {
 				});
 			});
 		}
+		let otherRoll = html.find(`.tab.details .form-fields input[name="data.formula"]`);
+		let otherContextField = $(`<input type="text" name="flags.betterRolls5e.quickOther.context" value="${(item.data.flags.betterRolls5e.quickOther.context || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
+		otherRoll[0].after(otherContextField[0]);
 	}
 }
 
@@ -515,7 +544,7 @@ function getTargetActors() {
  * Replaces the sheet's d20 rolls for ability checks, skill checks, and saving throws into dual d20s.
  * Also replaces the default button on items with a "standard" roll.
  */
-export function changeRollsToDual (app, html, data, params) {
+export function changeRollsToDual (actor, html, data, params) {
 	let paramRequests = mergeObject({
 			abilityButton: '.ability-name',
 			checkButton: '.ability-mod',
@@ -524,8 +553,6 @@ export function changeRollsToDual (app, html, data, params) {
 			itemButton: '.item .item-image',
 			singleAbilityButton: true
 		},params || {});
-	
-	let actor = app.object;
 	//console.log(paramRequests);
 	
 	function getAbility(target) {
@@ -542,7 +569,7 @@ export function changeRollsToDual (app, html, data, params) {
 	
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
-	if (paramRequests.singleAbilityButton === true) {
+	if (abilityName.length > 0 && paramRequests.singleAbilityButton === true) {
 		//console.log(abilityName);
 		abilityName.off();
 		abilityName.click(event => {
@@ -575,59 +602,67 @@ export function changeRollsToDual (app, html, data, params) {
 	
 	// Assign new action to ability button
 	let checkName = html.find(paramRequests.checkButton);
-	checkName.off();
-	checkName.addClass("rollable");
-	checkName.click(event => {
-		event.preventDefault();
-		let ability = getAbility(event.currentTarget),
-			abl = actor.data.data.abilities[ability];
-		//console.log("Ability: ", ability);
-		BetterRollsDice.fullRollAttribute(app.object, ability, "check");
-	});
+	if (checkName.length > 0) {
+		checkName.off();
+		checkName.addClass("rollable");
+		checkName.click(event => {
+			event.preventDefault();
+			let ability = getAbility(event.currentTarget),
+				abl = actor.data.data.abilities[ability];
+			//console.log("Ability: ", ability);
+			BetterRollsDice.fullRollAttribute(app.object, ability, "check");
+		});
+	}
 	
 	// Assign new action to save button
 	let saveName = html.find(paramRequests.saveButton);
-	saveName.off();
-	saveName.addClass("rollable");
-	saveName.click(event => {
-		event.preventDefault();
-		let ability = getAbility(event.currentTarget),
-			abl = actor.data.data.abilities[ability];
-		//console.log("Ability: ", ability);
-		BetterRollsDice.fullRollAttribute(app.object, ability, "save");
-	});
+	if (saveName.length > 0) {
+		saveName.off();
+		saveName.addClass("rollable");
+		saveName.click(event => {
+			event.preventDefault();
+			let ability = getAbility(event.currentTarget),
+				abl = actor.data.data.abilities[ability];
+			//console.log("Ability: ", ability);
+			BetterRollsDice.fullRollAttribute(app.object, ability, "save");
+		});
+	}
 	
 	// Assign new action to skill button
 	let skillName = html.find(paramRequests.skillButton);
-	skillName.off();
-	skillName.click(event => {
-		event.preventDefault();
-		let skill = event.currentTarget.parentElement.getAttribute("data-skill");
-		BetterRollsDice.fullRollSkill(app.object, skill);
-	});
+	if (skillName.length > 0) {
+		skillName.off();
+		skillName.click(event => {
+			event.preventDefault();
+			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
+			BetterRollsDice.fullRollSkill(app.object, skill);
+		});
+	}
 	
 	// Assign new action to item image button
 	let itemImage = html.find(paramRequests.itemButton);
-	itemImage.off();
-	itemImage.click(async event => {
-		//console.log("EVENT:");
-		//console.log(event);
-		let li = $(event.currentTarget).parents(".item"),
-			item = app.object.getOwnedItem(String(li.attr("data-item-id")));
-		if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
-			item.actor.sheet._onItemRoll(event);
-		} else if (event.altKey) {
-			if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
-				event.preventDefault();
-				BetterRollsDice.fullRoll(item, {quickRoll: true, alt: true});
-			} else {
+	if (itemImage.length > 0) {
+		itemImage.off();
+		itemImage.click(async event => {
+			//console.log("EVENT:");
+			//console.log(event);
+			let li = $(event.currentTarget).parents(".item"),
+				item = actor.getOwnedItem(String(li.attr("data-item-id")));
+			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
+			} else if (event.altKey) {
+				if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
+					event.preventDefault();
+					BetterRollsDice.fullRoll(item, {quickRoll: true, alt: true});
+				} else {
+					item.actor.sheet._onItemRoll(event);
+				}
+			} else {
+				event.preventDefault();
+				BetterRollsDice.fullRoll(item, {quickRoll: true});
 			}
-		} else {
-			event.preventDefault();
-			BetterRollsDice.fullRoll(item, {quickRoll: true});
-		}
-	});
+		});
+	}
 }
 
 // Frontend for macros
@@ -697,6 +732,7 @@ export function BetterRolls() {
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,
+		addItemContent:BetterRollsHooks.addItemContent,
 	}
 }
 
@@ -841,6 +877,8 @@ class BetterRollsDice {
 			slotLevel: null,
 			useCharge: false,
 			useTemplate: false,
+			other: false,
+			flavor: false,
 		},params || {});
 		
 		redUpdateFlags(item);
@@ -901,6 +939,9 @@ class BetterRollsDice {
 				damages.push(await BetterRollsDice.rollDamage(item, i, rollRequests.alt, rollRequests.versatile, isCrit, rollRequests.slotLevel));
 			}
 		}
+		if (rollRequests.other == true && (item.data.data.formula)) {
+			damages.push(await BetterRollsDice.rollOther(item, isCrit))
+		}
 		
 		if (attackRoll) {attackRoll = attackRoll["html"];}
 		if (toolRoll) {toolRoll = toolRoll["html"];}
@@ -908,6 +949,8 @@ class BetterRollsDice {
 			save = await BetterRollsDice.saveRollButton(item);
 		}
 		let info = ((rollRequests.info) && (itemData.description)) ? itemData.description.value : null;
+		let flavor = ((rollRequests.flavor) && (itemData.chatFlavor)) ? itemData.chatFlavor : null;
+		
 		
 		// Add token's ID to chat roll, if valid
 		let tokenId;
@@ -915,7 +958,7 @@ class BetterRollsDice {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
 		
-		if (rollRequests.useTemplate) {
+		if (rollRequests.useTemplate && item.data.data.level == 0) {
 			BetterRollsDice.placeTemplate(item);
 		}
 		
@@ -927,6 +970,7 @@ class BetterRollsDice {
 			isCritical: isCrit || toolCrit,
 			title: title,
 			info: info,
+			flavor: flavor,
 			dual: attackRoll || toolRoll,
 			save: save,
 			damages: damages,
@@ -972,8 +1016,9 @@ class BetterRollsDice {
 			info = false,
 			properties = false,
 			useCharge = false,
-			useTemplate = false;
-		
+			useTemplate = false,
+			other = false,
+			flavor = false;
 		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls
@@ -1010,6 +1055,8 @@ class BetterRollsDice {
 			if (flagIsTrue("quickProperties")) properties = true;
 			if (flagIsTrue("quickCharges")) useCharge = true;
 			if (flagIsTrue("quickTemplate")) useTemplate = true;
+			if (flagIsTrue("quickOther")) other = true;
+			if (flagIsTrue("quickFlavor")) flavor = true;
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
 			info = true;
@@ -1026,7 +1073,9 @@ class BetterRollsDice {
 			info: info,
 			properties: properties,
 			useCharge: useCharge,
-			useTemplate: useTemplate
+			useTemplate: useTemplate,
+			other: other,
+			flavor: flavor,
 		}
 		return rollRequests;
 	}
@@ -1486,34 +1535,40 @@ class BetterRollsDice {
 			critBehavior = game.settings.get("betterrolls5e", "critBehavior");
 			
 		if (isCrit && critBehavior !== "0") {
-			let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
-			let critRollData = duplicate(rollData);
-			critRollData.mod = 0;
-			critRoll = new Roll(critFormula, critRollData);
-			let savage;
-			if (itm.data.type === "weapon") {
-				try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
-				catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
-			}
-			let add = (itm.actor && savage) ? 1 : 0;
-			critRoll.alter(add);
-			critRoll.roll();
-			
-			// If critBehavior = 2, maximize base dice
-			if (critBehavior === "2") {
-				critRoll = Roll.maximize(critRoll.formula);
-			}
-			
-			// If critBehavior = 3, maximize base and crit dice
-			else if (critBehavior === "3") {
-				let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
-				let newFormula = critRoll.formula + "+" + maxDifference.toString();
-				critRoll = Roll.maximize(newFormula);
-			}
+			critRoll = BetterRollsDice.critRoll(itm, rollFormula, rollData);
 		}
 			
 		let damageRoll = BetterRollsDice.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
 		return damageRoll;
+	}
+	
+	static critRoll(itm, rollFormula, rollData) {
+		let critBehavior = game.settings.get("betterrolls5e", "critBehavior");
+		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
+		let critRollData = duplicate(rollData);
+		critRollData.mod = 0;
+		let critRoll = new Roll(critFormula, critRollData);
+		let savage;
+		if (itm.data.type === "weapon") {
+			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
+			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
+		}
+		let add = (itm.actor && savage) ? 1 : 0;
+		critRoll.alter(add);
+		critRoll.roll();
+		
+		// If critBehavior = 2, maximize base dice
+		if (critBehavior === "2") {
+			critRoll = Roll.maximize(critRoll.formula);
+		}
+		
+		// If critBehavior = 3, maximize base and crit dice
+		else if (critBehavior === "3") {
+			let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
+			let newFormula = critRoll.formula + "+" + maxDifference.toString();
+			critRoll = Roll.maximize(newFormula);
+		}
+		return critRoll;
 	}
 	
 	static scaleDamage(item, damageIndex, spellLevel = null, scaleInterval = null) {
@@ -1555,6 +1610,56 @@ class BetterRollsDice {
 		}
 		
 		return null;
+	}
+	
+	/*
+	Rolls the Other Formula field. Is subject to crits.
+	*/
+	static async rollOther(item, isCrit) {
+		let itemData = item.data.data,
+			formula = item.data.data.formula,
+			rollData = duplicate(item.actor.data.data),
+			flags = item.data.flags.betterRolls5e;
+			
+		let titlePlacement = game.settings.get("betterrolls5e", "damageTitlePlacement"),
+			contextPlacement = game.settings.get("betterrolls5e", "damageContextPlacement"),
+			replaceTitle = game.settings.get("betterrolls5e", "contextReplacesTitle"),
+			labels = {
+				"1": [],
+				"2": [],
+				"3": []
+			};
+			
+		// Title
+		let titleString = i18n("br5e.chat.other"),
+			contextString = flags.quickOther.context;
+		
+		let pushedTitle = false;
+		if (titlePlacement !== "0" && !(replaceTitle && contextString && titlePlacement == contextPlacement)) {
+			labels[titlePlacement].push(titleString);
+			pushedTitle = true;
+		}
+		
+		// Context
+		if (contextString) {
+			if (contextPlacement === titlePlacement && pushedTitle) {
+				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + contextString + ")";
+			} else {
+				labels[contextPlacement].push(contextString);
+			}
+		}
+		
+		let baseRoll = new Roll(formula, rollData).roll(),
+			critRoll = null,
+			baseMaxRoll = null,
+			critBehavior = game.settings.get("betterrolls5e", "critBehavior");
+			
+		if (isCrit && critBehavior !== "0") {
+			critRoll = BetterRollsDice.critRoll(item, formula, rollData);
+		}
+		
+		let damageRoll = BetterRollsDice.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
+		return damageRoll;
 	}
 	
 	/*
@@ -1615,29 +1720,33 @@ class BetterRollsDice {
 	
 	static async rollAbilitySave(actor, abl) {
 		//console.log(abl);
-		let parts = ["@mod"];
-		let data = {mod: actor.data.data.abilities[abl].save};
+		let actorData = actor.data.data;
+		let parts = [];
+		let data = {mod: []};
 		let flavor = null;
 		
-		// Support global save bonus
-		const ablSaveBonus = getProperty(actor, "data.data.bonuses.abilitySave");
-		const secondAblSaveBonus = getProperty(actor, "data.data.bonuses.abilities.save");
-		const saveBonus = getProperty(actor, "data.flags.dnd5e.saveBonus");
-		
-		if (ablSaveBonus && parseInt(ablSaveBonus) !== 0) {
-			parts.push("@ablSaveBonus");
-			data["ablSaveBonus"] = ablSaveBonus;
-		} else if (secondAblSaveBonus && parseInt(secondAblSaveBonus) !== 0) {
-			parts.push("@secondAblSaveBonus");
-			data["secondAblSaveBonus"] = secondAblSaveBonus;
-		} else if ( Number.isFinite(saveBonus) && parseInt(saveBonus) !== 0 ) {
-			parts.push("@saveBonus");
-			data["saveBonus"] = saveBonus;
+		// Support modifiers and global save bonus
+		const saveBonus = getProperty(actorData, "bonuses.abilities.save") || null;
+		let ablData = actor.data.data.abilities[abl];
+		let ablParts = {};
+		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
+		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
+		let mods = [ablParts.mod, ablParts.prof, saveBonus]
+		for (let i=0; i<mods.length; i++) {
+			if (mods[i] && mods[i] !== "0") {
+				data.mod.push(mods[i]);
+			}
 		}
+		data.mod = data.mod.join("+");
+		console.log(data.mod);
 		
 		let d20String = "1d20";
 		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
 			d20String = "1d20r<2";
+		}
+		
+		if (data.mod !== "") {
+			parts.push("@mod");
 		}
 		
 		//return await BetterRollsDice.rollDual20(parts, data, flavor);
@@ -1715,10 +1824,10 @@ class BetterRollsDice {
 		if (item.data.data.level > 0) {
 			try {
 				const spellFormData = await SpellCastDialog.create(actor, item);
-				console.log(spellFormData);
 				lvl = parseInt(spellFormData.get("level"));
 				consume = Boolean(spellFormData.get("consume"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
+				console.log(lvl, consume, placeTemplate);
 			}
 			catch(error) { return "error"; }
 		}

@@ -1,6 +1,7 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons } from "./betterrolls5e.js";
 
+
 export class BetterRollsHooks {
 	
 	/*
@@ -24,27 +25,51 @@ export class BetterRollsHooks {
 		params = {}) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app, html, data, triggeringElement, buttonContainer) : null;
-			game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app, html, data, params) : null;
+			game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
+			game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data, params) : null;
 		});
 	}
 	
 	static addItemSheet(sheetName) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
+			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app.object, html, data) : null;
 		});
 	}
 	
+	/*
+	Function for adding Better Rolls content to html data made after a sheet is rendered.
+	actor				The actor object
+	html				The target html to add content to
+	triggeringElement	Container for the element that must be clicked for the extra buttons to be shown.
+	buttonContainer		Container for the element the extra buttons will display in.
+	itemButton			Selector for the item button.
+	*/
+	static addItemContent(actor, html, 
+		triggeringElement = ".item .item-name h4", 
+		buttonContainer = ".item-properties", 
+		itemButton = ".item .rollable") {
+		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
+		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
+	}
 }
 
 BetterRollsHooks.addActorSheet("ActorSheet5eNPC");
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacter");
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable', abilityButton: ".ability h4.ability-name.rollable", checkButton: ".ability div span.ability-mod", saveButton: ".saves-div .save .rollable"});
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item-summary", {itemButton: '.item .rollable'});
+BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {
+	itemButton: '.item .rollable', 
+	abilityButton: ".ability h4.ability-name.rollable", 
+	checkButton: ".ability div span.ability-mod", 
+	saveButton: ".saves-div .save .rollable"
+});
+BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item-summary", {
+	itemButton: '.item .rollable', 
+	abilityButton: ".ability h4.ability-name.rollable", 
+	checkButton: ".ability div span.ability-mod", 
+	saveButton: ".saves-div .save .rollable"
+});
 BetterRollsHooks.addActorSheet("ActorSheet5eCharacterDark");
 BetterRollsHooks.addActorSheet("ActorSheet5eNPCDark");
 BetterRollsHooks.addActorSheet("Alt5eSheet");
-
 BetterRollsHooks.addItemSheet("ItemSheet5e");
 BetterRollsHooks.addItemSheet("ItemSheet5eDark");

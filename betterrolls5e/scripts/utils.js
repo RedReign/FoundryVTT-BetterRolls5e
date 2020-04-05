@@ -1,5 +1,4 @@
 export class Utils {
-	
 	static getCharacterLevel(actor) {
 		// Determine character level and available hit dice based on owned Class items
 		const data = actor.data.data;

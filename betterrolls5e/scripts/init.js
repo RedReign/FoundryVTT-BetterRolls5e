@@ -16,6 +16,20 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
+	game.settings.register("betterrolls5e", "d20Mode", {
+		name: i18n("br5e.d20Mode.name"),
+		hint: i18n("br5e.d20Mode.hint"),
+		scope: "world",
+		config: true,
+		default: 2,
+		type: Number,
+		choices: {
+			1: i18n("br5e.d20Mode.choices.1"),
+			2: i18n("br5e.d20Mode.choices.2"),
+			3: i18n("br5e.d20Mode.choices.3")
+		}
+	});
+	
 	/**
 	* Register added roll buttons
 	*/

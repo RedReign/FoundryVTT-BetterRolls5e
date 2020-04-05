@@ -1,5 +1,6 @@
 <div class="dnd5e red-full chat-card" {{#if actor}}data-actor-id="{{actor._id}}"{{/if}} {{#if item}}data-item-id="{{itemId}}"{{/if}} {{#if tokenId}}data-token-id="{{tokenId}}"{{/if}} data-critical="{{isCritical}}">
 	{{#if title}} <div>{{{title}}}</div> {{/if}}
+	{{#if flavor}}<div class="flavor-text">{{flavor}}</div>{{/if}}
 	{{#if info}}<div class="card-content">{{{info}}}</div>{{/if}}
 	{{{dual}}}
 	{{{save}}}
