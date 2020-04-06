@@ -732,6 +732,8 @@ export function BetterRolls() {
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,
+		fullRollAttribute:BetterRollsDice.fullRollAttribute,
+		fullRollSkill:BetterRollsDice.fullRollSkill,
 		addItemContent:BetterRollsHooks.addItemContent,
 	}
 }
