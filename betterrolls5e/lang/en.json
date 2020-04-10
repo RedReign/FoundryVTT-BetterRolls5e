@@ -35,7 +35,7 @@
 	"br5e.playRollSounds.name": "Enable Roll Sounds",
 	"br5e.playRollSounds.hint": "Plays a dice-rolling sound when a Better Rolls message is sent to chat. Wlll not play if Maestro's Item Track are enabled.",
 	
-	"br5e.d20Mode.name": "d20 Mode",
+	"br5e.d20Mode.name": "d20 Mode (NOT WORKING YET)",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown.",
 	"br5e.d20Mode.choices.1": "Single Roll (Shift Advantage, Ctrl Disadvantage)",
 	"br5e.d20Mode.choices.2": "Dual Rolls",

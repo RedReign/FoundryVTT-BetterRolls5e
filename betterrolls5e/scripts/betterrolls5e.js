@@ -489,6 +489,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 		let damageRolls = html.find(`.tab.details .damage-parts .damage-part input`);
 		// Placeholder is either "Context" or "Label" depending on system settings
 		let placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
+		
 		for (let i = 0; i < damageRolls.length; i++) {
 			let contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
 			damageRolls[i].after(contextField[0]);
@@ -501,9 +502,11 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 				});
 			});
 		}
+		
+		// Add context field for Other Formula field
 		let otherRoll = html.find(`.tab.details .form-fields input[name="data.formula"]`);
 		let otherContextField = $(`<input type="text" name="flags.betterRolls5e.quickOther.context" value="${(item.data.flags.betterRolls5e.quickOther.context || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
-		otherRoll[0].after(otherContextField[0]);
+		if (otherRoll[0]) { otherRoll[0].after(otherContextField[0]); }
 	}
 }
 
@@ -733,6 +736,10 @@ export function BetterRolls() {
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,
 		addItemContent:BetterRollsHooks.addItemContent,
+		hooks:BetterRollsHooks,
+		rollAbilityCheck:BetterRollsDice.rollAbilityCheck,
+		rollSavingThrow:BetterRollsDice.rollSavingThrow,
+		rollSkill:BetterRollsDice.fullRollSkill,
 	}
 }
 
@@ -797,6 +804,14 @@ class BetterRollsDice {
 		
 		// Output the rolls to chat
 		ChatMessage.create(chatData);
+	}
+	
+	static async rollAbilityCheck(actor, ability) {
+		BetterRollsDice.fullRollAttribute(actor, ability "check");
+	}
+	
+	static async rollAbilitySave(actor, ability) {
+		BetterRollsDice.fullRollAttribute(actor, ability "save");
 	}
 	
 	/**

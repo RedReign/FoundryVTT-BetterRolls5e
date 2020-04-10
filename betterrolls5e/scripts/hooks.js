@@ -47,7 +47,7 @@ export class BetterRollsHooks {
 	*/
 	static addItemContent(actor, html, 
 		triggeringElement = ".item .item-name h4", 
-		buttonContainer = ".item-properties", 
+		buttonContainer = ".item-properties",
 		itemButton = ".item .rollable") {
 		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
 		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
