@@ -807,11 +807,11 @@ class BetterRollsDice {
 	}
 	
 	static async rollAbilityCheck(actor, ability) {
-		BetterRollsDice.fullRollAttribute(actor, ability "check");
+		BetterRollsDice.fullRollAttribute(actor, ability, "check");
 	}
 	
 	static async rollAbilitySave(actor, ability) {
-		BetterRollsDice.fullRollAttribute(actor, ability "save");
+		BetterRollsDice.fullRollAttribute(actor, ability, "save");
 	}
 	
 	/**
