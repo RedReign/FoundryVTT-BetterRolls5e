@@ -47,11 +47,17 @@
 		{{localize DND5E.weaponProperties.ver}}</label>
 		{{/if}}
 		
-		{{#if item.data.data.uses.per}}
 		{{#if flags.betterRolls5e.quickCharges}}
+		{{#if item.data.data.uses.per}}
 		<label class="checkbox">
 		<input type="checkbox" name="flags.betterRolls5e.quickCharges.value" value="flags.betterRolls5e.quickCharges.value" data-dtype="{{flags.betterRolls5e.quickCharges.type}}" {{checked flags.betterRolls5e.quickCharges.value}}/>
 		{{localize "br5e.settings.consumeCharge"}}</label>
+		{{else}}
+		{{#if item.data.data.recharge.value}}
+		<label class="checkbox">
+		<input type="checkbox" name="flags.betterRolls5e.quickCharges.value" value="flags.betterRolls5e.quickCharges.value" data-dtype="{{flags.betterRolls5e.quickCharges.type}}" {{checked flags.betterRolls5e.quickCharges.value}}/>
+		{{localize "br5e.settings.consumeCharge"}}</label>
+		{{/if}}
 		{{/if}}
 		{{/if}}
 		

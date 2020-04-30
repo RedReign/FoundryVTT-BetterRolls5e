@@ -31,8 +31,13 @@
 	color: #aa0200;
 }
 
-.red-dual .success {
+.red-dual .dice-row .success {
 	color: #257f11;
+}
+
+.red-full .dice-roll .dice-row .dice-row-item.ignored {
+	opacity: .4;
+    border: 1px solid #888888;
 }
 
 .dnd5e.red-full.chat-card .dice-tooltip {
@@ -46,6 +51,10 @@
 .red-full .flavor-text {
 	text-align: center;
 	font-size: 12px;
+}
+
+.red-full .br-flavor {
+	font-style: italic;
 }
 
 .red-full .inline {
