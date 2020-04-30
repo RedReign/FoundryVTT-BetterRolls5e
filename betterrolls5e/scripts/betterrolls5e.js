@@ -588,7 +588,6 @@ export function changeRollsToDual (actor, html, data, params) {
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
 				params = CustomRoll.eventToAdvantage(event);
-				console.log(params);
 			CustomRoll.fullRollAttribute(actor, ability, "check", params);
 		});
 	}
