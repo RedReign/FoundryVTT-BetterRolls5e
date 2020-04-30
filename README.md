@@ -19,7 +19,9 @@ Felix's [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-bette
 - Enjoy!
 
 ## Implemented Features
-- Improved roll outputs into chat for efficiency. Dubbed "Better Rolls", these compounded rolls can include dual d20 rolls for attack rolls, ability checks, and saving throws, but also damage rolls and automatic critical damage calculation.
+- ***New!*** Implemented d20 roll modes for Single, Dual, and Triple rolls. Single mode will roll double in the case of advantage and disadvantage.
+- ***New!*** Rolls with advantage or disadvantage highlight the correct roll, indicating which roll is used.
+- Improved roll outputs into chat for efficiency. Pretentiously dubbed "Better Rolls", these compounded rolls can include dual d20 rolls for attack rolls, ability checks, and saving throws, but also damage rolls and automatic critical damage calculation.
 ![](https://i.imgur.com/Pq5HK73.png)
 ![](https://i.imgur.com/6YzQWG9.png)
 ![](https://i.imgur.com/pME8Tsz.png)
