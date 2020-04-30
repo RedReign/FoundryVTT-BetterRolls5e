@@ -11,7 +11,7 @@
 		</div>
 		<div class="dice-row">
 			{{#each rolls}}
-			<h4 class="dice-total dice-row-item">{{this.total}}</h4>
+			<h4 class="dice-total dice-row-item{{#if this.ignored}} ignored{{/if}}">{{this.total}}</h4>
 			{{/each}}
 		</div>
     </div>

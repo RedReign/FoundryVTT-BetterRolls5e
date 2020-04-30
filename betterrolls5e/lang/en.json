@@ -35,7 +35,7 @@
 	"br5e.playRollSounds.name": "Enable Roll Sounds",
 	"br5e.playRollSounds.hint": "Plays a dice-rolling sound when a Better Rolls message is sent to chat. Wlll not play if Maestro's Item Track are enabled.",
 	
-	"br5e.d20Mode.name": "d20 Mode (NOT WORKING YET)",
+	"br5e.d20Mode.name": "d20 Mode",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown.",
 	"br5e.d20Mode.choices.1": "Single Roll (Shift Advantage, Ctrl Disadvantage)",
 	"br5e.d20Mode.choices.2": "Dual Rolls",
@@ -114,6 +114,8 @@
 	"br5e.chat.abrSomatic": "S",
 	"br5e.chat.abrMaterial": "M",
 	"br5e.chat.other": "Other",
+	"br5e.chat.advantage": "Advantage",
+	"br5e.chat.disadvantage": "Disadvantage",
 	
 	"br5e.chat.damageButtons.fullDamage.hint": "Click to apply full damage to selected token(s).",
 	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",
