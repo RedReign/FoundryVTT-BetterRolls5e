@@ -163,7 +163,12 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		return await CustomRoll.rollMultiple(game.settings.get("betterrolls5e", "d20Mode"), d20String, parts, data, flavor, params.critThreshold || null, rollState);
+		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		if (rollState && numRolls == 1) {
+			numRolls = 2;
+		}
+		
+		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
 	
 	/**
@@ -249,7 +254,12 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		return await CustomRoll.rollMultiple(game.settings.get("betterrolls5e", "d20Mode"), d20String, parts, data, flavor, params.critThreshold || null, rollState);
+		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		if (rollState && numRolls == 1) {
+			numRolls = 2;
+		}
+		
+		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
 	
 	static async rollAbilitySave(actor, abl, params = {}) {
@@ -284,7 +294,12 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		return await CustomRoll.rollMultiple(game.settings.get("betterrolls5e", "d20Mode"), d20String, parts, data, flavor, params.critThreshold || null, rollState);
+		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		if (rollState && numRolls == 1) {
+			numRolls = 2;
+		}
+		
+		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
 	
 	static newItemRoll(item, params, fields) {
@@ -319,6 +334,8 @@ export class CustomItemRoll {
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
 		this.rollState = null;
+		
+		if (!this.params.event) { this.params.event = event; }
 		
 		this.checkEvent();
 		this.setRollState();
