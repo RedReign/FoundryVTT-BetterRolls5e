@@ -344,7 +344,7 @@ export class CustomItemRoll {
 			playRollSounds: game.settings.get("betterrolls5e", "playRollSounds"),
 			hasMaestroSound: hasMaestroSound(this.item),
 			damageRollPlacement: game.settings.get("betterrolls5e", "damageRollPlacement"),
-			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),f
+			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),
 			damageTitlePlacement: game.settings.get("betterrolls5e", "damageTitlePlacement"),
 			damageContextPlacement: game.settings.get("betterrolls5e", "damageContextPlacement"),
 			contextReplacesTitle: game.settings.get("betterrolls5e", "contextReplacesTitle"),
