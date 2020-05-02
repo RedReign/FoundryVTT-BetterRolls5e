@@ -28,7 +28,7 @@ export class CustomRoll {
 	* @param {String} rollState			null, "highest", or "lowest"
 	* @param {Boolean} triggersCrit		Whether this field marks the entire roll as critical
 	*/
-	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title, critThreshold, rollState, triggersCrit = false) {
+	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false) {
 		let formula = [dice].concat(parts);
 		let rolls = [];
 		let tooltips = [];
@@ -193,11 +193,7 @@ export class CustomRoll {
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
 		
-		let titleImage = ((actor.data.img == "icons/svg/mystery-man.svg") || actor.data.img == "" || actor.data.img.includes("*")) ? actor.data.token.img : actor.data.img;
-		if (titleImage.includes("*")) {
-			
-		}
-		
+		let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? actor.token.data.img : actor.data.img;
 		
 		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
@@ -348,7 +344,7 @@ export class CustomItemRoll {
 			playRollSounds: game.settings.get("betterrolls5e", "playRollSounds"),
 			hasMaestroSound: hasMaestroSound(this.item),
 			damageRollPlacement: game.settings.get("betterrolls5e", "damageRollPlacement"),
-			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),
+			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),f
 			damageTitlePlacement: game.settings.get("betterrolls5e", "damageTitlePlacement"),
 			damageContextPlacement: game.settings.get("betterrolls5e", "damageContextPlacement"),
 			contextReplacesTitle: game.settings.get("betterrolls5e", "contextReplacesTitle"),
@@ -544,19 +540,20 @@ export class CustomItemRoll {
 					"disadv": "lowest"
 				};
 				if (!fieldArgs[0]) {
-					fieldArgs = {};
+					fieldArgs[0] = {rolls:1, formula:"1d20", rollState:null};
 				}
 				let rollData = duplicate(this.item.actor.data.data);
 				rollData.item = item.data.data;
 				this.addToRollData(rollData);
-				return await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, null, rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState]);
+				let customRoll = await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, ["0"], rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState]);
+				return customRoll.html;
 				break;
 			case 'description':
 			case 'desc':
 				// Display info from Components module
 				let componentField = "";
-				if (window.Components) {
-					componentField = window.Components.getComponentHtml(item, 20);
+				if (game.modules.get("components5e") && game.modules.get("components5e").active) {
+					componentField = window.ComponentsModule.getComponentHtml(item, 20);
 				}
 				fieldArgs[0] = {text: componentField + item.data.data.description.value};
 			case 'text':
@@ -646,7 +643,7 @@ export class CustomItemRoll {
 				case 0: // Quick Roll
 					if (brFlags.quickDamage && (brFlags.quickDamage.value.length > 0)) {
 						for (let i = 0; i < brFlags.quickDamage.value.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue["quickVersatile"];
+							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
 							if (brFlags.quickDamage.value[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
 						}
 					}
@@ -654,7 +651,7 @@ export class CustomItemRoll {
 				case 1: // Alt Quick Roll
 					if (brFlags.quickDamage && (brFlags.quickDamage.altValue.length > 0)) {
 						for (let i = 0; i < brFlags.quickDamage.altValue.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue["quickVersatile"];
+							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
 							if (brFlags.quickDamage.altValue[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
 						}
 					}
@@ -843,10 +840,12 @@ export class CustomItemRoll {
 		// Prepare roll data
 		let itemData = itm.data.data,
 			actorData = itm.actor.data.data,
-			title = (this.params.rollTitlePlacement != "0") ? i18n("br5e.chat.attack") : null,
+			title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null,
 			parts = [],
 			rollData = duplicate(actorData);
 		
+		console.log(this.params.rollTitlePlacement);
+		console.log(title);
 		this.addToRollData(rollData);
 		
 		// Add critical threshold
@@ -986,7 +985,7 @@ export class CustomItemRoll {
 		return output;
 	}
 	
-	async rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false}) {
+	async rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0}) {
 		let itm = this.item;
 		let itemData = itm.data.data,
 			rollData = duplicate(itm.actor.data.data),
@@ -999,6 +998,7 @@ export class CustomItemRoll {
 		
 		rollData.item = itemData;
 		this.addToRollData(rollData);
+		
 		
 		// Change first damage formula if versatile
 		if (((this.params.versatile && damageIndex === 0) || forceVersatile) && itemData.damage.versatile.length > 0) {
@@ -1263,7 +1263,7 @@ export class CustomItemRoll {
 		// Prepare roll data
 		let itemData = itm.data.data,
 			actorData = itm.actor.data.data,
-			title = args.title || ((this.params.rollTitlePlacement != "0") ? i18n("br5e.chat.check") : null),
+			title = args.title || ((this.config.rollTitlePlacement != "0") ? i18n("br5e.chat.check") : null),
 			parts = [],
 			rollData = duplicate(actorData);
 		rollData.item = itm;
@@ -1332,7 +1332,7 @@ export class CustomItemRoll {
 				lvl = spellFormData.get("level");
 				consume = Boolean(spellFormData.get("consume"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
-				console.log(lvl, consume, placeTemplate);
+				// console.log(lvl, consume, placeTemplate);
 			}
 			catch(error) { return "error"; }
 		}

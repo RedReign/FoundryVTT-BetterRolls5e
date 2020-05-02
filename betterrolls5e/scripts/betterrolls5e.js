@@ -326,24 +326,23 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			// The arguments compounded into an object and an array of fields, to be served to the roll() function as the params and fields arguments
 			let params = {forceCrit:ev.altKey, event:ev};
 			let fields = [];
+			if (params.forceCrit) { fields.push(["flavor", {text:`${game.settings.get("betterrolls5e", "critString")}`}]); }
 			
             // Sets the damage roll in the argument to the value of the button
             function setDamage(versatile = false) {
                 let damage = [];
                 if (ev.target.dataset.value === "all") {
-					fields.push(["damage", {index:"all", versatile:versatile, crit:forceCrit}]);
+					fields.push(["damage", {index:"all", versatile:versatile}]);
                 } else {
-					fields.push(["damage", {index:Number(ev.target.dataset.value), crit:forceCrit}]);
+					fields.push(["damage", {index:Number(ev.target.dataset.value)}]);
                 }
             }
 			
-			console.log(params);
-			
             switch (ev.target.dataset.action) {
                 case 'quickRoll':
-                    params.quickRoll = "0"; break;
+                    params.preset = 0; break;
                 case 'altRoll':
-                    params.quickRoll = "1"; break;
+                    params.preset = 1; break;
                 case 'attackRoll':
                     fields.push(["attack"]); break;
                 case 'save':
@@ -363,7 +362,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
             }
 
             if (ev.target.dataset.action !== 'vanillaRoll') {
-				console.log("Fields:", fields);
                 new CustomItemRoll(item, params, fields).toMessage();
             }
             // If better rolls are off
@@ -424,7 +422,7 @@ export async function redUpdateFlags(item) {
  * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
  */
 export async function addBetterRollsContent(item, protoHtml, data) {
-	if (item.actor.permission < 3) { return; }
+	if (item.actor && item.actor.permission < 3) { return; }
 	
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 	redUpdateFlags(item);
@@ -521,7 +519,7 @@ function getTargetActors() {
  * Also replaces the default button on items with a "standard" roll.
  */
 export function changeRollsToDual (actor, html, data, params) {
-	if (actor.permission < 3) { return; }
+	if (actor && actor.permission < 3) { return; }
 	
 	let paramRequests = mergeObject({
 			abilityButton: '.ability-name',
