@@ -1,9 +1,11 @@
 # FoundryVTT - Better Rolls for 5e
-A module for modifying certain sheet functions on Foundry VTT Character sheets for D&D 5th Edition.
+A module for modifying certain sheet functions on Foundry VTT Character sheets for D&D 5th Edition. It allows for quick, compounded rolls for items, ability checks saving throws, and just about any roll you might want in 5th Edition D&D.
 
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
 
-Felix's [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) module has been implemented into core Better Rolls.
+Felix's [Chat Damage Buttons](https://github.com/syl3r86/chatdamagebuttons-betterrolls) module has been implemented into core Better Rolls. 
+
+If you are feeling generous, and would like to support my work, you can do so through this [Paypal](https://www.paypal.me/RedReignDonate) link. Thank you!
 
 ## Installation
 ### Method 1
