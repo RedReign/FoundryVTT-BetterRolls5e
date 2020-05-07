@@ -11,7 +11,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
     for (let dmgElement of dmgElements) {
         // creating the buttons and container
         let fullDamageButton = $(`<button data-modifier="1"><i class="fas fa-user-minus" title="${i18n("br5e.chat.damageButtons.fullDamage.hint")}"></i></button>`);
-	let halfDamageButton = $(`<button data-modifier="0.5"><i class="fas fa-user-shield" title="${i18n("br5e.chat.damageButtons.halfDamage.hint")}"></i></button>`);
+        let halfDamageButton = $(`<button data-modifier="0.5"><i class="fas fa-user-shield" title="${i18n("br5e.chat.damageButtons.halfDamage.hint")}"></i></button>`);
         let doubleDamageButton = $(`<button data-modifier="2"><i class="fas fa-user-injured" title="${i18n("br5e.chat.damageButtons.doubleDamage.hint")}"></i></button>`);
         let fullHealingButton = $(`<button data-modifier="-1"><i class="fas fa-user-plus" title="${i18n("br5e.chat.damageButtons.healing.hint")}"></i></button>`);
 
@@ -28,6 +28,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
 
     // adding click events to the buttons, this gets redone since they can break through rerendering of the card
     html.find('.dmgBtn-container-br button').click(async ev => {
+ ev.preventDefault();
         ev.stopPropagation();
         // find out the proper dmg thats supposed to be applied
         let dmgElement = $(ev.target.parentNode.parentNode.parentNode);

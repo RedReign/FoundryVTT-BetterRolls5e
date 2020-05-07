@@ -15,6 +15,16 @@ function debug() {
 	}
 }
 
+class Roll3D extends Roll {
+    async roll() {
+        let result = super.roll();
+        if (game.dice3d) {
+            game.dice3d.showForRoll(this).then(() => {return result;});
+        }
+        return result;
+    }
+}
+
 // General class for macro support, actor rolls, and most static rolls.
 export class CustomRoll {
 	/**
@@ -35,7 +45,7 @@ export class CustomRoll {
 		
 		// Step 1 - Get all rolls
 		for (let i=0; i<numRolls; i++) {
-			rolls.push(new Roll(formula.join("+"), data).roll());
+			rolls.push(await new Roll3D(formula.join("+"), data).roll());
 			tooltips.push(await rolls[i].getTooltip());
 		}
 		
@@ -46,7 +56,8 @@ export class CustomRoll {
 			title: title,
 			formula: chatFormula,
 			tooltips: tooltips,
-			rolls: rolls
+			rolls: rolls,
+			rollState: rollState,
 		}
 		
 		function tagIgnored() {
@@ -193,7 +204,7 @@ export class CustomRoll {
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
 		
-		let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? actor.token.data.img : actor.data.img;
+		let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? (actor.token && actor.token.data ? actor.token.data.img : actor.data.token.img) : actor.data.img;
 		
 		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
@@ -844,8 +855,6 @@ export class CustomItemRoll {
 			parts = [],
 			rollData = duplicate(actorData);
 		
-		console.log(this.params.rollTitlePlacement);
-		console.log(title);
 		this.addToRollData(rollData);
 		
 		// Add critical threshold
@@ -951,7 +960,7 @@ export class CustomItemRoll {
 		return output.html;
 	}
 	
-	async damageTemplate ({baseRoll, critRoll, labels}) {
+	async damageTemplate ({baseRoll, critRoll, labels, type}) {
 		let baseTooltip = await baseRoll.getTooltip(),
 			templateTooltip;
 		
@@ -971,7 +980,8 @@ export class CustomItemRoll {
 			damagemid: labels[2],
 			damagebottom: labels[3],
 			formula: baseRoll.formula,
-			crittext: this.config.critString
+			crittext: this.config.critString,
+			damageType:type
 		};
 		
 		let html = {
@@ -1098,26 +1108,26 @@ export class CustomItemRoll {
 		
 		let rollFormula = baseWithParts.join("+");
 		
-		let baseRoll = new Roll(rollFormula, rollData).roll(),
+		let baseRoll = await new Roll3D(rollFormula, rollData).roll(),
 			critRoll = null,
 			baseMaxRoll = null,
 			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
 		if ((forceCrit || this.isCrit) && critBehavior !== "0") {
-			critRoll = this.critRoll(rollFormula, rollData, baseRoll);
+			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
 		}
 			
-		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
+		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels, type:damageType});
 		return damageRoll;
 	}
 	
-	critRoll(rollFormula, rollData, baseRoll) {
+	async critRoll(rollFormula, rollData, baseRoll) {
 		let itm = this.item;
 		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
 		let critRollData = duplicate(rollData);
 		critRollData.mod = 0;
-		let critRoll = new Roll(critFormula, critRollData);
+		let critRoll = await new Roll3D(critFormula, critRollData);
 		let savage;
 		if (itm.data.type === "weapon") {
 			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
@@ -1226,13 +1236,13 @@ export class CustomItemRoll {
 			}
 		}
 		
-		let baseRoll = new Roll(formula, rollData).roll(),
+		let baseRoll = await new Roll3D(formula, rollData).roll(),
 			critRoll = null,
 			baseMaxRoll = null,
 			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
 		if (isCrit && critBehavior !== "0") {
-			critRoll = this.critRoll(formula, rollData, baseRoll);
+			critRoll = await this.critRoll(formula, rollData, baseRoll);
 		}
 		
 		let damageRoll = this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});

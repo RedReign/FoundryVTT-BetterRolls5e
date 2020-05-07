@@ -236,6 +236,7 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 }
 
 async function addButtonsToItemLi(li, actor, buttonContainer) {
+	
     let item = actor.getOwnedItem(String(li.attr("data-item-id")));
     let itemData = item.data.data;
     let flags = item.data.flags.betterRolls5e;

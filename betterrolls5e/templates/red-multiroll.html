@@ -1,15 +1,15 @@
-<div class="dice-roll red-dual">
+<div class="dice-roll red-dual" data-rollState="{{rollState}}">
     {{#if title}}
     <div class="flavor-text">{{title}}</div>
     {{/if}}
     <div class="dice-result">
 		<div class="dice-formula dice-tooltip">{{formula}}</div>
-		<div class="dice-row">
+		<div class="dice-row red-rolls">
 			{{#each tooltips}}
 			<div class="tooltip dual-left dice-row-item">{{{this}}}</div>
 			{{/each}}	
 		</div>
-		<div class="dice-row">
+		<div class="dice-row red-totals">
 			{{#each rolls}}
 			<h4 class="dice-total dice-row-item{{#if this.ignored}} ignored{{/if}}">{{this.total}}</h4>
 			{{/each}}
