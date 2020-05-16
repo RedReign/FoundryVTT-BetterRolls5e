@@ -1,4 +1,4 @@
-import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData } from "./betterrolls5e.js";
+import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData } from "./betterrollssw5e.js";
 import { Utils } from "./utils.js";
 
 import { SW5E } from "../../../systems/sw5e/module/config.js";
@@ -87,7 +87,7 @@ export class CustomRoll {
 		tagIgnored();
 		
 		// Step 3 - Create HTML using custom template
-		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
+		let multiRoll = await renderTemplate("modules/betterrollssw5e/templates/red-multiroll.html", chatData);
 		
 		let output = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
 		output.isCrit = output.isCrit && triggersCrit;
@@ -123,14 +123,14 @@ export class CustomRoll {
 		
 		let titleImage = (actor.data.img == "icons/svg/mystery-man.svg") ? actor.data.token.img : actor.data.img;
 		
-		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
+		let titleTemplate = await renderTemplate("modules/betterrollssw5e/templates/red-header.html", {
 			item: {
 				img: titleImage,
 				name: `${i18n(label)}`
 			}
 		});
 		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+		let content = await renderTemplate("modules/betterrollssw5e/templates/red-fullroll.html", {
 			title: titleTemplate,
 			templates: [multiRoll["html"]]
 		});
@@ -174,7 +174,7 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		let numRolls = game.settings.get("betterrollssw5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
@@ -206,14 +206,14 @@ export class CustomRoll {
 		
 		let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? (actor.token && actor.token.data ? actor.token.data.img : actor.data.token.img) : actor.data.img;
 		
-		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
+		let titleTemplate = await renderTemplate("modules/betterrollssw5e/templates/red-header.html", {
 			item: {
 				img: titleImage,
 				name: titleString
 			}
 		});
 		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+		let content = await renderTemplate("modules/betterrollssw5e/templates/red-fullroll.html", {
 			title: titleTemplate,
 			templates: [dualRoll["html"]]
 		});
@@ -261,7 +261,7 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		let numRolls = game.settings.get("betterrollssw5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
@@ -301,7 +301,7 @@ export class CustomRoll {
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
+		let numRolls = game.settings.get("betterrollssw5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
@@ -352,19 +352,19 @@ export class CustomItemRoll {
 	// Update config settings in the roll.
 	updateConfig() {
 		this.config = {
-			playRollSounds: game.settings.get("betterrolls5e", "playRollSounds"),
+			playRollSounds: game.settings.get("betterrollssw5e", "playRollSounds"),
 			hasMaestroSound: hasMaestroSound(this.item),
-			damageRollPlacement: game.settings.get("betterrolls5e", "damageRollPlacement"),
-			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),
-			damageTitlePlacement: game.settings.get("betterrolls5e", "damageTitlePlacement"),
-			damageContextPlacement: game.settings.get("betterrolls5e", "damageContextPlacement"),
-			contextReplacesTitle: game.settings.get("betterrolls5e", "contextReplacesTitle"),
-			contextreplacesDamage: game.settings.get("betterrolls5e", "contextReplacesDamage"),
-			critString: game.settings.get("betterrolls5e", "critString"),
-			critBehavior: game.settings.get("betterrolls5e", "critBehavior"),
-			quickDefaultDescriptionEnabled: game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled"),
-			altSecondaryEnabled: game.settings.get("betterrolls5e", "altSecondaryEnabled"),
-			d20Mode: game.settings.get("betterrolls5e", "d20Mode"),
+			damageRollPlacement: game.settings.get("betterrollssw5e", "damageRollPlacement"),
+			rollTitlePlacement: game.settings.get("betterrollssw5e", "rollTitlePlacement"),
+			damageTitlePlacement: game.settings.get("betterrollssw5e", "damageTitlePlacement"),
+			damageContextPlacement: game.settings.get("betterrollssw5e", "damageContextPlacement"),
+			contextReplacesTitle: game.settings.get("betterrollssw5e", "contextReplacesTitle"),
+			contextreplacesDamage: game.settings.get("betterrollssw5e", "contextReplacesDamage"),
+			critString: game.settings.get("betterrollssw5e", "critString"),
+			critBehavior: game.settings.get("betterrollssw5e", "critBehavior"),
+			quickDefaultDescriptionEnabled: game.settings.get("betterrollssw5e", "quickDefaultDescriptionEnabled"),
+			altSecondaryEnabled: game.settings.get("betterrollssw5e", "altSecondaryEnabled"),
+			d20Mode: game.settings.get("betterrollssw5e", "d20Mode"),
 		};
 	}
 	
@@ -429,7 +429,7 @@ export class CustomItemRoll {
 		
 		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? sw5e.spellLevels[this.params.slotLevel] : null;
 			
-		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
+		let title = (this.params.title || await renderTemplate("modules/betterrollssw5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
 		
 		
 		
@@ -443,7 +443,7 @@ export class CustomItemRoll {
 			this.placeTemplate();
 		}
 		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+		let content = await renderTemplate("modules/betterrollssw5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
 			tokenId: tokenId,
@@ -968,7 +968,7 @@ export class CustomItemRoll {
 		
 		if (critRoll) {
 			let critTooltip = await critRoll.getTooltip();
-			templateTooltip = await renderTemplate("modules/betterrolls5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
+			templateTooltip = await renderTemplate("modules/betterrollssw5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
 		} else { templateTooltip = baseTooltip; }
 		
 		
@@ -985,7 +985,7 @@ export class CustomItemRoll {
 		};
 		
 		let html = {
-			html: await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData)
+			html: await renderTemplate("modules/betterrollssw5e/templates/red-damageroll.html", chatData)
 		};
 		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-left-die");
 		html = CustomItemRoll.tagCrits(html, critRoll, ".red-right-die");
@@ -1262,7 +1262,7 @@ export class CustomItemRoll {
 		if (customDC) { saveData.dc = saveArgs.customDC; }
 		
 		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${sw5e.abilities[saveData.ability]}`;
-		let button = await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel});
+		let button = await renderTemplate("modules/betterrollssw5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel});
 		
 		return button;
 	}

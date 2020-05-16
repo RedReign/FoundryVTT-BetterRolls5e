@@ -7,7 +7,7 @@ Hooks.once("init", () => {
 	/**
 	* Register better rolls setting
 	*/
-	game.settings.register("betterrolls5e", "diceEnabled", {
+	game.settings.register("betterrollssw5e", "diceEnabled", {
 		name: i18n("br5e.diceEnabled.name"),
 		hint: i18n("br5e.diceEnabled.hint"),
 		scope: "world",
@@ -16,7 +16,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterrolls5e", "d20Mode", {
+	game.settings.register("betterrollssw5e", "d20Mode", {
 		name: i18n("br5e.d20Mode.name"),
 		hint: i18n("br5e.d20Mode.hint"),
 		scope: "world",
@@ -33,7 +33,7 @@ Hooks.once("init", () => {
 	/**
 	* Register added roll buttons
 	*/
-	game.settings.register("betterrolls5e", "rollButtonsEnabled", {
+	game.settings.register("betterrollssw5e", "rollButtonsEnabled", {
 		name: i18n("br5e.rollButtonsEnabled.name"),
 		hint: i18n("br5e.rollButtonsEnabled.hint"),
 		scope: "world",
@@ -45,7 +45,7 @@ Hooks.once("init", () => {
 	/**
 	* Register better roll for icon
 	*/
-	game.settings.register("betterrolls5e", "imageButtonEnabled", {
+	game.settings.register("betterrollssw5e", "imageButtonEnabled", {
 		name: i18n("br5e.imageButtonEnabled.name"),
 		hint: i18n("br5e.imageButtonEnabled.hint"),
 		scope: "world",
@@ -54,7 +54,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterrolls5e", "altSecondaryEnabled", {
+	game.settings.register("betterrollssw5e", "altSecondaryEnabled", {
 		name: i18n("br5e.altSecondaryEnabled.name"),
 		hint: i18n("br5e.altSecondaryEnabled.hint"),
 		scope: "world",
@@ -66,7 +66,7 @@ Hooks.once("init", () => {
 	/**
 	* Register quick roll defaults for description
 	*/
-	game.settings.register("betterrolls5e", "quickDefaultDescriptionEnabled", {
+	game.settings.register("betterrollssw5e", "quickDefaultDescriptionEnabled", {
 		name: i18n("br5e.quickDefaultDescriptionEnabled.name"),
 		hint: i18n("br5e.quickDefaultDescriptionEnabled.hint"),
 		scope: "world",
@@ -78,7 +78,7 @@ Hooks.once("init", () => {
 	/**
 	* Register roll label options
 	*/
-	game.settings.register("betterrolls5e", "rollTitlePlacement", {
+	game.settings.register("betterrollssw5e", "rollTitlePlacement", {
 		name: i18n("br5e.rollTitlePlacement.name"),
 		hint: i18n("br5e.rollTitlePlacement.hint"),
 		scope: "world",
@@ -91,7 +91,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "damageTitlePlacement", {
+	game.settings.register("betterrollssw5e", "damageTitlePlacement", {
 		name: i18n("br5e.damageTitlePlacement.name"),
 		hint: i18n("br5e.damageTitlePlacement.hint"),
 		scope: "world",
@@ -106,7 +106,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "damageContextPlacement", {
+	game.settings.register("betterrollssw5e", "damageContextPlacement", {
 		name: i18n("br5e.damageContextEnabled.name"),
 		hint: i18n("br5e.damageContextEnabled.hint"),
 		scope: "world",
@@ -121,7 +121,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "damageRollPlacement", {
+	game.settings.register("betterrollssw5e", "damageRollPlacement", {
 		name: i18n("br5e.damageRollPlacement.name"),
 		hint: i18n("br5e.damageRollPlacement.hint"),
 		scope: "world",
@@ -136,7 +136,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "contextReplacesTitle", {
+	game.settings.register("betterrollssw5e", "contextReplacesTitle", {
 		name: i18n("br5e.contextReplacesTitle.name"),
 		hint: i18n("br5e.contextReplacesTitle.hint"),
 		scope: "world",
@@ -145,7 +145,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterrolls5e", "contextReplacesDamage", {
+	game.settings.register("betterrollssw5e", "contextReplacesDamage", {
 		name: i18n("br5e.contextReplacesDamage.name"),
 		hint: i18n("br5e.contextReplacesDamage.hint"),
 		scope: "world",
@@ -154,7 +154,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterrolls5e", "critBehavior", {
+	game.settings.register("betterrollssw5e", "critBehavior", {
 		name: i18n("br5e.critBehavior.name"),
 		hint: i18n("br5e.critBehavior.hint"),
 		scope: "world",
@@ -169,7 +169,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "critString", {
+	game.settings.register("betterrollssw5e", "critString", {
 		name: i18n("br5e.critString.name"),
 		hint: i18n("br5e.critString.hint"),
 		scope: "world",
@@ -178,7 +178,7 @@ Hooks.once("init", () => {
 		type: String
 	});
 	
-	game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {
+	game.settings.register("betterrollssw5e", "chatDamageButtonsEnabled", {
 		name: i18n("br5e.chatDamageButtonsEnabled.name"),
 		hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
 		scope: "world",
@@ -187,7 +187,7 @@ Hooks.once("init", () => {
 		type: Boolean
 	});
 	
-	game.settings.register("betterrolls5e", "playRollSounds", {
+	game.settings.register("betterrollssw5e", "playRollSounds", {
 		name: i18n("br5e.playRollSounds.name"),
 		hint: i18n("br5e.playRollSounds.hint"),
 		scope: "world",
@@ -199,7 +199,7 @@ Hooks.once("init", () => {
 
 // Disable context menu for damage rolls (they break)
 Hooks.on("getChatLogEntryContext", (html, options) => {
-	if (game.settings.get("betterrolls5e", "diceEnabled")) {
+	if (game.settings.get("betterrollssw5e", "diceEnabled")) {
 		options.splice(0,4);
 		console.log("Deleted context menu for sw5e chat cards!");
 	}

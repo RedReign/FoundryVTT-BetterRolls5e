@@ -1,5 +1,5 @@
 import { SW5E } from "../../../systems/sw5e/module/config.js";
-import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons } from "./betterrolls5e.js";
+import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons } from "./betterrollssw5e.js";
 
 
 export class BetterRollsHooks {
@@ -25,15 +25,15 @@ export class BetterRollsHooks {
 		params = {}) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
-			game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data, params) : null;
+			game.settings.get("betterrollssw5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
+			game.settings.get("betterrollssw5e", "diceEnabled") ? changeRollsToDual(app.object, html, data, params) : null;
 		});
 	}
 	
 	static addItemSheet(sheetName) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app.object, html, data) : null;
+			game.settings.get("betterrollssw5e", "diceEnabled") ? addBetterRollsContent(app.object, html, data) : null;
 		});
 	}
 	
@@ -49,8 +49,8 @@ export class BetterRollsHooks {
 		triggeringElement = ".item .item-name h4", 
 		buttonContainer = ".item-properties",
 		itemButton = ".item .rollable") {
-		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
-		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
+		game.settings.get("betterrollssw5e", "rollButtonsEnabled") ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
+		game.settings.get("betterrollssw5e", "diceEnabled") ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
 	}
 }
 

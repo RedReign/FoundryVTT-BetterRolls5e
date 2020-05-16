@@ -1,9 +1,9 @@
 import { SW5E } from "../../../systems/sw5e/module/config.js";
 import { Actor5e } from "../../../systems/sw5e/module/actor/entity.js";
-import { i18n } from "./betterrolls5e.js";
+import { i18n } from "./betterrollssw5e.js";
 
 Hooks.on('renderChatMessage', (message, html, data) => {
-	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
+	if (!game.settings.get("betterrollssw5e", "chatDamageButtonsEnabled")) { return; }
     let chatCard = html.find('.red-full');
     if (chatCard.length === 0) { return; }
 	
