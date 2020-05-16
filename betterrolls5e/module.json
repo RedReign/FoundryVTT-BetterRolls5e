@@ -1,5 +1,5 @@
 {
-	"name": "betterrolls5e",
+	"name": "betterrollssw5e",
 	"title": "Better Rolls for SW 5e",
 	"description": "This module adds special roll functionality for the SW D20 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
 	"minimumCoreVersion": "0.5.5",
