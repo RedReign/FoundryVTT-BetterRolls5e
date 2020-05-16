@@ -629,7 +629,7 @@ export class CustomItemRoll {
 			chatData = item.getChatData(),
 			itemData = item.data.data,
 			flags = item.data.flags,
-			brFlags = flags.betterRolls5e,
+			brFlags = flags.betterRollsSW5e,
 			preset = this.params.preset,
 			properties = false,
 			useCharge = false,
@@ -863,7 +863,7 @@ export class CustomItemRoll {
 		try { characterCrit = Number(getProperty(itm, "actor.data.flags.sw5e.weaponCriticalThreshold")) || 20;  }
 		catch(error) { characterCrit = itm.actor.data.flags.sw5e.weaponCriticalThreshold || 20; }
 		
-		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
+		let itemCrit = Number(getProperty(itm, "data.flags.betterRollsSW5e.critRange.value")) || 20;
 		//	console.log(critThreshold, characterCrit, itemCrit);
 		
 		// If a specific critThreshold is set, use that
@@ -1000,7 +1000,7 @@ export class CustomItemRoll {
 		let itemData = itm.data.data,
 			rollData = duplicate(itm.actor.data.data),
 			abl = itemData.ability,
-			flags = itm.data.flags.betterRolls5e,
+			flags = itm.data.flags.betterRollsSW5e,
 			damageFormula,
 			damageType = itemData.damage.parts[damageIndex][1],
 			isVersatile = false,
@@ -1020,7 +1020,7 @@ export class CustomItemRoll {
 		
 		let type = itm.data.type,
 			parts = [],
-			dtype = CONFIG.betterRolls5e.combinedDamageTypes[damageType];
+			dtype = CONFIG.betterRollsSW5e.combinedDamageTypes[damageType];
 		
 		let generalMod = rollData.attributes.spellcasting;
 		
@@ -1204,7 +1204,7 @@ export class CustomItemRoll {
 		let itemData = item.data.data,
 			formula = item.data.data.formula,
 			rollData = duplicate(item.actor.data.data),
-			flags = item.data.flags.betterRolls5e;
+			flags = item.data.flags.betterRollsSW5e;
 		
 		this.addToRollData(rollData);
 		
