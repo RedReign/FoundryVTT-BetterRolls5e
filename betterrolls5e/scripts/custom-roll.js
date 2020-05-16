@@ -1,12 +1,12 @@
 import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData } from "./betterrolls5e.js";
 import { Utils } from "./utils.js";
 
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
-import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
+import { SW5E } from "../../../systems/sw5e/module/config.js";
+import { addChatMessageContextOptions } from "../../../systems/sw5e/module/chat.js";
+import { SpellCastDialog } from "../../../systems/sw5e/module/apps/spell-cast-dialog.js";
+import { AbilityTemplate } from "../../../systems/sw5e/module/pixi/ability-template.js";
 
-let dnd5e = DND5E;
+let sw5e = SW5E;
 let DEBUG = false;
 
 function debug() {
@@ -115,7 +115,7 @@ export class CustomRoll {
 	// Creates a chat message with the requested skill check.
 	static async fullRollSkill(actor, skill, params) {
 		let skl = actor.data.data.skills[skill],
-			label = dnd5e.skills[skill];
+			label = sw5e.skills[skill];
 			
 		let wd = getWhisperData();
 		
@@ -168,7 +168,7 @@ export class CustomRoll {
 		}
 		
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (getProperty(actor, "data.flags.sw5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
 		
@@ -192,7 +192,7 @@ export class CustomRoll {
 		let dualRoll,
 			titleString,
 			abl = ability,
-			label = dnd5e.abilities[ability];
+			label = sw5e.abilities[ability];
 		
 		let wd = getWhisperData();
 		
@@ -255,7 +255,7 @@ export class CustomRoll {
 		}
 		
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (getProperty(actor, "data.flags.sw5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
 		
@@ -291,7 +291,7 @@ export class CustomRoll {
 		data.mod = data.mod.join("+");
 		
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (getProperty(actor, "data.flags.sw5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
 		
@@ -427,7 +427,7 @@ export class CustomItemRoll {
 		// Show properties
 		this.properties = (params.properties) ? this.listProperties() : null;
 		
-		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[this.params.slotLevel] : null;
+		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? sw5e.spellLevels[this.params.slotLevel] : null;
 			
 		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
 		
@@ -696,15 +696,15 @@ export class CustomItemRoll {
 		let data = item.data.data,
 			ad = item.actor.data.data;
 		
-		let range = ((data.range) && (data.range.value || data.range.units)) ? (data.range.value || "") + (((data.range.long) && (data.range.long !== 0) && (data.rangelong != data.range.value)) ? "/" +data.range.long : "") + " " + (data.range.units ? dnd5e.distanceUnits[data.range.units] : "") : null;
-		let target = (data.target && data.target.type) ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null;
+		let range = ((data.range) && (data.range.value || data.range.units)) ? (data.range.value || "") + (((data.range.long) && (data.range.long !== 0) && (data.rangelong != data.range.value)) ? "/" +data.range.long : "") + " " + (data.range.units ? sw5e.distanceUnits[data.range.units] : "") : null;
+		let target = (data.target && data.target.type) ? i18n("Target: ").concat(sw5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + sw5e.distanceUnits[data.target.units] + ")" : "") : null;
 		let activation = (data.activation && (data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null;
-		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
+		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + sw5e.timePeriods[data.duration.units] : null;
 		let activationCondition = (data.activation && data.activation.condition) ? "(" + data.activation.condition + ")" : null;
 		switch(item.data.type) {
 			case "weapon":
 				properties = [
-					dnd5e.weaponTypes[data.weaponType],
+					sw5e.weaponTypes[data.weaponType],
 					range,
 					target,
 					data.proficient ? "" : i18n("Not Proficient"),
@@ -712,7 +712,7 @@ export class CustomItemRoll {
 				];
 				for (const prop in data.properties) {
 					if (data.properties[prop] === true) {
-						properties.push(dnd5e.weaponProperties[prop]);
+						properties.push(sw5e.weaponProperties[prop]);
 					}
 				}
 				break;
@@ -731,8 +731,8 @@ export class CustomItemRoll {
 				}
 				
 				properties = [
-					dnd5e.spellSchools[data.school],
-					dnd5e.spellLevels[data.level],
+					sw5e.spellSchools[data.school],
+					sw5e.spellLevels[data.level],
 					components.ritual ? i18n("Ritual") : null,
 					activation,
 					duration,
@@ -745,15 +745,15 @@ export class CustomItemRoll {
 			case "feat":
 				properties = [
 					data.requirements,
-					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
-					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
+					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + sw5e.abilityActivationTypes[data.activation.type] : null,
+					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + sw5e.timePeriods[data.duration.units] : null,
 					range,
-					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
+					data.target.type ? i18n("Target: ").concat(sw5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + sw5e.distanceUnits[data.target.units] + ")" : "") : null,
 				];
 				break;
 			case "equipment":
 				properties = [
-					dnd5e.equipmentTypes[data.armor.type],
+					sw5e.equipmentTypes[data.armor.type],
 					data.equipped ? i18n("Equipped") : null,
 					data.armor.value ? data.armor.value + " " + i18n("AC") : null,
 					data.stealth ? i18n("Stealth Disadv.") : null,
@@ -762,8 +762,8 @@ export class CustomItemRoll {
 				break;
 			case "tool":
 				properties = [
-					dnd5e.proficiencyLevels[data.proficient],
-					data.ability ? dnd5e.abilities[data.ability] : null,
+					sw5e.proficiencyLevels[data.proficient],
+					data.ability ? sw5e.abilities[data.ability] : null,
 					data.weight ? data.weight + " lbs." : null,
 				];
 				break;
@@ -860,8 +860,8 @@ export class CustomItemRoll {
 		// Add critical threshold
 		let critThreshold = 20;
 		let characterCrit = 20;
-		try { characterCrit = Number(getProperty(itm, "actor.data.flags.dnd5e.weaponCriticalThreshold")) || 20;  }
-		catch(error) { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
+		try { characterCrit = Number(getProperty(itm, "actor.data.flags.sw5e.weaponCriticalThreshold")) || 20;  }
+		catch(error) { characterCrit = itm.actor.data.flags.sw5e.weaponCriticalThreshold || 20; }
 		
 		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
 		//	console.log(critThreshold, characterCrit, itemCrit);
@@ -941,7 +941,7 @@ export class CustomItemRoll {
 		
 		// Elven Accuracy check
 		if (numRolls == 2) {
-			if (getProperty(itm, "actor.data.flags.dnd5e.elvenAccuracy") && ["dex", "int", "wis", "cha"].includes(abl)) {
+			if (getProperty(itm, "actor.data.flags.sw5e.elvenAccuracy") && ["dex", "int", "wis", "cha"].includes(abl)) {
 				numRolls = 3;
 			}
 		}
@@ -949,7 +949,7 @@ export class CustomItemRoll {
 		let d20String = "1d20";
 		
 		// Halfling Luck check
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+		if (getProperty(itm, "actor.data.flags.sw5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
 		
@@ -1060,9 +1060,9 @@ export class CustomItemRoll {
 			contextString = flags.quickDamage.context[damageIndex];
 		
 		// Show "Healing" prefix only if it's not inherently a heal action
-		if (dnd5e.healingTypes[damageType]) { titleString = ""; }
+		if (sw5e.healingTypes[damageType]) { titleString = ""; }
 		// Show "Damage" prefix if it's a damage roll
-		else if (dnd5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
+		else if (sw5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
 		
 		// Title
 		let pushedTitle = false;
@@ -1082,7 +1082,7 @@ export class CustomItemRoll {
 		
 		// Damage type
 		if (dtype) { damageString.push(dtype); }
-		if (isVersatile) { damageString.push("(" + dnd5e.weaponProperties.ver + ")"); }
+		if (isVersatile) { damageString.push("(" + sw5e.weaponProperties.ver + ")"); }
 		damageString = damageString.join(" ");
 		if (damagePlacement !== "0" && damageString.length > 0 && !(replaceDamage && contextString && damagePlacement == contextPlacement)) {
 			labels[damagePlacement].push(damageString);
@@ -1130,8 +1130,8 @@ export class CustomItemRoll {
 		let critRoll = await new Roll3D(critFormula, critRollData);
 		let savage;
 		if (itm.data.type === "weapon") {
-			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
-			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
+			try { savage = itm.actor.getFlag("sw5e", "savageAttacks"); }
+			catch(error) { savage = itm.actor.getFlag("sw5eJP", "savageAttacks"); }
 		}
 		let add = (itm.actor && savage) ? 1 : 0;
 		critRoll.alter(add);
@@ -1261,7 +1261,7 @@ export class CustomItemRoll {
 		if (customAbl) { saveData.ability = saveArgs.customAbl; }
 		if (customDC) { saveData.dc = saveArgs.customDC; }
 		
-		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}`;
+		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${sw5e.abilities[saveData.ability]}`;
 		let button = await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel});
 		
 		return button;
@@ -1308,7 +1308,7 @@ export class CustomItemRoll {
 		}
 		
 		let d20String = "1d20";
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+		if (getProperty(itm, "actor.data.flags.sw5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
 		

@@ -1,7 +1,7 @@
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
-import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
+import { SW5E } from "../../../systems/sw5e/module/config.js";
+import { addChatMessageContextOptions } from "../../../systems/sw5e/module/chat.js";
+import { SpellCastDialog } from "../../../systems/sw5e/module/apps/spell-cast-dialog.js";
+import { AbilityTemplate } from "../../../systems/sw5e/module/pixi/ability-template.js";
 
 import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
@@ -108,7 +108,7 @@ export function isCheck(item) {
 	return output;
 }
 
-let dnd5e = DND5E;
+let sw5e = SW5E;
 
 function getQuickDescriptionDefault() {
 	return game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled");
@@ -190,7 +190,7 @@ CONFIG.betterRolls5e = {
 
 Hooks.on(`ready`, () => {
 	// Make a combined damage type array that includes healing
-	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
+	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(sw5e.damageTypes), sw5e.healingTypes);
 	
 	// Updates crit text from the dropdown.
 	let critText = game.settings.get("betterrolls5e", "critString")
@@ -262,7 +262,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
             if (isAttack(item)) buttons.append(`<span class="tag"><button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button></span>`);
             if (isSave(item)) {
                 let saveData = getSave(item);
-                buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}</button></span>`);
+                buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${sw5e.abilities[saveData.ability]}</button></span>`);
             }
             if (itemData.damage.parts.length > 0) {
                 buttons.append(`<span class="tag"><button data-action="damageRoll" data-value="all">${i18n("br5e.buttons.damage")}</button></span>`);
@@ -276,7 +276,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 						let damageString = (contextEnabled && flags.quickDamage.context[i]) || CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]];
 						buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${damageString}</button></span>`);
 						if (i === 0 && itemData.damage.versatile) {
-							buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${damageString} (${dnd5e.weaponProperties.ver})</button></span>`);
+							buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${damageString} (${sw5e.weaponProperties.ver})</button></span>`);
 						}
 					}
 				}
@@ -442,7 +442,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	let betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
 		altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
-		DND5E: CONFIG.DND5E,
+		SW5E: CONFIG.SW5E,
 		item: item,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
@@ -560,8 +560,8 @@ export function changeRollsToDual (actor, html, data, params) {
 				CustomRoll.fullRollAttribute(actor, ability, "save");
 			} else {
 				new Dialog({
-					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
-					content: `<p><span style="font-weight: bold;">${i18n(dnd5e.abilities[ability])}:</span> ${i18n("What type of roll?")}</p>`,
+					title: `${i18n(sw5e.abilities[ability])} ${i18n("Ability Roll")}`,
+					content: `<p><span style="font-weight: bold;">${i18n(sw5e.abilities[ability])}:</span> ${i18n("What type of roll?")}</p>`,
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
@@ -660,7 +660,7 @@ export function BetterRolls() {
 				type: "script",
 				img: item.data.img,
 				command: command(),
-				flags: {"dnd5e.itemMacro": true}
+				flags: {"sw5e.itemMacro": true}
 			}, {displaySheet: false});
 		}
 		game.user.assignHotbarMacro(macro, slot);

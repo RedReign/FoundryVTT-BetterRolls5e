@@ -1,14 +1,14 @@
-.dnd5e.sheet .item-buttons button {
+.sw5e.sheet .item-buttons button {
 	font-size: 10px;
 	line-height: 12px;
 	margin: 0;
 }
 
-.dnd5e.sheet .item-buttons span {
+.sw5e.sheet .item-buttons span {
 	padding: 0;
 }
 
-.dnd5e.chat-card .card-header img {
+.sw5e.chat-card .card-header img {
     flex: 0 0 36px;
     margin-right: 5px;
 }
@@ -40,7 +40,7 @@
     border: 1px solid #888888;
 }
 
-.dnd5e.red-full.chat-card .dice-tooltip {
+.sw5e.red-full.chat-card .dice-tooltip {
 	font-size:14px;
 }
 
@@ -66,21 +66,21 @@
 	font-size: 12px;
 }
 
-.dnd5e.red-full.chat-card footer.card-footer {
+.sw5e.red-full.chat-card footer.card-footer {
     margin-top:2px;
 }
 
-.dnd5e.item form .item-betterRolls {
+.sw5e.item form .item-betterRolls {
 	padding: 8px 8px 0;
 	overflow-y: auto;
 }
 
-.dnd5e.sheet.item .item-betterRolls input[type="text"], .dnd5e.sheet.item .item-betterRolls select {
+.sw5e.sheet.item .item-betterRolls input[type="text"], .sw5e.sheet.item .item-betterRolls select {
     border: 1px solid #7a7971;
     background: rgba(0, 0, 0, 0.05);
 }
 
-.dnd5e.sheet.item .item-betterRolls label.checkbox {
+.sw5e.sheet.item .item-betterRolls label.checkbox {
     display: flex;
 }
 

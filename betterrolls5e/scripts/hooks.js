@@ -1,4 +1,4 @@
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import { SW5E } from "../../../systems/sw5e/module/config.js";
 import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons } from "./betterrolls5e.js";
 
 

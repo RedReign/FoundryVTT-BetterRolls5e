@@ -33,7 +33,7 @@
 			"path": "lang/kr.json"
 		}
 	],
-	"systems": ["dnd5e", "dnd5eJP"],
+	"systems": ["sw5e", "sw5eJP"],
 	"esmodules": [
 		"./scripts/betterrolls5e.js",
 		"./scripts/custom-roll.js",

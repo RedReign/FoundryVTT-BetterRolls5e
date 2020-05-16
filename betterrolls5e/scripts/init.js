@@ -201,6 +201,6 @@ Hooks.once("init", () => {
 Hooks.on("getChatLogEntryContext", (html, options) => {
 	if (game.settings.get("betterrolls5e", "diceEnabled")) {
 		options.splice(0,4);
-		console.log("Deleted context menu for dnd5e chat cards!");
+		console.log("Deleted context menu for sw5e chat cards!");
 	}
 });
