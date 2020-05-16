@@ -44,7 +44,7 @@
 	],
 	"styles": ["./css/betterrollssw5e.css"],
 	"packs": [],
-	"url": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrollssw5e",
-	"manifest": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrollssw5e/module.json",
-	"download": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrollssw5e.zip"
+	"url": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrolls5e",
+	"manifest": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json",
+	"download": "https://raw.githubusercontent.com/RaaviArda/FoundryVTT-BetterRolls5e/master/betterrolls5e.zip"
 }
