@@ -1361,7 +1361,7 @@ export class CustomItemRoll {
 		if ( consume && (lvl !== 0) ) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
 			await actor.update({
-				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
+				[`data.resources.primary.value`]: Math.max(parseInt(this.data.data.resources.primary.value) - lvl, 0)
 			});
 		}
 		
