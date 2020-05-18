@@ -9,15 +9,21 @@ If you are feeling generous, and would like to support my work, you can do so th
 
 ## Installation
 ### Method 1
-- Download the [.zip file](https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip) in this repository.
-- Extract the contents of the zip in `\resources\app\public\modules\`
-- Restart Foundry.
+- Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
+- Search for "Better Rolls" in the pop up window.
+- Click "Install" and it should appear in your modules list.
 - Enjoy!
 
-### Method 2 (Now Works™!)
+### Method 2
 - Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
 - Paste the link: `https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json`
 - Click "Install" and it should appear in your modules list.
+- Enjoy!
+
+### Method 3
+- Download the [.zip file](https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip) in this repository.
+- Extract the contents of the zip in `\resources\app\public\modules\`
+- Restart Foundry.
 - Enjoy!
 
 ## Implemented Features
