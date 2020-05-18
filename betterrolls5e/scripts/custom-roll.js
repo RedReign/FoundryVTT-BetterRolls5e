@@ -3,8 +3,8 @@ import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
-import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
+import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -38,7 +38,7 @@ export class CustomRoll {
 	* @param {String} rollState			null, "highest", or "lowest"
 	* @param {Boolean} triggersCrit		Whether this field marks the entire roll as critical
 	*/
-	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false) {
+	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false, rollType = "") {
 		let formula = [dice].concat(parts);
 		let rolls = [];
 		let tooltips = [];
@@ -58,6 +58,7 @@ export class CustomRoll {
 			tooltips: tooltips,
 			rolls: rolls,
 			rollState: rollState,
+			rollType: rollType
 		}
 		
 		function tagIgnored() {
@@ -89,8 +90,14 @@ export class CustomRoll {
 		// Step 3 - Create HTML using custom template
 		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
 		
-		let output = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
-		output.isCrit = output.isCrit && triggersCrit;
+		let template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+		template.isCrit = template.isCrit && triggersCrit;
+		
+		let output = {
+			html:template.html,
+			isCrit:template.isCrit,
+			data:chatData
+		};
 		return output;
 	}
 	
@@ -132,7 +139,7 @@ export class CustomRoll {
 		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			title: titleTemplate,
-			templates: [multiRoll["html"]]
+			templates: [multiRoll]
 		});
 		
 		let chatData = {
@@ -215,7 +222,7 @@ export class CustomRoll {
 		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			title: titleTemplate,
-			templates: [dualRoll["html"]]
+			templates: [dualRoll]
 		});
 		
 		let chatData = {
@@ -282,7 +289,7 @@ export class CustomRoll {
 		let ablParts = {};
 		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
 		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
-		let mods = [ablParts.mod, ablParts.prof, saveBonus]
+		let mods = [ablParts.mod, ablParts.prof, saveBonus];
 		for (let i=0; i<mods.length; i++) {
 			if (mods[i] && mods[i] !== "0") {
 				data.mod.push(mods[i]);
@@ -336,7 +343,7 @@ export class CustomItemRoll {
 		this.itemFlags = item.data.flags;
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
 		this.fields = fields;			 									// Where requested roll fields are stored, in the order they should be rendered.
-		this.templates = [];			 									// Where finished HTML templates are stored, in the order they should be rendered.
+		this.templates = [];			 									// Where finished templates are stored, in the order they should be rendered.
 		
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
@@ -400,6 +407,8 @@ export class CustomItemRoll {
 		
 		await redUpdateFlags(item);
 		
+		Hooks.call("preRollItemBetterRolls", this);
+		
 		if (Number.isInteger(params.preset)) {
 			this.updateForPreset();
 		}
@@ -443,6 +452,13 @@ export class CustomItemRoll {
 			this.placeTemplate();
 		}
 		
+		if (consumedCharge.destroy === true) { setTimeout(() => {item.actor.deleteOwnedItem(item.id);}, 100);}
+		this.rolled = true;
+		
+		await Hooks.callAll("rollItemBetterRolls", this);
+		
+		await new Promise(r => setTimeout(r, 25));
+		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
@@ -455,9 +471,7 @@ export class CustomItemRoll {
 		});
 		this.content = content;
 		
-		//if (consumedCharge.destroy === true) { setTimeout(() => {item.actor.deleteOwnedItem(item.id);}, 100);}
-		this.rolled = true;
-		return content;
+		return this.content;
 	}
 	
 /*
@@ -488,12 +502,12 @@ export class CustomItemRoll {
 		switch (fieldType) {
 			case 'attack':
 				// {adv, disadv, bonus, triggersCrit, critThreshold}
-				return await this.rollAttack(fieldArgs[0]);
+				this.templates.push(await this.rollAttack(fieldArgs[0]));
 				break;
 			case 'toolcheck':
 			case 'tool':
 			case 'check':
-				return await this.rollTool(fieldArgs[0]);
+				this.templates.push(await this.rollTool(fieldArgs[0]));
 				break;
 			case 'damage':
 				// {damageIndex: 0, forceVersatile: false, forceCrit: false}
@@ -515,16 +529,14 @@ export class CustomItemRoll {
 					let newIndex = [index];
 					index = newIndex;
 				}
-				let templates = [];
 				for (let i=0;i<index.length;i++) {
-					templates.push(await this.rollDamage({
+					this.templates.push(await this.rollDamage({
 						damageIndex: index[i] || 0,
 						// versatile damage will only replace the first damage formula in an "all" damage request
 						forceVersatile: (i == 0 || oldIndex !== "all") ? versatile : false,
 						forceCrit: crit
 					}));
 				}
-				return templates.join("");
 				break;
 			case 'savedc':
 				// {customAbl: null, customDC: null}
@@ -533,10 +545,10 @@ export class CustomItemRoll {
 					abl = fieldArgs[0].abl;
 					dc = fieldArgs[0].dc;
 				}
-				return await this.saveRollButton({customAbl:abl, customDC:dc});
+				this.templates.push(await this.saveRollButton({customAbl:abl, customDC:dc}));
 				break;
 			case 'other':
-				if (item.data.data.formula) { return await this.rollOther(); }
+				if (item.data.data.formula) { this.templates.push(await this.rollOther()); }
 				break;
 			case 'custom':
 				/* args:
@@ -556,8 +568,9 @@ export class CustomItemRoll {
 				let rollData = duplicate(this.item.actor.data.data);
 				rollData.item = item.data.data;
 				this.addToRollData(rollData);
-				let customRoll = await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, ["0"], rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState]);
-				return customRoll.html;
+				let output = await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, ["0"], rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState], false, "custom");
+				output.type = 'custom';
+				this.templates.push(output);
 				break;
 			case 'description':
 			case 'desc':
@@ -569,25 +582,27 @@ export class CustomItemRoll {
 				fieldArgs[0] = {text: componentField + item.data.data.description.value};
 			case 'text':
 				if(fieldArgs[0].text) {
-					return `<div class="card-content br-text">${fieldArgs[0].text}</div>`;
+					this.templates.push({
+						type:'text',
+						html:`<div class="card-content br-text">${fieldArgs[0].text}</div>`,
+					});
 				}
 				break;
 			case 'flavor':
-				return this.rollFlavor(fieldArgs[0]);
+				this.templates.push(this.rollFlavor(fieldArgs[0]));
 				break;
 		}
+		return true;
 	}
 	
 	async allFieldsToTemplates() {
 		return new Promise(async (resolve, reject) => {
-			let templates = [];
 			
 			for (let i=0;i<this.fields.length;i++) {
-				let currentTemplate = await this.fieldToTemplate(this.fields[i]);
-				templates.push(currentTemplate);
+				await this.fieldToTemplate(this.fields[i]);
 			}
 			
-			resolve(templates);
+			resolve(this.templates);
 		});
 	}
 	
@@ -617,7 +632,9 @@ export class CustomItemRoll {
 			
 			if (wd.whisper) { chatData.whisper = wd.whisper; }
 			
-				return ChatMessage.create(chatData);
+			await Hooks.callAll("messageBetterRolls", this, chatData);
+			let output = await ChatMessage.create(chatData);
+			return output;
 		}
 	}
 	
@@ -670,7 +687,7 @@ export class CustomItemRoll {
 			}
 			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
-			if (flagIsTrue("quickCharges") && this.item.hasLimitedUses) { useCharge = true; }
+			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable")) { useCharge = true; }
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
@@ -953,11 +970,12 @@ export class CustomItemRoll {
 			d20String = "1d20r<2";
 		}
 		
-		let output = await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold, rollState, args.triggersCrit);
+		let output = mergeObject({type:"attack"}, await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold, rollState, args.triggersCrit));
 		if (output.isCrit) {
 			this.isCrit = true;
 		}
-		return output.html;
+		output.type = "attack";
+		return output;
 	}
 	
 	async damageTemplate ({baseRoll, critRoll, labels, type}) {
@@ -981,16 +999,22 @@ export class CustomItemRoll {
 			damagebottom: labels[3],
 			formula: baseRoll.formula,
 			crittext: this.config.critString,
-			damageType:type
+			damageType:type,
+			maxRoll: Roll.maximize(baseRoll.formula).total,
+			maxCrit: critRoll ? Roll.maximize(critRoll.formula).total : null
 		};
 		
 		let html = {
 			html: await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData)
 		};
-		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-left-die");
-		html = CustomItemRoll.tagCrits(html, critRoll, ".red-right-die");
+		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-base-die");
+		html = CustomItemRoll.tagCrits(html, critRoll, ".red-extra-die");
 		
-		let output = html["html"];
+		let output = {
+			type: "damage",
+			html: html["html"],
+			data: chatData
+		}
 		
 		return output;
 	}
@@ -1262,7 +1286,10 @@ export class CustomItemRoll {
 		if (customDC) { saveData.dc = saveArgs.customDC; }
 		
 		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}`;
-		let button = await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel});
+		let button = {
+			type: "saveDC",
+			html: await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel})
+		}
 		
 		return button;
 	}
@@ -1313,18 +1340,21 @@ export class CustomItemRoll {
 		}
 		
 		//(numRolls = 1, dice = "1d20", parts = [], data = {}, title, critThreshold, rollState, triggersCrit = false)
-		let output = await CustomRoll.rollMultiple(this.config.d20Mode, d20String, parts, rollData, title, args.critThreshold, args.rollState);
+		let output = await CustomRoll.rollMultiple(this.config.d20Mode, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);
 		if (output.isCrit && triggersCrit) {
 			this.isCrit = true;
 		}
-		return output.html;
+		return output;
 	}
 	
 	// Rolls the flavor text of the item, or custom text if any was entered.
 	rollFlavor(preArgs) {
 		let args = mergeObject({text: this.item.data.data.chatFlavor}, preArgs || {});
 		
-		return `<div class="flavor-text br-flavor">${args.text}</div>`;
+		return {
+			type: "flavor",
+			html: `<div class="flavor-text br-flavor">${args.text}</div>`
+		};
 	}
 	
 	async configureSpell() {
@@ -1350,7 +1380,6 @@ export class CustomItemRoll {
 		if (lvl == "pact") {
 			isPact = true;
 			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
-			console.log(lvl);
 		}
 		
 		if ( lvl !== item.data.data.level ) {
@@ -1391,6 +1420,7 @@ export class CustomItemRoll {
 		let itemData = duplicate(item).data;
 		let output = {value: "success", destroy: false};
 		let recharged = getProperty(this.item, "data.data.recharge.charged");
+		let hasNoCharges = ((itemData.uses.value == null || itemData.uses.value == 0) && (itemData.uses.max == null || itemData.uses.max == 0)) ? true : false;
 		
 		function noChargesLeft() {
 			output.value = "noCharges";
@@ -1399,8 +1429,17 @@ export class CustomItemRoll {
 		function checkQuantity() {
 			let autoUse = itemData.uses.autoUse;
 			let autoDestroy = itemData.uses.autoDestroy;
-			if (autoUse && itemData.uses.value <= 0) { // If the item should reduce in quantity when out of charges
-				console.log("autoUse!");
+			if (hasNoCharges) {
+				//console.log("No uses, only quantity!");
+				if (itemData.quantity < chargesToConsume) { noChargesLeft(); }
+				else if (autoUse) {
+					itemData.quantity -= 1;
+					if (itemData.quantity <= 0 && autoDestroy) {
+						output.destroy = true;
+					}
+				}
+			} else if (autoUse && itemData.uses.value <= 0) { // If the item should reduce in quantity when out of charges
+				//console.log("autoUse!");
 				if (itemData.quantity <= 1 && autoDestroy) {
 					output.destroy = true;
 				} else if (itemData.quantity <= 1 && itemData.uses.value < 0 && !autoDestroy) {
@@ -1417,7 +1456,7 @@ export class CustomItemRoll {
 					noChargesLeft();
 				}
 			} else if (itemData.uses.value < 0) {
-				noChargesLeft();
+				noChargesLeft;
 			}
 		}
 		
@@ -1437,14 +1476,15 @@ export class CustomItemRoll {
 		} else if (item.type !== "consumable") {
 			if (recharged) { item.update({[`data.recharge.charged`]: false}) }
 			else { output.value = "noCharges"; }
+		} else if (hasNoCharges) {
+			checkQuantity();
 		}
 		
-		
-		
 		item.update({
-			[`data.uses.value`]: item.data.data.uses.value ? Math.max(itemData.uses.value, 0) : null,
+			[`data.uses.value`]: (typeof item.data.data.uses.value === "number") ? Math.max(itemData.uses.value, 0) : null,
 			[`data.quantity`]: itemData.quantity,
 		});
+		
 		return output;
 	}
 }

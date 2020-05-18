@@ -1,7 +1,7 @@
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
-import { SpellCastDialog } from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import { AbilityTemplate } from "../../../systems/dnd5e/module/pixi/ability-template.js";
+import { DND5E } from "../../../../systems/dnd5e/module/config.js";
+import { addChatMessageContextOptions } from "../../../../systems/dnd5e/module/chat.js";
+import SpellCastDialog from "../../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import AbilityTemplate from "../../../../systems/dnd5e/module/pixi/ability-template.js";
 
 import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
@@ -444,6 +444,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		DND5E: CONFIG.DND5E,
 		item: item,
+		isConsumable: item.data.type == "consumable" ? true : false,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
 		flags: item.data.flags,
@@ -714,7 +715,7 @@ export function BetterRolls() {
 		addItemContent:BetterRollsHooks.addItemContent,
 		hooks:BetterRollsHooks,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
-		rollSavingThrow:CustomRoll.rollSavingThrow,
+		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.fullRollSkill,
 		rollItem:CustomRoll.newItemRoll,
 	};
