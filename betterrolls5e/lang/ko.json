@@ -34,12 +34,19 @@
 	"br5e.chatDamageButtonsEnabled.hint": "Better Rolls의 피해 굴림에서 선택한 토큰에 피해를 가하는 버튼을 활성화한다. Foundry를 새로고침해야 한다.",
 	"br5e.playRollSounds.name": "굴림 소리 활성화",
 	"br5e.playRollSounds.hint": "Better Rolls의 메시지가 채팅으로 전송될 때 주사위 굴림 소리를 재생한다. Maestro 모듈의 아이템 트랙이 활성화 되었을 경우 재생되지 않는다.",
+	"br5e.hideDC.name": "내성 굴림 난이도 숨김",
+	"br5e.hideDC.hint": "Better Rolls의 내성 굴림 버튼에 난이도를 숨기고자 할 때 선택한다.",
+	"br5e.hideDC.string": "??",
+	"br5e.hideDC.choices.0": "비활성화",
+	"br5e.hideDC.choices.1": "NPC만",
+	"br5e.hideDC.choices.2": "항상",
 
 	"br5e.d20Mode.name": "d20 모드",
 	"br5e.d20Mode.hint": "공격 굴림, 능력 판정, 내성 굴림이 어떻게 보여질지 결정한다",
 	"br5e.d20Mode.choices.1": "단일 굴림 (Shift 유리함, Ctrl 불리함)",
 	"br5e.d20Mode.choices.2": "2중 굴림",
 	"br5e.d20Mode.choices.3": "3중 굴림",
+	
 	
 	"br5e.critBehavior.name": "치명타 피해",
 	"br5e.critBehavior.hint": "치명타 피해가 어떻게 계산되는 지를 결정한다.",

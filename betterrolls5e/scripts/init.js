@@ -195,12 +195,38 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
+	
+	game.settings.register("betterrolls5e", "hideDC", {
+		name: i18n("br5e.hideDC.name"),
+		hint: i18n("br5e.hideDC.hint"),
+		scope: "world",
+		config: true,
+		default: "0",
+		type: String,
+		choices: {
+			"0": i18n("br5e.hideDC.choices.0"),
+			"1": i18n("br5e.hideDC.choices.1"),
+			"2": i18n("br5e.hideDC.choices.2"),
+		}
+	});
 });
 
-// Disable context menu for damage rolls (they break)
+// Modify context menu for damage rolls (they break)
 Hooks.on("getChatLogEntryContext", (html, options) => {
-	if (game.settings.get("betterrolls5e", "diceEnabled")) {
-		options.splice(0,4);
-		console.log("Deleted context menu for dnd5e chat cards!");
+	let contextDamageLabels = [
+		game.i18n.localize("DND5E.ChatContextDamage"),
+		game.i18n.localize("DND5E.ChatContextHealing"),
+		game.i18n.localize("DND5E.ChatContextDoubleDamage"),
+		game.i18n.localize("DND5E.ChatContextHalfDamage")
+	];
+	
+	for (let i=options.length-1; i>=0; i--) {
+		let option = options[i];
+		console.log(option);
+		if (contextDamageLabels.includes(option.name)) {
+			option.condition = li => canvas.tokens.controlledTokens.length && li.find(".dice-roll").length && !li.find(".red-full").length;
+		}
 	}
+	
+	//let canApply = li => canvas.tokens.controlledTokens.length && li.find(".red-damage").length && li.find(".red-full").length;
 });

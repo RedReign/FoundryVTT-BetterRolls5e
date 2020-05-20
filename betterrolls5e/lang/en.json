@@ -34,6 +34,12 @@
 	"br5e.chatDamageButtonsEnabled.hint": "Renders buttons on Better Rolls damage rolls that apply damage to selected tokens. Requires refreshing Foundry.",
 	"br5e.playRollSounds.name": "Enable Roll Sounds",
 	"br5e.playRollSounds.hint": "Plays a dice-rolling sound when a Better Rolls message is sent to chat. Wlll not play if Maestro's Item Track are enabled.",
+	"br5e.hideDC.name": "Hide Save DCs",
+	"br5e.hideDC.hint": "Determines if the DC is hidden on save DC buttons on Better Rolls.",
+	"br5e.hideDC.string": "??",
+	"br5e.hideDC.choices.0": "Never",
+	"br5e.hideDC.choices.1": "NPCs Only",
+	"br5e.hideDC.choices.2": "Always",
 	
 	"br5e.d20Mode.name": "d20 Mode",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown.",

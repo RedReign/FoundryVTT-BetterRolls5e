@@ -2,7 +2,6 @@ import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFla
 import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../systems/dnd5e/module/chat.js";
 import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
@@ -165,7 +164,7 @@ export class CustomRoll {
 	// Rolls a skill check through a character
 	static async rollSkillCheck(actor, skill, params = {}) {
 		let parts = ["@mod"],
-			data = {mod: skill.mod},
+			data = {mod: skill.total},
 			flavor = null;
 			
 		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
@@ -372,6 +371,7 @@ export class CustomItemRoll {
 			quickDefaultDescriptionEnabled: game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled"),
 			altSecondaryEnabled: game.settings.get("betterrolls5e", "altSecondaryEnabled"),
 			d20Mode: game.settings.get("betterrolls5e", "d20Mode"),
+			hideDC: game.settings.get("betterrolls5e", "hideDC"),
 		};
 	}
 	
@@ -653,6 +653,8 @@ export class CustomItemRoll {
 			useTemplate = false,
 			fields = [];
 		
+		
+		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls
 			function flagIsTrue(flag) {
@@ -762,6 +764,15 @@ export class CustomItemRoll {
 			case "feat":
 				properties = [
 					data.requirements,
+					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
+					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
+					range,
+					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
+				];
+				break;
+			case "consumable":
+				properties = [
+					data.weight ? data.weight + " " + i18n("lbs.") : null,
 					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
 					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
 					range,
@@ -1274,7 +1285,6 @@ export class CustomItemRoll {
 	}
 	
 	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
-	*	
 	*/
 	async saveRollButton({customAbl = null, customDC = null}) {
 		let item = this.item;
@@ -1285,7 +1295,10 @@ export class CustomItemRoll {
 		if (customAbl) { saveData.ability = saveArgs.customAbl; }
 		if (customDC) { saveData.dc = saveArgs.customDC; }
 		
-		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}`;
+		let hideDC = this.config.hideDC;
+		let displayedDC = (hideDC == "2") || (hideDC == "1" && actor.data.type == "npc") ? i18n("br5e.hideDC.string") : saveData.dc
+		
+		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${displayedDC} ${dnd5e.abilities[saveData.ability]}`;
 		let button = {
 			type: "saveDC",
 			html: await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel})

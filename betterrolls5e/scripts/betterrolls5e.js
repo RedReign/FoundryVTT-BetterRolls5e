@@ -1,5 +1,4 @@
 import { DND5E } from "../../../../systems/dnd5e/module/config.js";
-import { addChatMessageContextOptions } from "../../../../systems/dnd5e/module/chat.js";
 import SpellCastDialog from "../../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
 import AbilityTemplate from "../../../../systems/dnd5e/module/pixi/ability-template.js";
 
@@ -501,7 +500,7 @@ export function updateSaveButtons(html) {
 	});
 }
 
-function getTargetActors() {
+export function getTargetActors() {
 	const character = game.user.character;
 	const controlled = canvas.tokens.controlled;
 	let actors = [];
@@ -514,6 +513,11 @@ function getTargetActors() {
 		return actors;
 	}
 	else throw new Error(`You must designate a specific Token as the roll target`);
+}
+
+// Gets the total of all damage rolls from a given Better Roll HTML
+export function getTotalDamage(html) {
+	return;
 }
 
 /**

@@ -1,6 +1,6 @@
 import { DND5E } from "../../../../systems/dnd5e/module/config.js";
 import Actor5e from "../../../../systems/dnd5e/module/actor/entity.js";
-import { i18n } from "./betterrolls5e.js";
+import { i18n, getTargetActors } from "./betterrolls5e.js";
 
 Hooks.on('renderChatMessage', (message, html, data) => {
 	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
@@ -57,7 +57,10 @@ Hooks.on('renderChatMessage', (message, html, data) => {
 			}
 
 			// applying dmg to the targeted token and sending only the span that the button sits in 
-			Actor5e.applyDamage(dmgHtml, modifier);
+			let targetActors = getTargetActors();
+			for (let i=0; i<targetActors.length; i++) {
+				targetActors[i].applyDamage(dmg, modifier);
+			}
 			setTimeout(() => { 
 				if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
 					canvas.hud.token.render();
