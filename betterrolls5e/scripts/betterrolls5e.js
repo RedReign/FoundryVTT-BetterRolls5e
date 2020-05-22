@@ -632,6 +632,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			let li = $(event.currentTarget).parents(".item"),
 				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
 				params = CustomRoll.eventToAdvantage(event);
+				console.log(item);
 			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
 			} else if (event.altKey) {
