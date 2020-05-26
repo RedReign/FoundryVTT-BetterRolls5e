@@ -230,3 +230,4 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 	
 	//let canApply = li => canvas.tokens.controlledTokens.length && li.find(".red-damage").length && li.find(".red-full").length;
 });
+
