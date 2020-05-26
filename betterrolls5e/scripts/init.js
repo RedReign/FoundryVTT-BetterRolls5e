@@ -227,6 +227,4 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 			option.condition = li => canvas.tokens.controlled.length && li.find(".dice-roll").length && !li.find(".red-full").length;
 		}
 	}
-	
-	//let canApply = li => canvas.tokens.controlledTokens.length && li.find(".red-damage").length && li.find(".red-full").length;
 });
