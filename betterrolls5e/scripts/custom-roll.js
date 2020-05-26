@@ -18,7 +18,8 @@ class Roll3D extends Roll {
     async roll() {
         let result = super.roll();
         if (game.dice3d) {
-            game.dice3d.showForRoll(this).then(() => {return result;});
+            let wd = getWhisperData();
+            game.dice3d.showForRoll(this, wd.whisper, wd.blind || false).then(() => {return result;});
         }
         return result;
     }
