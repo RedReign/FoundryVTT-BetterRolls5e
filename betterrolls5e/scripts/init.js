@@ -3,7 +3,7 @@ function i18n(key) {
 }
 
 Hooks.once("init", () => {
-	
+
 	/**
 	* Register better rolls setting
 	*/
@@ -15,7 +15,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "d20Mode", {
 		name: i18n("br5e.d20Mode.name"),
 		hint: i18n("br5e.d20Mode.hint"),
@@ -29,7 +29,7 @@ Hooks.once("init", () => {
 			3: i18n("br5e.d20Mode.choices.3")
 		}
 	});
-	
+
 	/**
 	* Register added roll buttons
 	*/
@@ -41,7 +41,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	/**
 	* Register better roll for icon
 	*/
@@ -53,7 +53,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "altSecondaryEnabled", {
 		name: i18n("br5e.altSecondaryEnabled.name"),
 		hint: i18n("br5e.altSecondaryEnabled.hint"),
@@ -62,7 +62,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	/**
 	* Register quick roll defaults for description
 	*/
@@ -74,7 +74,7 @@ Hooks.once("init", () => {
 		default: false,
 		type: Boolean
 	});
-	
+
 	/**
 	* Register roll label options
 	*/
@@ -90,7 +90,7 @@ Hooks.once("init", () => {
 			"1": i18n("br5e.damageRollPlacement.choices.1")
 		}
 	});
-	
+
 	game.settings.register("betterrolls5e", "damageTitlePlacement", {
 		name: i18n("br5e.damageTitlePlacement.name"),
 		hint: i18n("br5e.damageTitlePlacement.hint"),
@@ -105,7 +105,7 @@ Hooks.once("init", () => {
 			"3": i18n("br5e.damageRollPlacement.choices.3")
 		}
 	});
-	
+
 	game.settings.register("betterrolls5e", "damageContextPlacement", {
 		name: i18n("br5e.damageContextEnabled.name"),
 		hint: i18n("br5e.damageContextEnabled.hint"),
@@ -120,7 +120,7 @@ Hooks.once("init", () => {
 			"3": i18n("br5e.damageRollPlacement.choices.3")
 		}
 	});
-	
+
 	game.settings.register("betterrolls5e", "damageRollPlacement", {
 		name: i18n("br5e.damageRollPlacement.name"),
 		hint: i18n("br5e.damageRollPlacement.hint"),
@@ -135,7 +135,7 @@ Hooks.once("init", () => {
 			"3": i18n("br5e.damageRollPlacement.choices.3")
 		}
 	});
-	
+
 	game.settings.register("betterrolls5e", "contextReplacesTitle", {
 		name: i18n("br5e.contextReplacesTitle.name"),
 		hint: i18n("br5e.contextReplacesTitle.hint"),
@@ -144,7 +144,7 @@ Hooks.once("init", () => {
 		default: false,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "contextReplacesDamage", {
 		name: i18n("br5e.contextReplacesDamage.name"),
 		hint: i18n("br5e.contextReplacesDamage.hint"),
@@ -153,7 +153,7 @@ Hooks.once("init", () => {
 		default: false,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "critBehavior", {
 		name: i18n("br5e.critBehavior.name"),
 		hint: i18n("br5e.critBehavior.hint"),
@@ -168,7 +168,7 @@ Hooks.once("init", () => {
 			"3": i18n("br5e.critBehavior.choices.3"), // Max Base & Critical Damage
 		}
 	});
-	
+
 	game.settings.register("betterrolls5e", "critString", {
 		name: i18n("br5e.critString.name"),
 		hint: i18n("br5e.critString.hint"),
@@ -177,7 +177,7 @@ Hooks.once("init", () => {
 		default: "Crit",
 		type: String
 	});
-	
+
 	game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {
 		name: i18n("br5e.chatDamageButtonsEnabled.name"),
 		hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
@@ -186,7 +186,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "playRollSounds", {
 		name: i18n("br5e.playRollSounds.name"),
 		hint: i18n("br5e.playRollSounds.hint"),
@@ -195,7 +195,7 @@ Hooks.once("init", () => {
 		default: true,
 		type: Boolean
 	});
-	
+
 	game.settings.register("betterrolls5e", "hideDC", {
 		name: i18n("br5e.hideDC.name"),
 		hint: i18n("br5e.hideDC.hint"),
@@ -219,14 +219,14 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 		game.i18n.localize("DND5E.ChatContextDoubleDamage"),
 		game.i18n.localize("DND5E.ChatContextHalfDamage")
 	];
-	
+
 	for (let i=options.length-1; i>=0; i--) {
 		let option = options[i];
 		console.log(option);
 		if (contextDamageLabels.includes(option.name)) {
-			option.condition = li => canvas.tokens.controlledTokens.length && li.find(".dice-roll").length && !li.find(".red-full").length;
+			option.condition = li => canvas.tokens.controlled.length && li.find(".dice-roll").length && !li.find(".red-full").length;
 		}
 	}
-	
-	//let canApply = li => canvas.tokens.controlledTokens.length && li.find(".red-damage").length && li.find(".red-full").length;
+
+	//let canApply = li => canvas.tokens.controlled.length && li.find(".red-damage").length && li.find(".red-full").length;
 });
