@@ -71,6 +71,7 @@ Clicking with/without the Alt key:
 
 ## Known Issues
 - Consumable logic is currently not working. Sit tight as the dnd5e system improves!
+- Blind rolls do not work with Better Rolls. This is due to the way that blind roll message logic is implemented in Foundry.
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
