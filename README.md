@@ -72,6 +72,7 @@ Clicking with/without the Alt key:
 ## Known Issues
 - Consumable logic is currently not working. Sit tight as the dnd5e system improves!
 - Blind rolls do not work with Better Rolls. This is due to the way that blind roll message logic is implemented in Foundry.
+- Chat Damage Buttons may not work for your players if you use Combat Utility Belt and have its "Hide NPC Names" feature enabled. This is because that feature overwrites click events in the messages. Make sure to disable the CUB feature if you wish to continue using Better Rolls's chat damage buttons.
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
@@ -80,6 +81,7 @@ Clicking with/without the Alt key:
 - Thank you, Brother Sharp#6921 for providing the Japanese localization for this module.
 - Thank you, KLO#1490 for providing the Korean localization for this module.
 - Thank you, Cosmo Corban#4840 for providing the Spanish localization for this module.
+- Thank you, Olirin#0350 for providing the French localization for this module.
 - Additional thanks go to KaKaRoTo, tposney, and Giddy of the Foundry discord for advice and assistance while developing and maintaining this module.
 - My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
 
