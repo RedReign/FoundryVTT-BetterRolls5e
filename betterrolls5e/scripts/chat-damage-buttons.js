@@ -1,5 +1,5 @@
-import { DND5E } from "../../../../systems/dnd5e/module/config.js";
-import Actor5e from "../../../../systems/dnd5e/module/actor/entity.js";
+import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import Actor5e from "../../../systems/dnd5e/module/actor/entity.js";
 import { i18n, getTargetActors } from "./betterrolls5e.js";
 
 Hooks.on('renderChatMessage', (message, html, data) => {
