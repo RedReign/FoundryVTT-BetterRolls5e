@@ -222,9 +222,10 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 	
 	for (let i=options.length-1; i>=0; i--) {
 		let option = options[i];
-		console.log(option);
+		console.log(option.name);
+		console.log(option.condition);
 		if (contextDamageLabels.includes(option.name)) {
-			option.condition = li => canvas.tokens.controlledTokens.length && li.find(".dice-roll").length && !li.find(".red-full").length;
+			option.condition = li => canvas.tokens.controlled.length && li.find(".dice-roll").length && !li.find(".red-full").length;
 		}
 	}
 	

@@ -1,6 +1,6 @@
-import { DND5E } from "../../../../systems/dnd5e/module/config.js";
-import SpellCastDialog from "../../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import AbilityTemplate from "../../../../systems/dnd5e/module/pixi/ability-template.js";
+import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
@@ -42,7 +42,7 @@ export function getWhisperData() {
 		blind = null;
 	
 	rollMode = game.settings.get("core", "rollMode");
-	if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperIDs("GM");
+	if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
 	if ( rollMode === "blindroll" ) blind = true;
 	else if ( rollMode === "selfroll" ) whisper = [game.user._id];
 	
