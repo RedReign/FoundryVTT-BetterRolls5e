@@ -989,37 +989,27 @@ export class CustomItemRoll {
 		return output;
 	}
 	
-	async damageTemplate ({baseRoll, critRoll, labels, type}) {
-		let baseTooltip = await baseRoll.getTooltip(),
-			templateTooltip;
+	async damageTemplate ({roll, isCrit, labels, type}) {
+		let templateTooltip = await roll.getTooltip();
 		
-		if (baseRoll.parts.length === 0) return;
-		
-		if (critRoll) {
-			let critTooltip = await critRoll.getTooltip();
-			templateTooltip = await renderTemplate("modules/betterrolls5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
-		} else { templateTooltip = baseTooltip; }
-		
+		if (roll.parts.length === 0) return;
 		
 		let chatData = {
 			tooltip: templateTooltip,
-			lefttotal: baseRoll.total,
-			righttotal: (critRoll ? critRoll.total : null),
+			total: roll.total,
 			damagetop: labels[1],
 			damagemid: labels[2],
 			damagebottom: labels[3],
-			formula: baseRoll.formula,
-			crittext: this.config.critString,
-			damageType:type,
-			maxRoll: Roll.maximize(baseRoll.formula).total,
-			maxCrit: critRoll ? Roll.maximize(critRoll.formula).total : null
+			formula: roll.formula,
+			crittext: isCrit ? this.config.critString : null,
+			damageType: type,
+			maxRoll: Roll.maximize(roll.formula).total,
 		};
 		
 		let html = {
 			html: await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData)
 		};
-		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-base-die");
-		html = CustomItemRoll.tagCrits(html, critRoll, ".red-extra-die");
+		html = CustomItemRoll.tagCrits(html, roll, ".red-base-die");
 		
 		let output = {
 			type: "damage",
@@ -1143,49 +1133,54 @@ export class CustomItemRoll {
 		
 		let rollFormula = baseWithParts.join("+");
 		
-		let baseRoll = await new Roll3D(rollFormula, rollData).roll(),
-			critRoll = null,
-			baseMaxRoll = null,
-			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-			
-		if ((forceCrit || this.isCrit) && critBehavior !== "0") {
-			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
-		}
-			
-		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels, type:damageType});
-		return damageRoll;
-	}
-	
-	async critRoll(rollFormula, rollData, baseRoll) {
-		let itm = this.item;
+		let roll = await new Roll3D(rollFormula, rollData);
 		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
-		let critRollData = duplicate(rollData);
-		critRollData.mod = 0;
-		let critRoll = await new Roll3D(critFormula, critRollData);
-		let savage;
-		if (itm.data.type === "weapon") {
-			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
-			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
-		}
-		let add = (itm.actor && savage) ? 1 : 0;
-		critRoll.alter(add);
-		critRoll.roll();
-		
-		// If critBehavior = 2, maximize base dice
-		if (critBehavior === "2") {
-			critRoll = Roll.maximize(critRoll.formula);
-		}
-		
-		// If critBehavior = 3, maximize base and crit dice
-		else if (critBehavior === "3") {
-			let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
-			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = Roll.maximize(newFormula);
-		}
-		return critRoll;
-	}
 	
+		if ((forceCrit || this.isCrit) && critBehavior !== "0") {
+			roll = await this.makeCritical(roll, critBehavior);
+		}
+			
+		roll.roll();
+
+		return await this.damageTemplate({roll: roll, isCrit: (forceCrit || this.isCrit), labels: labels, type:damageType});
+	}
+
+	async makeCritical(roll, critBehavior) {
+		let item = this.item;
+		let savage;
+		if (item.data.type === "weapon") {
+			try { savage = item.actor.getFlag("dnd5e", "savageAttacks"); }
+			catch(error) { savage = item.actor.getFlag("dnd5eJP", "savageAttacks"); }
+		}
+		let add = (item.actor && savage) ? 1 : 0;
+		roll.alter(add);
+
+		if (critBehavior === "1") { // roll crit dice
+			roll.alter(0, 2);
+		}
+		else if (critBehavior === "2") { // roll base, max crit
+			let critFormula = roll.formula.split('+')
+				.map(parts => parts.match(Roll.rgx.dice))
+				.filter(parts => !!parts)
+				.map(parts => parts[0])
+				.join('+');
+
+			let critRoll = Roll.maximize(critFormula);
+			roll.formula += ` + ${critRoll.formula}`;
+		}
+		else if (critBehavior === "3") { // max base, max crit
+			roll.alter(0, 2);
+			let critRoll = Roll.maximize(roll.formula);
+			roll = new Roll(critRoll.formula)
+		}
+		
+		if (item.data.data.critical) {
+			roll.formula += ` + ${item.data.data.critical}`;
+		}
+
+		return roll;
+	}
+		
 	scaleDamage(damageIndex, scaleInterval = null) {
 		let item = this.item;
 		let itemData = item.data.data;
@@ -1271,17 +1266,14 @@ export class CustomItemRoll {
 			}
 		}
 		
-		let baseRoll = await new Roll3D(formula, rollData).roll(),
-			critRoll = null,
-			baseMaxRoll = null,
-			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
+		let roll = await new Roll3D(formula, rollData).roll();
+		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
 		if (isCrit && critBehavior !== "0") {
-			critRoll = await this.critRoll(formula, rollData, baseRoll);
+			roll = await this.makeCritical(roll, critBehavior);
 		}
 		
-		let damageRoll = this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
-		return damageRoll;
+		return this.damageTemplate({roll: roll, isCrit: isCrit, labels: labels});
 	}
 	
 	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
