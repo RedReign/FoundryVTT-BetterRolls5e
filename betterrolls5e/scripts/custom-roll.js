@@ -914,7 +914,7 @@ export class CustomItemRoll {
 			if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
 				if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) { abl = "str"; }
 				else { abl = "dex"; }
-			} else { abl = itemData.ability; }
+			} else { abl = itemData.ability || (itemData.actionType === "mwak" ? "str" : itemData.actionType === "rwak" ? "dex" : "") }
 		} else {
 			abl = itemData.ability || "";
 		}
