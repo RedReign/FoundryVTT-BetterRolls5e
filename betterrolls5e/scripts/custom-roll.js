@@ -18,7 +18,8 @@ class Roll3D extends Roll {
     async roll() {
         let result = super.roll();
         if (game.dice3d) {
-            game.dice3d.showForRoll(this).then(() => {return result;});
+			let wd = getWhisperData();
+            game.dice3d.showForRoll(this, wd.whisper, wd.blind || false).then(() => {return result;});
         }
         return result;
     }
@@ -36,6 +37,7 @@ export class CustomRoll {
 	* @param {Boolean} critThreshold	The minimum roll on the dice to cause a critical roll.
 	* @param {String} rollState			null, "highest", or "lowest"
 	* @param {Boolean} triggersCrit		Whether this field marks the entire roll as critical
+	* @param {String} rollType			The type of roll, such as "attack" or "damage"
 	*/
 	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false, rollType = "") {
 		let formula = [dice].concat(parts);
@@ -166,7 +168,7 @@ export class CustomRoll {
 		let parts = ["@mod"],
 			data = {mod: skill.total},
 			flavor = null;
-			
+		
 		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
 		if (skillBonus) {
 			parts.push("@skillBonus");
@@ -177,6 +179,10 @@ export class CustomRoll {
 		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
 			d20String = "1d20r<2";
 		}
+
+		if (getProperty(actor, "data.flags.dnd5e.reliableTalent") && skill.value >= 1) {
+			d20String = `{${d20String},10}kh`;
+		}
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
@@ -185,7 +191,7 @@ export class CustomRoll {
 			numRolls = 2;
 		}
 		
-		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
+		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState, params.triggersCrit, "skill");
 	}
 	
 	/**
@@ -419,19 +425,15 @@ export class CustomItemRoll {
 				if (params.slotLevel === "error") { return "error"; }
 			}
 		}
+
+		// Convert all requested fields into templates to be entered into the chat message.
+		this.templates = await this.allFieldsToTemplates();
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
-		let consumedCharge = {value:"", destroy:false};
 		if (params.useCharge) {
-			consumedCharge = await this.consumeCharge();
-			if (consumedCharge.value === "noCharges") {
-				ui.notifications.warn(`${i18n("br5e.error.noChargesLeft")}`);
-				return 'error';
-			}
+			let chargeCheck = await this.consumeCharge();
+			if (chargeCheck === "error") { return "error"; }
 		}
-		
-		// Converts all requested fields into templates to be entered into the chat message.
-		this.templates = await this.allFieldsToTemplates();
 		
 		// Show properties
 		this.properties = (params.properties) ? this.listProperties() : null;
@@ -452,7 +454,6 @@ export class CustomItemRoll {
 			this.placeTemplate();
 		}
 		
-		if (consumedCharge.destroy === true) { setTimeout(() => {item.actor.deleteOwnedItem(item.id);}, 100);}
 		this.rolled = true;
 		
 		await Hooks.callAll("rollItemBetterRolls", this);
@@ -591,6 +592,9 @@ export class CustomItemRoll {
 			case 'flavor':
 				this.templates.push(this.rollFlavor(fieldArgs[0]));
 				break;
+			case 'crit':
+				this.templates.push(await this.rollCritExtra());
+				break;
 		}
 		return true;
 	}
@@ -600,6 +604,10 @@ export class CustomItemRoll {
 			
 			for (let i=0;i<this.fields.length;i++) {
 				await this.fieldToTemplate(this.fields[i]);
+			}
+
+			if (this.isCrit && this.hasDamage && this.item.data.flags.betterRolls5e?.critDamage?.value) {
+				await this.fieldToTemplate(["crit"]);
 			}
 			
 			resolve(this.templates);
@@ -689,7 +697,7 @@ export class CustomItemRoll {
 			}
 			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
-			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable")) { useCharge = true; }
+			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable") || this.item.data.data.consume?.type) { useCharge = true; }
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
@@ -882,8 +890,10 @@ export class CustomItemRoll {
 			title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null,
 			parts = [],
 			rollData = duplicate(actorData);
+
 		
 		this.addToRollData(rollData);
+		this.hasAttack = true;
 		
 		// Add critical threshold
 		let critThreshold = 20;
@@ -914,14 +924,14 @@ export class CustomItemRoll {
 			if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
 				if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) { abl = "str"; }
 				else { abl = "dex"; }
-			} else { abl = itemData.ability; }
+			} else { abl = itemData.ability || (itemData.actionType === "mwak" ? "str" : itemData.actionType === "rwak" ? "dex" : "") }
 		} else {
 			abl = itemData.ability || "";
 		}
 		
 		if (abl.length > 0) {
 			parts.push(`@abl`);
-			rollData.abl = actorData.abilities[abl].mod;
+			rollData.abl = actorData.abilities[abl]?.mod;
 			//console.log("Adding Ability mod", abl);
 		}
 		
@@ -1043,7 +1053,9 @@ export class CustomItemRoll {
 		
 		rollData.item = itemData;
 		this.addToRollData(rollData);
-		
+
+		// Makes the custom roll flagged as having a damage roll.
+		this.hasDamage = true;
 		
 		// Change first damage formula if versatile
 		if (((this.params.versatile && damageIndex === 0) || forceVersatile) && itemData.damage.versatile.length > 0) {
@@ -1064,18 +1076,21 @@ export class CustomItemRoll {
 			abl = itemData.ability ? itemData.ability : generalMod;
 		}
 		
+
 		// Applies ability modifier on weapon and feat damage rolls, but only for the first damage roll listed on the item.
 		if ((type === "weapon" || type === "feat") && damageIndex === 0) {
 			if (type === "weapon") {
 				if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
 					if (rollData.abilities.str.mod >= rollData.abilities.dex.mod) { abl = "str"; }
 					else { abl = "dex"; }
+				} else if (itemData.actionType == "mwak"){
+					abl = "str";
 				}
 			}
 		}
 		
 		// Users may add "+ @mod" to their rolls to manually add the ability modifier to their rolls.
-		rollData.mod = (abl !== "") ? rollData.abilities[abl].mod : 0;
+		rollData.mod = (abl !== "") ? rollData.abilities[abl]?.mod : 0;
 		//console.log(rollData.mod);
 		
 		// Prepare roll label
@@ -1148,7 +1163,7 @@ export class CustomItemRoll {
 			baseMaxRoll = null,
 			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
-		if ((forceCrit || this.isCrit) && critBehavior !== "0") {
+		if ((forceCrit == true || (this.isCrit && forceCrit !== "never")) && critBehavior !== "0") {
 			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
 		}
 			
@@ -1156,10 +1171,15 @@ export class CustomItemRoll {
 		return damageRoll;
 	}
 	
+	/*
+	* Rolls critical damage based on a damage roll's formula and output.
+	* This critical damage should not overwrite the base damage - it should be seen as "additional damage dealt on a crit", as crit damage may not be used even if it was rolled.
+	*/
+
 	async critRoll(rollFormula, rollData, baseRoll) {
 		let itm = this.item;
 		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"");
+		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRollData = duplicate(rollData);
 		critRollData.mod = 0;
 		let critRoll = await new Roll3D(critFormula, critRollData);
@@ -1228,6 +1248,14 @@ export class CustomItemRoll {
 		
 		return null;
 	}
+
+	async rollCritExtra(index) {
+		let damageIndex = (index ? toString(index) : null) || this.item.data.flags.betterRolls5e?.critDamage?.value || "";
+		let asdf;
+		if (damageIndex) {
+			return await this.rollDamage({damageIndex:Number(damageIndex), forceCrit:"never"});
+		}
+	}
 	
 	/*
 	Rolls the Other Formula field. Is subject to crits.
@@ -1295,10 +1323,11 @@ export class CustomItemRoll {
 		if (customAbl) { saveData.ability = saveArgs.customAbl; }
 		if (customDC) { saveData.dc = saveArgs.customDC; }
 		
-		let hideDC = this.config.hideDC;
-		let displayedDC = (hideDC == "2") || (hideDC == "1" && actor.data.type == "npc") ? i18n("br5e.hideDC.string") : saveData.dc
+		let hideDC = (this.config.hideDC == "2" || (this.config.hideDC == "1" && actor.data.type == "npc")); // Determine whether the DC should be hidden
+
+		let divHTML = `<span ${hideDC ? 'class="hideSave"' : null} style="display:inline;line-height:inherit;">${saveData.dc}</span>`;
 		
-		let saveLabel = `${i18n("br5e.buttons.saveDC")} ${displayedDC} ${dnd5e.abilities[saveData.ability]}`;
+		let saveLabel = `${i18n("br5e.buttons.saveDC")} ` + divHTML + ` ${dnd5e.abilities[saveData.ability]}`;
 		let button = {
 			type: "saveDC",
 			html: await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel})
@@ -1427,77 +1456,38 @@ export class CustomItemRoll {
 		}
 	}
 	
-	// Consumes one charge on an item. Will do nothing if item.data.data.uses.per is blank. Will warn the user if there are no charges left.
-	async consumeCharge(chargesToConsume = 1) {
-		let item = this.item;
-		let itemData = duplicate(item).data;
-		let output = {value: "success", destroy: false};
-		let recharged = getProperty(this.item, "data.data.recharge.charged");
-		let hasNoCharges = ((itemData.uses.value == null || itemData.uses.value == 0) && (itemData.uses.max == null || itemData.uses.max == 0)) ? true : false;
-		
-		function noChargesLeft() {
-			output.value = "noCharges";
-		}
-		
-		function checkQuantity() {
-			let autoUse = itemData.uses.autoUse;
-			let autoDestroy = itemData.uses.autoDestroy;
-			if (hasNoCharges) {
-				//console.log("No uses, only quantity!");
-				if (itemData.quantity < chargesToConsume) { noChargesLeft(); }
-				else if (autoUse) {
-					itemData.quantity -= 1;
-					if (itemData.quantity <= 0 && autoDestroy) {
-						output.destroy = true;
-					}
-				}
-			} else if (autoUse && itemData.uses.value <= 0) { // If the item should reduce in quantity when out of charges
-				//console.log("autoUse!");
-				if (itemData.quantity <= 1 && autoDestroy) {
-					output.destroy = true;
-				} else if (itemData.quantity <= 1 && itemData.uses.value < 0 && !autoDestroy) {
-					noChargesLeft();
-				} else if (itemData.quantity > 1 &&  itemData.uses.value >= 0 && !autoDestroy) {
-					itemData.quantity -= 1;
-					itemData.uses.value += itemData.uses.max;
-				} else if (itemData.quantity > 1) {
-					itemData.quantity -= 1;
-					itemData.uses.value += itemData.uses.max;
-				} else if (itemData.quantity == 1 && itemData.uses.value >= 0) {
-					itemData.quantity = 0;
-				} else {
-					noChargesLeft();
-				}
-			} else if (itemData.uses.value < 0) {
-				noChargesLeft;
+	// Consumes charges & resources assigned on an item.
+	async consumeCharge() {
+		let item = this.item,
+			itemData = item.data.data;
+		const uses = itemData.uses || {};
+		let usesCharges = !!uses.per && (uses.max > 0);
+		const recharge = itemData.recharge || {};
+		const usesRecharge = !!recharge.value;
+		const current = uses.value || 0;
+
+		const remaining = usesCharges ? Math.max(current - 1, 0) : current;
+
+		if ( usesRecharge ) { await item.update({"data.recharge.charged": false}); }
+		else {
+			const q = Number(itemData.quantity);
+			if (!uses.value && !uses.max && uses.per == "charges") { // Check for items that must consume their own quantity
+				let amount = Number(itemData.consume.amount);
+				if (itemData.consume.amount === null) { amount = 1; }
+				if (itemData.quantity < amount) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+				await item.update({"data.quantity": q - amount});
+			} else if (uses.per && itemData.quantity) {
+				if (itemData.uses.value >= 1) {
+					item.update({"data.uses.value": uses.value - 1});
+				} else { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+			} else if ( ( remaining === 0 ) && (q > 1) ) {
+				item.update({"data.quantity": q - 1, "data.uses.value": uses.max});
 			}
+			else item.update({"data.uses.value": remaining});
 		}
-		
-		if (itemData.uses && itemData.uses.per) {
-			let itemCharges = itemData.uses.value;
-			let itemChargesMax = itemData.uses.max;
-			
-			if (itemCharges != null && itemChargesMax != null && itemCharges >= chargesToConsume) {
-				itemData.uses.value -= chargesToConsume;
-				checkQuantity();
-			} else if (item.type !== "consumable") {
-				noChargesLeft();
-			} else {
-				itemData.uses.value -= chargesToConsume;	
-				checkQuantity();
-			}
-		} else if (item.type !== "consumable") {
-			if (recharged) { item.update({[`data.recharge.charged`]: false}) }
-			else { output.value = "noCharges"; }
-		} else if (hasNoCharges) {
-			checkQuantity();
-		}
-		
-		item.update({
-			[`data.uses.value`]: (typeof item.data.data.uses.value === "number") ? Math.max(itemData.uses.value, 0) : null,
-			[`data.quantity`]: itemData.quantity,
-		});
-		
-		return output;
+
+		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: this.hasAttack});
+		if ( allowed === false ) { return "error"; }
+		return "success";
 	}
 }
