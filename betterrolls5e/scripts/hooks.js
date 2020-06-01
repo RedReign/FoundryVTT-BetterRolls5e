@@ -1,5 +1,5 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons } from "./betterrolls5e.js";
+import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons, i18n } from "./betterrolls5e.js";
 
 
 export class BetterRollsHooks {
@@ -73,3 +73,13 @@ BetterRollsHooks.addActorSheet("ActorSheet5eNPCDark");
 BetterRollsHooks.addActorSheet("Alt5eSheet");
 BetterRollsHooks.addItemSheet("ItemSheet5e");
 BetterRollsHooks.addItemSheet("ItemSheet5eDark");
+
+
+Hooks.on("renderChatMessage", (message, html, data) => {
+	if (!html.find(".red-full").length) { return; }
+
+	let actor = game.actors.get(message.data.speaker.actor);
+	if (actor.permission != 3) {
+		html.find(".hideSave").text(i18n("br5e.hideDC.string"));
+	}
+});

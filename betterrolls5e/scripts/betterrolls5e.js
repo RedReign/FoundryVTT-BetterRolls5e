@@ -118,6 +118,7 @@ CONFIG.betterRolls5e = {
 	allFlags: {
 		weaponFlags: {
 			critRange: { type: "String", value: "" },
+			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: false, altValue: false },
@@ -131,6 +132,7 @@ CONFIG.betterRolls5e = {
 		},
 		spellFlags: {
 			critRange: { type: "String", value: "" },
+			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -144,6 +146,7 @@ CONFIG.betterRolls5e = {
 		},
 		equipmentFlags: {
 			critRange: { type: "String", value: "" },
+			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -155,6 +158,7 @@ CONFIG.betterRolls5e = {
 		},
 		featFlags: {
 			critRange: { type: "String", value: "" },
+			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -174,6 +178,7 @@ CONFIG.betterRolls5e = {
 		},
 		consumableFlags: {
 			critRange: { type: "String", value: "" },
+			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -223,7 +228,6 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	
     // adding an event for when the description is shown
     html.find(triggeringElement).click(event => {
-		//console.log(event);
         let li = $(event.currentTarget).parents(".item");
         addButtonsToItemLi(li, actor, buttonContainer);
     });
@@ -440,10 +444,13 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	
 	let betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
 		altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
+
+	let canConsume = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value;
+	
 	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		DND5E: CONFIG.DND5E,
 		item: item,
-		isConsumable: item.data.type == "consumable" ? true : false,
+		isConsumable: canConsume,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
 		flags: item.data.flags,
@@ -535,7 +542,6 @@ export function changeRollsToDual (actor, html, data, params) {
 			itemButton: '.item .item-image',
 			singleAbilityButton: true
 		},params || {});
-	//console.log(paramRequests);
 	
 	function getAbility(target) {
 		let ability = null;
@@ -552,13 +558,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
 	if (abilityName.length > 0 && paramRequests.singleAbilityButton === true) {
-		//console.log(abilityName);
 		abilityName.off();
 		abilityName.click(event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
-			//console.log("Ability: ", ability);
 			if ( event.ctrlKey ) {
 				CustomRoll.fullRollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
@@ -627,12 +631,9 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (itemImage.length > 0) {
 		itemImage.off();
 		itemImage.click(async event => {
-			//console.log("EVENT:");
-			//console.log(event);
 			let li = $(event.currentTarget).parents(".item"),
 				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
 				params = CustomRoll.eventToAdvantage(event);
-				console.log(item);
 			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
 			} else if (event.altKey) {

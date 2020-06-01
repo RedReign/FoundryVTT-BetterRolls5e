@@ -115,3 +115,7 @@
 .better-npc-sheet .item.expanded .item-summary .item-buttons {
     line-height: 22px;
 }
+
+.dnd5e .item-betterRolls label.checkbox input[type="checkbox"] {
+	top: 0px;
+}
