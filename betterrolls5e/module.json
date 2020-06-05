@@ -45,6 +45,55 @@
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],
 	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",
-	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json",
+	"manifest": "{
+	"name": "betterrolls5e",
+	"title": "Better Rolls for 5e",
+	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
+	"minimumCoreVersion": "0.6.0",
+	"compatibleCoreVersion": "0.6.1",
+	"version": "1.1.1",
+	"author": "Red Reign#5128",
+	"languages": [
+		{
+			"lang": "en",
+			"name": "English",
+			"path": "lang/en.json"
+		},
+		{
+			"lang": "fr",
+			"name": "Français (French)",
+			"path": "lang/fr.json"
+		},
+		{
+			"lang": "es",
+			"name": "Español (Spanish)",
+			"path": "lang/es.json"
+		},
+		{
+			"lang": "ja",
+			"name": "日本語 (Japanese)",
+			"path": "lang/ja.json"
+		},
+		{
+			"lang": "ko",
+			"name": "한국어 (Korean)",
+			"path": "lang/ko.json"
+		}
+	],
+	"systems": ["dnd5e", "dnd5eJP"],
+	"esmodules": [
+		"./scripts/betterrolls5e.js",
+		"./scripts/custom-roll.js",
+		"./scripts/init.js",
+		"./scripts/chat-damage-buttons.js",
+		"./scripts/utils.js",
+		"./scripts/hooks.js"
+	],
+	"styles": ["./css/betterrolls5e.css"],
+	"packs": [],
+	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",
+	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/1.1.1(Foundry-0.6.0)/betterrolls5e/module.json",
+	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip"
+}",
 	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip"
 }
