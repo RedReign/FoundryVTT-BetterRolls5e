@@ -929,7 +929,7 @@ export class CustomItemRoll {
 			abl = itemData.ability || "";
 		}
 		
-		if (abl.length > 0) {
+		if (abl.length) {
 			parts.push(`@abl`);
 			rollData.abl = actorData.abilities[abl]?.mod;
 			//console.log("Adding Ability mod", abl);
@@ -956,7 +956,7 @@ export class CustomItemRoll {
 		
 		if (actorData.bonuses && isAttack(itm)) {
 			let actionType = `${itemData.actionType}`;
-			if (actorData.bonuses[actionType].attack) {
+			if (actorData?.bonuses[actionType]?.attack) {
 				parts.push("@" + actionType);
 				rollData[actionType] = actorData.bonuses[actionType].attack;
 			}
@@ -1078,13 +1078,15 @@ export class CustomItemRoll {
 		
 
 		// Applies ability modifier on weapon and feat damage rolls, but only for the first damage roll listed on the item.
-		if ((type === "weapon" || type === "feat") && damageIndex === 0) {
+		if (!abl && (type === "weapon" || type === "feat") && damageIndex === 0) {
 			if (type === "weapon") {
 				if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
 					if (rollData.abilities.str.mod >= rollData.abilities.dex.mod) { abl = "str"; }
 					else { abl = "dex"; }
-				} else if (itemData.actionType == "mwak"){
+				} else if (itemData.actionType == "mwak") {
 					abl = "str";
+				} else if (itemData.actionType == "rwak") {
+					abl = "dex";
 				}
 			}
 		}

@@ -445,7 +445,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	let betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
 		altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 
-	let canConsume = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value;
+	let canConsume = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value || item.data.type == "consumable";
 	
 	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		DND5E: CONFIG.DND5E,
