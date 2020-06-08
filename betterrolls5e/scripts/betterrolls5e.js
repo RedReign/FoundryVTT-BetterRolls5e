@@ -651,6 +651,17 @@ export function changeRollsToDual (actor, html, data, params) {
 	}
 }
 
+// Creates message out of a Custom Roll. Rolls the necessary 3D dice using the custom roll data, only rendering the message when the roll is finished.
+export async function createMessage(customRoll) {
+	if (game.dice3d && customRoll.dicePool) {
+		let wd = getWhisperData();
+		game.dice3d.showForRoll(customRoll.dicePool, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
+	} else {
+		let output = await ChatMessage.create(customRoll.chatData);
+		return output;
+	}
+}
+
 // Frontend for macros
 export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
@@ -720,6 +731,8 @@ export function BetterRolls() {
 		quickRollByName:quickRollByName,
 		addItemContent:BetterRollsHooks.addItemContent,
 		hooks:BetterRollsHooks,
+		rollCheck:CustomRoll.rollCheck,
+		rollSave:CustomRoll.rollSave,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.fullRollSkill,

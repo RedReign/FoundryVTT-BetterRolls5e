@@ -1,4 +1,4 @@
-import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData } from "./betterrolls5e.js";
+import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData, createMessage } from "./betterrolls5e.js";
 import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
@@ -12,17 +12,6 @@ function debug() {
 	if (DEBUG) {
 		console.log.apply(console, arguments);
 	}
-}
-
-class Roll3D extends Roll {
-    async roll() {
-        let result = super.roll();
-        if (game.dice3d) {
-			let wd = getWhisperData();
-            game.dice3d.showForRoll(this, wd.whisper, wd.blind || false).then(() => {return result;});
-        }
-        return result;
-    }
 }
 
 // General class for macro support, actor rolls, and most static rolls.
@@ -46,7 +35,7 @@ export class CustomRoll {
 		
 		// Step 1 - Get all rolls
 		for (let i=0; i<numRolls; i++) {
-			rolls.push(await new Roll3D(formula.join("+"), data).roll());
+			rolls.push(await new Roll(formula.join("+"), data).roll());
 			tooltips.push(await rolls[i].getTooltip());
 		}
 		
@@ -143,24 +132,24 @@ export class CustomRoll {
 			templates: [multiRoll]
 		});
 		
-		let chatData = {
-			user: game.user._id,
-			content: content,
-			speaker: {
-				actor: actor._id,
-				token: actor.token,
-				alias: actor.name
-			},
-			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-			rollMode: wd.rollMode,
-			blind: wd.blind,
-			sound: CONFIG.sounds.dice
+		let output = {
+			chatData: {
+				user: game.user._id,
+				content: content,
+				speaker: {
+					actor: actor._id,
+					token: actor.token,
+					alias: actor.name
+				},
+				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
+				rollMode: wd.rollMode,
+				blind: wd.blind,
+				sound: CONFIG.sounds.dice
+			}
 		};
 		
-		if (wd.whisper) { chatData.whisper = wd.whisper; }
-		
 		// Output the rolls to chat
-		ChatMessage.create(chatData);
+		return await createMessage(output);
 	}
 	
 	// Rolls a skill check through a character
@@ -192,6 +181,14 @@ export class CustomRoll {
 		}
 		
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState, params.triggersCrit, "skill");
+	}
+
+	static async rollCheck(actor, ability, params) {
+		return await CustomRoll.fullRollAttribute(actor, ability, "check", params);
+	}
+
+	static async rollSave(actor, ability, params) {
+		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
 	}
 	
 	/**
@@ -230,24 +227,26 @@ export class CustomRoll {
 			templates: [dualRoll]
 		});
 		
-		let chatData = {
-			user: game.user._id,
-			content: content,
-			speaker: {
-				actor: actor._id,
-				token: actor.token,
-				alias: actor.name
-			},
-			type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-			rollMode: wd.rollMode,
-			blind: wd.blind,
-			sound: CONFIG.sounds.dice
+		let rollMessage = {
+			chatData: {
+				user: game.user._id,
+				content: content,
+				speaker: {
+					actor: actor._id,
+					token: actor.token,
+					alias: actor.name
+				},
+				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
+				rollMode: wd.rollMode,
+				blind: wd.blind,
+				sound: CONFIG.sounds.dice
+			}
 		};
 		
-		if (wd.whisper) { chatData.whisper = wd.whisper; }
+		if (wd.whisper) { rollMessage.chatData.whisper = wd.whisper; }
 		
 		// Output the rolls to chat
-		ChatMessage.create(chatData);
+		return await createMessage(rollMessage);
 	}
 	
 	static async rollAbilityCheck(actor, abl, params = {}) {
@@ -359,6 +358,7 @@ export class CustomItemRoll {
 		this.checkEvent();
 		this.setRollState();
 		this.updateConfig();
+		this.dicePool = new Roll("").roll();
 	}
 	
 	// Update config settings in the roll.
@@ -401,6 +401,13 @@ export class CustomItemRoll {
 			if (adv > disadv) { this.rollState = "highest"; }
 			else if (adv < disadv) { this.rollState = "lowest"; }
 		}
+	}
+
+	// Adds a roll's results to the custom roll's dice pool, for the purposes of 3D dice rendering.
+	addToDicePool(roll) {
+		roll.dice.forEach(die => {
+			this.dicePool._dice.push(die);
+		});
 	}
 	
 	async roll() {
@@ -571,6 +578,9 @@ export class CustomItemRoll {
 				this.addToRollData(rollData);
 				let output = await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, ["0"], rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState], false, "custom");
 				output.type = 'custom';
+				output.data.rolls.forEach(roll => {
+					this.addToDicePool(roll);
+				});
 				this.templates.push(output);
 				break;
 			case 'description':
@@ -623,8 +633,13 @@ export class CustomItemRoll {
 			if (content === "error") return;
 			
 			let wd = getWhisperData();
-					
-			let chatData = {
+			
+			// Configure sound based on Dice So Nice and Maestro sounds
+			let has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+			let playRollSounds = this.config.playRollSounds;
+			let hasMaestroSound = this.config.hasMaestroSound;
+
+			this.chatData = {
 				user: game.user._id,
 				content: this.content,
 				speaker: {
@@ -635,14 +650,13 @@ export class CustomItemRoll {
 				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
 				rollMode: wd.rollMode,
 				blind: wd.blind,
-				sound: (this.config.playRollSounds && !this.config.hasMaestroSound) ? CONFIG.sounds.dice : null,
+				sound: (playRollSounds && !hasMaestroSound && !has3DDiceSound) ? CONFIG.sounds.dice : null,
 			};
 			
-			if (wd.whisper) { chatData.whisper = wd.whisper; }
+			if (wd.whisper) { this.chatData.whisper = wd.whisper; }
 			
-			await Hooks.callAll("messageBetterRolls", this, chatData);
-			let output = await ChatMessage.create(chatData);
-			return output;
+			await Hooks.callAll("messageBetterRolls", this, this.chatData);
+			return await createMessage(this);
 		}
 	}
 	
@@ -996,6 +1010,11 @@ export class CustomItemRoll {
 			this.isCrit = true;
 		}
 		output.type = "attack";
+
+		output.data.rolls.forEach(roll => {
+			this.addToDicePool(roll);
+		});
+
 		return output;
 	}
 	
@@ -1160,11 +1179,13 @@ export class CustomItemRoll {
 		
 		let rollFormula = baseWithParts.join("+");
 		
-		let baseRoll = await new Roll3D(rollFormula, rollData).roll(),
+		let baseRoll = await new Roll(rollFormula, rollData).roll(),
 			critRoll = null,
 			baseMaxRoll = null,
 			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
+		this.addToDicePool(baseRoll);
+
 		if ((forceCrit == true || (this.isCrit && forceCrit !== "never")) && critBehavior !== "0") {
 			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
 		}
@@ -1184,7 +1205,7 @@ export class CustomItemRoll {
 		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRollData = duplicate(rollData);
 		critRollData.mod = 0;
-		let critRoll = await new Roll3D(critFormula, critRollData);
+		let critRoll = await new Roll(critFormula, critRollData);
 		let savage;
 		if (itm.data.type === "weapon") {
 			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
@@ -1205,6 +1226,9 @@ export class CustomItemRoll {
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
 			critRoll = Roll.maximize(newFormula);
 		}
+
+		this.addToDicePool(critRoll);
+
 		return critRoll;
 	}
 	
@@ -1301,7 +1325,7 @@ export class CustomItemRoll {
 			}
 		}
 		
-		let baseRoll = await new Roll3D(formula, rollData).roll(),
+		let baseRoll = await new Roll(formula, rollData).roll(),
 			critRoll = null,
 			baseMaxRoll = null,
 			critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
@@ -1388,6 +1412,11 @@ export class CustomItemRoll {
 		if (output.isCrit && triggersCrit) {
 			this.isCrit = true;
 		}
+
+		output.data.rolls.forEach(roll => {
+			this.addToDicePool(roll);
+		});
+
 		return output;
 	}
 	
