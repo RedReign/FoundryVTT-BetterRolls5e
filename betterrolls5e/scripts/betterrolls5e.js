@@ -669,6 +669,7 @@ export function BetterRolls() {
 			switch (mode) {
 				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
 				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`; break;
+				case "vanillaRoll": return `BetterRolls.quickVanillaRoll("${item.actorId}", "${item.data._id}");`; break;
 			}
 		}
 		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
@@ -703,6 +704,15 @@ export function BetterRolls() {
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
 		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
+
+	function quickVanillaRoll(actorId, itemId) {
+		let actor = game.actors.get(actorId);
+		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
+		let item = actor.getOwnedItem(itemId);
+		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
+		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
+		item.roll()
+	};
 	
 	function quickRollByName(actorName, itemName) {
 		let actor = game.actors.entities.find(i => i.name === actorName);
@@ -720,7 +730,11 @@ export function BetterRolls() {
 	
 	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
 		if ( data.type !== "Item" ) return true;
-		assignMacro(data, slot, "id");
+		if (event && event.altKey) { // not using isAlt(event) because it's not related to alternative roll
+			assignMacro(data, slot, "vanillaRoll");
+		} else {
+			assignMacro(data, slot, "id");
+		}
 		return false;
     }].concat(Hooks._hooks.hotbarDrop || []);
 	
@@ -728,6 +742,7 @@ export function BetterRolls() {
 		assignMacro:assignMacro,
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
+		quickVanillaRoll:quickVanillaRoll,
 		quickRollByName:quickRollByName,
 		addItemContent:BetterRollsHooks.addItemContent,
 		hooks:BetterRollsHooks,
