@@ -458,7 +458,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 		altSecondaryEnabled: altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget
 	});
-	let extraTab = settingsContainer.append(betterRollsTemplate);
+	let extraTabContent = settingsContainer.append(betterRollsTemplate);
 	
 	// Add damage context input
 	if (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") {
@@ -563,7 +563,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
-			if ( event.ctrlKey ) {
+			if ( keyboard.isCtrl(event) ) {
 				CustomRoll.fullRollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
 				CustomRoll.fullRollAttribute(actor, ability, "save");
@@ -669,6 +669,7 @@ export function BetterRolls() {
 			switch (mode) {
 				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
 				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`; break;
+				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`; break;
 			}
 		}
 		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
@@ -682,6 +683,15 @@ export function BetterRolls() {
 			}, {displaySheet: false});
 		}
 		game.user.assignHotbarMacro(macro, slot);
+	};
+
+	function vanillaRoll(actorId, itemId) {
+		let actor = game.actors.get(actorId);
+		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
+		let item = actor.getOwnedItem(itemId);
+		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
+		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
+		item.roll()
 	};
 	
 	function quickRoll(itemName) {
@@ -719,13 +729,18 @@ export function BetterRolls() {
 	};
 	
 	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
-		if ( data.type !== "Item" ) return true;
-		assignMacro(data, slot, "id");
-		return false;
+		if ( data.type !== "Item" ) return false;
+		if (event && event.altKey) { // not using isAlt(event) because it's not related to alternative roll
+			assignMacro(data, slot, "vanillaRoll");
+		} else {
+			assignMacro(data, slot, "id");
+		}
+		return true;
     }].concat(Hooks._hooks.hotbarDrop || []);
 	
 	return {
 		assignMacro:assignMacro,
+		vanillaRoll:vanillaRoll,
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,

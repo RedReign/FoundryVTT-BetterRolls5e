@@ -12,6 +12,8 @@
 	"br5e.imageButtonEnabled.hint": "When clicking on an item's image, output a Better Roll message to chat instead of the normal chat output. Can be bypassed by holding Alt when clicking.",
 	"br5e.quickDefaultDescriptionEnabled.name": "Quick Roll Description Enabled by Default",
 	"br5e.quickDefaultDescriptionEnabled.hint": "If enabled, weapons and tools will have their descriptions show by default on quick rolls. Only affects new weapons and tools, as other item types already have descriptions enabled by default.",
+	"br5e.defaultRollArt.name": "Use Default Art",
+	"br5e.defaultRollArt.hint": "Determines which art is used by default for ability checks and saving throws. If this is not available (or is the default mystery man icon), it will use the other icon instead.",
 	"br5e.damageContextEnabled.name": "Damage Context Labels",
 	"br5e.damageContextEnabled.hint": "Allows entering context for damage labels, which precede the damage type. Only works on Better Rolls.",
 	"br5e.contextReplacesTitle.name": "Context Replaces Title Label",

@@ -104,7 +104,7 @@ export class CustomRoll {
 	static eventToAdvantage(ev) {
 		let output = {adv:0, disadv:0};
 		if (ev.shiftKey) { output.adv = 1; }
-		if (ev.ctrlKey) { output.disadv = 1; }
+		if (keyboard.isCtrl(ev)) { output.disadv = 1; }
 		return output;
 	}
 	
@@ -118,7 +118,8 @@ export class CustomRoll {
 		
 		let multiRoll = await CustomRoll.rollSkillCheck(actor, skl, params);
 		
-		let titleImage = (actor.data.img == "icons/svg/mystery-man.svg") ? actor.data.token.img : actor.data.img;
+		// let titleImage = (actor.data.img == "icons/svg/mystery-man.svg") ? actor.data.token.img : actor.data.img;
+		let titleImage = CustomRoll.getImage(actor);
 		
 		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
@@ -190,6 +191,20 @@ export class CustomRoll {
 	static async rollSave(actor, ability, params) {
 		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
 	}
+
+	static getImage(actor) {
+		let actorImage = (actor.data.img && actor.data.img != DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
+		let tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
+
+		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {
+			case "actor":
+				return actorImage || tokenImage;
+				break;
+			case "token":
+				return tokenImage || actorImage;
+				break;
+		}
+	}
 	
 	/**
 	* Creates a chat message with the requested ability check or saving throw.
@@ -212,8 +227,9 @@ export class CustomRoll {
 			dualRoll = await CustomRoll.rollAbilitySave(actor, abl, params);
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
-		
-		let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? (actor.token && actor.token.data ? actor.token.data.img : actor.data.token.img) : actor.data.img;
+
+		// let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? (actor.token && actor.token.data ? actor.token.data.img : actor.data.token.img) : actor.data.img;
+		let titleImage = CustomRoll.getImage(actor);
 		
 		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
@@ -387,7 +403,7 @@ export class CustomItemRoll {
 		if (eventToCheck.shiftKey) {
 			this.params.adv = 1;
 		}
-		if (eventToCheck.ctrlKey) {
+		if (keyboard.isCtrl(eventToCheck)) {
 			this.params.disadv = 1;
 		}
 	}
@@ -1481,8 +1497,8 @@ export class CustomItemRoll {
 			const template = AbilityTemplate.fromItem(item);
 			if ( template ) template.drawPreview(event);
 			if (item.actor && item.actor.sheet) {
-				item.sheet.minimize();
-				item.actor.sheet.minimize();
+				if (item.sheet.rendered) item.sheet.minimize();
+				if (item.actor.sheet.rendered) item.actor.sheet.minimize();
 			}
 		}
 	}

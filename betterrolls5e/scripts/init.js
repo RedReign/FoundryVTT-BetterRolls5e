@@ -74,6 +74,19 @@ Hooks.once("init", () => {
 		default: false,
 		type: Boolean
 	});
+
+	game.settings.register("betterrolls5e", "defaultRollArt", {
+		name: i18n("br5e.defaultRollArt.name"),
+		hint: i18n("br5e.defaultRollArt.hint"),
+		scope: "world",
+		config: true,
+		default: "actor",
+		type: String,
+		choices: {
+			"actor": i18n("Actor"),
+			"token": i18n("Token")
+		}
+	});
 	
 	/**
 	* Register roll label options
