@@ -563,7 +563,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
-			if ( event.ctrlKey ) {
+			if ( keyboard.isCtrl(event) ) {
 				CustomRoll.fullRollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
 				CustomRoll.fullRollAttribute(actor, ability, "save");
