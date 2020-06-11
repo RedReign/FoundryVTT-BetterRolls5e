@@ -104,7 +104,7 @@ export class CustomRoll {
 	static eventToAdvantage(ev) {
 		let output = {adv:0, disadv:0};
 		if (ev.shiftKey) { output.adv = 1; }
-		if (ev.ctrlKey) { output.disadv = 1; }
+		if (ev.ctrlKey || ev.metaKey) { output.disadv = 1; }
 		return output;
 	}
 	
@@ -387,7 +387,7 @@ export class CustomItemRoll {
 		if (eventToCheck.shiftKey) {
 			this.params.adv = 1;
 		}
-		if (eventToCheck.ctrlKey) {
+		if (eventToCheck.ctrlKey || eventToCheck.metaKey) {
 			this.params.disadv = 1;
 		}
 	}
