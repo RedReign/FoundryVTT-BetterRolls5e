@@ -685,6 +685,7 @@ export function BetterRolls() {
 		game.user.assignHotbarMacro(macro, slot);
 	};
 
+	// Performs a vanilla roll message, searching the actor and item by ID.
 	function vanillaRoll(actorId, itemId) {
 		let actor = game.actors.get(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
@@ -694,6 +695,7 @@ export function BetterRolls() {
 		item.roll()
 	};
 	
+	// Performs a Quick Roll, searching for an item in the controlled actor by name.
 	function quickRoll(itemName) {
 		let speaker = ChatMessage.getSpeaker();
 		let actor;
@@ -705,6 +707,7 @@ export function BetterRolls() {
 		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
+	// Performs a Quick Roll, searching the actor and item by ID.
 	function quickRollById(actorId, itemId) {
 		let actor = game.actors.get(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
@@ -714,6 +717,7 @@ export function BetterRolls() {
 		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
+	// Performs a Quick Roll, searching the actor and item by name.
 	function quickRollByName(actorName, itemName) {
 		let actor = game.actors.entities.find(i => i.name === actorName);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noKnownActorWithName")}`); }
@@ -723,19 +727,20 @@ export function BetterRolls() {
 		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
+	// Returns if an event should have its corresponding Quick Roll be an Alt Roll.
 	function isAlt(event) {
 		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
 		else { return false; }
 	};
 	
 	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
-		if ( data.type !== "Item" ) return false;
+		if ( data.type !== "Item" ) return true;
 		if (event && event.altKey) { // not using isAlt(event) because it's not related to alternative roll
 			assignMacro(data, slot, "vanillaRoll");
 		} else {
 			assignMacro(data, slot, "id");
 		}
-		return true;
+		return false;
     }].concat(Hooks._hooks.hotbarDrop || []);
 	
 	return {
