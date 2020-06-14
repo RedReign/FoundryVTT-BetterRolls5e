@@ -99,6 +99,17 @@ export class CustomRoll {
 			else if (adv < disadv) { return "lowest"; }
 		} else { return null; }
 	}
+
+	// Gets the dice pool from a single template. Used for non-item rolls.
+	static getDicePool(template) {
+		let dicePool = new Roll("").roll();
+		template.data.rolls.forEach(roll => {
+			roll.dice.forEach(die => {
+				dicePool._dice.push(die);
+			});
+		});
+		return dicePool;
+	}
 	
 	// Returns an {adv, disadv} object when given an event
 	static eventToAdvantage(ev) {
@@ -146,8 +157,11 @@ export class CustomRoll {
 				rollMode: wd.rollMode,
 				blind: wd.blind,
 				sound: CONFIG.sounds.dice
-			}
+			},
+			dicePool: CustomRoll.getDicePool(multiRoll),
 		};
+
+		if (wd.whisper) { output.chatData.whisper = wd.whisper; }
 		
 		// Output the rolls to chat
 		return await createMessage(output);
@@ -213,7 +227,7 @@ export class CustomRoll {
 	* @param {String} rollType		String of either "check" or "save" 
 	*/
 	static async fullRollAttribute(actor, ability, rollType, params) {
-		let dualRoll,
+		let multiRoll,
 			titleString,
 			abl = ability,
 			label = dnd5e.abilities[ability];
@@ -221,10 +235,10 @@ export class CustomRoll {
 		let wd = getWhisperData();
 		
 		if (rollType === "check") {
-			dualRoll = await CustomRoll.rollAbilityCheck(actor, abl, params);
+			multiRoll = await CustomRoll.rollAbilityCheck(actor, abl, params);
 			titleString = `${i18n(label)} ${i18n("br5e.chat.check")}`;
 		} else if (rollType === "save") {
-			dualRoll = await CustomRoll.rollAbilitySave(actor, abl, params);
+			multiRoll = await CustomRoll.rollAbilitySave(actor, abl, params);
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
 
@@ -240,7 +254,7 @@ export class CustomRoll {
 		
 		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			title: titleTemplate,
-			templates: [dualRoll]
+			templates: [multiRoll]
 		});
 		
 		let rollMessage = {
@@ -256,7 +270,8 @@ export class CustomRoll {
 				rollMode: wd.rollMode,
 				blind: wd.blind,
 				sound: CONFIG.sounds.dice
-			}
+			},
+			dicePool: CustomRoll.getDicePool(multiRoll)
 		};
 		
 		if (wd.whisper) { rollMessage.chatData.whisper = wd.whisper; }
@@ -676,6 +691,7 @@ export class CustomItemRoll {
 		}
 	}
 	
+	
 	/*
 	* Updates the rollRequests based on the br5e flags.
 	*/
@@ -1009,7 +1025,7 @@ export class CustomItemRoll {
 		
 		// Elven Accuracy check
 		if (numRolls == 2) {
-			if (getProperty(itm, "actor.data.flags.dnd5e.elvenAccuracy") && ["dex", "int", "wis", "cha"].includes(abl)) {
+			if (getProperty(itm, "actor.data.flags.dnd5e.elvenAccuracy") && ["dex", "int", "wis", "cha"].includes(abl) && rollState !== "lowest") {
 				numRolls = 3;
 			}
 		}

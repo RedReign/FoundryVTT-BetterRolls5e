@@ -79,7 +79,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 	if (!html.find(".red-full").length) { return; }
 
 	let actor = game.actors.get(message.data.speaker.actor);
-	if (actor.permission != 3) {
+	if ((!actor && !game.user.isGM) || actor?.permission != 3) {
 		html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 	}
 });
