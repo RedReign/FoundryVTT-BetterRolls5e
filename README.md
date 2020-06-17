@@ -1,4 +1,4 @@
-# FoundryVTT - Better Rolls for 5e
+# Better Rolls for 5e - A FoundryVTT Module
 A module for modifying certain sheet functions on Foundry VTT Character sheets for D&D 5th Edition. It allows for quick, compounded rolls for items, ability checks saving throws, and just about any roll you might want in 5th Edition D&D.
 
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
