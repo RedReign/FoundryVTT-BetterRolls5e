@@ -655,7 +655,7 @@ export function changeRollsToDual (actor, html, data, params) {
 export async function createMessage(customRoll) {
 	if (game.dice3d && customRoll.dicePool) {
 		let wd = getWhisperData();
-		game.dice3d.showForRoll(customRoll.dicePool, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
+		game.dice3d.showForRoll(customRoll.dicePool, game.user, false, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
 	} else {
 		let output = await ChatMessage.create(customRoll.chatData);
 		return output;
