@@ -12,6 +12,8 @@
 	"br5e.imageButtonEnabled.hint": "아이템의 이미지를 클릭했을 때 일반적 출력 대신 개선된 굴림 메시지를 출력한다. Alt+클릭시 우회된다",
 	"br5e.quickDefaultDescriptionEnabled.name": "기본 값으로 활성화된 빠른 굴림 설명",
 	"br5e.quickDefaultDescriptionEnabled.hint": "이 기능이 활성화되면 무기와 도구의 설명이 빠른 굴림에 표시된다. 다른 아이템 타입에는 기본적으로 설정된 설명이 있기 때문에 새 무기와 도구에만 영향을 미친다.",
+	"br5e.defaultRollArt.name": "기본 그림 사용",
+	"br5e.defaultRollArt.hint": "능력 판정 및 내성 굴림에 기본적으로 사용되는 그림을 결정한다. 만약 사용할 수 없는 경우(혹은 기본 Mystery man 아이콘일 때) 다른 아이콘을 대신 사용한다.",
 	"br5e.damageContextEnabled.name": "피해 내용 설명",
 	"br5e.damageContextEnabled.hint": "피해 유형 앞에 피해 내용에 따른 설명을 입력할 수 있다. Better Rolls에서만 작동한다",
 	"br5e.contextReplacesTitle.name": "이름 표시를 대체하는 설명",
@@ -47,7 +49,6 @@
 	"br5e.d20Mode.choices.2": "2중 굴림",
 	"br5e.d20Mode.choices.3": "3중 굴림",
 	
-	
 	"br5e.critBehavior.name": "치명타 피해",
 	"br5e.critBehavior.hint": "치명타 피해가 어떻게 계산되는 지를 결정한다.",
 	"br5e.critBehavior.choices.0": "추가 피해 없음",
@@ -73,10 +74,8 @@
 	"br5e.error.noChargesLeft": "이 아이템은 차지가 다 떨어졌습니다",
 	
 	"br5e.settings.critThreshold": "치명타 한계점",
-	"br5e.settings.extraDamage": "추가 피해",
-	"br5e.settings.extraType": "추가 유형",
-	"br5e.settings.addExtraToBase": "기본 피해 굴림에 추가 피해량을 더함",
-	"br5e.settings.addExtraToAlt": "대체 피해 굴림에 추가 피해를 더함",
+	"br5e.settings.critDamage": "추가 치명타 피해",
+	"br5e.settings.critDamage.hint": "하나 이상의 피해가 굴려질 때 더해지는 추가 치명타 피해",
 	"br5e.settings.quickRollsLabel": "빠른 굴림",
 	"br5e.settings.quickRollsAltLabel": "대체된 빠른 굴림",
 	"br5e.settings.quickRollsAltSubLabel": "(빠른 굴림 중 Alt 키를 누르고 있을 때)",
@@ -145,6 +144,6 @@
 	"Target: ": "대상: ",
 	"Concentration": "집중",
 	"AC": "AC",
-	"Equipped": "장비함",
+	"Equipped": "장비됨",
 	"Stealth Disadv.": "은신 불리성."
 }

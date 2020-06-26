@@ -8,6 +8,8 @@ import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template
 let dnd5e = DND5E;
 let DEBUG = false;
 
+const blankRoll = new Roll("").roll();
+
 function debug() {
 	if (DEBUG) {
 		console.log.apply(console, arguments);
@@ -143,6 +145,9 @@ export class CustomRoll {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
+
+		let has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+		let playRollSounds = game.settings.get("betterrolls5e", "playRollSounds");
 		
 		let output = {
 			chatData: {
@@ -153,10 +158,11 @@ export class CustomRoll {
 					token: actor.token,
 					alias: actor.name
 				},
-				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
+				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+				roll: blankRoll,
 				rollMode: wd.rollMode,
 				blind: wd.blind,
-				sound: CONFIG.sounds.dice
+				sound: (playRollSounds && !has3DDiceSound) ? CONFIG.sounds.dice : null,
 			},
 			dicePool: CustomRoll.getDicePool(multiRoll),
 		};
@@ -256,6 +262,9 @@ export class CustomRoll {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
+
+		let has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+		let playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
 		
 		let rollMessage = {
 			chatData: {
@@ -266,10 +275,11 @@ export class CustomRoll {
 					token: actor.token,
 					alias: actor.name
 				},
-				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
+				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+				roll: blankRoll,
 				rollMode: wd.rollMode,
 				blind: wd.blind,
-				sound: CONFIG.sounds.dice
+				sound: (playRollSounds && !has3DDiceSound) ? CONFIG.sounds.dice : null,
 			},
 			dicePool: CustomRoll.getDicePool(multiRoll)
 		};
@@ -282,8 +292,10 @@ export class CustomRoll {
 	
 	static async rollAbilityCheck(actor, abl, params = {}) {
 		let parts = ["@mod"],
-			data = {mod: actor.data.data.abilities[abl].mod},
+			data = duplicate(actor.data.data),
 			flavor = null;
+
+			data.mod = data.abilities[abl].mod;
 		
 		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
 		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
@@ -295,7 +307,11 @@ export class CustomRoll {
 			parts.push("@secondCheckBonus");
 			data["secondCheckBonus"] = secondCheckBonus;
 		}
-		
+
+		if (actor.getFlag("dnd5e", "jackOfAllTrades")) {
+			parts.push(`floor(@attributes.prof / 2)`);
+		}
+
 		let d20String = "1d20";
 		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
 			d20String = "1d20r<2";
@@ -527,7 +543,7 @@ export class CustomItemRoll {
 	},
 	[
 		["attack", {triggersCrit: true}],
-		["damage", {index:0}, versatile:true],
+		["damage", {index:0, versatile:true}],
 		["damage", {index:[1,2,4]}],
 	]
 	).toMessage();
@@ -678,7 +694,8 @@ export class CustomItemRoll {
 					token: this.actor.token,
 					alias: this.actor.name
 				},
-				type: CONST.CHAT_MESSAGE_TYPES.OTHER,
+				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+				roll: blankRoll,
 				rollMode: wd.rollMode,
 				blind: wd.blind,
 				sound: (playRollSounds && !hasMaestroSound && !has3DDiceSound) ? CONFIG.sounds.dice : null,

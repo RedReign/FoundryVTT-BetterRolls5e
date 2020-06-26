@@ -655,7 +655,7 @@ export function changeRollsToDual (actor, html, data, params) {
 export async function createMessage(customRoll) {
 	if (game.dice3d && customRoll.dicePool) {
 		let wd = getWhisperData();
-		game.dice3d.showForRoll(customRoll.dicePool, game.user, false, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
+		game.dice3d.showForRoll(customRoll.dicePool, game.user, true, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
 	} else {
 		let output = await ChatMessage.create(customRoll.chatData);
 		return output;
@@ -687,7 +687,7 @@ export function BetterRolls() {
 
 	// Performs a vanilla roll message, searching the actor and item by ID.
 	function vanillaRoll(actorId, itemId) {
-		let actor = game.actors.get(actorId);
+		let actor = getActorById(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
@@ -698,9 +698,7 @@ export function BetterRolls() {
 	// Performs a Quick Roll, searching for an item in the controlled actor by name.
 	function quickRoll(itemName) {
 		let speaker = ChatMessage.getSpeaker();
-		let actor;
-		if (speaker.token) actor = game.actors.tokens[speaker.token];
-		if (!actor) actor = game.actors.get(speaker.actor);
+		let actor = getActorById(speaker.actor);
 		let item = actor ? actor.items.find(i => i.name === itemName) : null;
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noSelectedActor")}`); }
 		else if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
@@ -709,7 +707,7 @@ export function BetterRolls() {
 	
 	// Performs a Quick Roll, searching the actor and item by ID.
 	function quickRollById(actorId, itemId) {
-		let actor = game.actors.get(actorId);
+		let actor = getActorById(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
@@ -719,7 +717,7 @@ export function BetterRolls() {
 	
 	// Performs a Quick Roll, searching the actor and item by name.
 	function quickRollByName(actorName, itemName) {
-		let actor = game.actors.entities.find(i => i.name === actorName);
+		let actor = getActorByName(actorName);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noKnownActorWithName")}`); }
 		let item = actor.items.find(i => i.name === itemName);
 		if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
@@ -732,6 +730,20 @@ export function BetterRolls() {
 		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
 		else { return false; }
 	};
+
+	// Prefer synthetic actors over game.actors to avoid consumables and spells being missdepleted.
+	function getActorById(actorId) {
+		let actor = canvas.tokens.placeables.find(t => t.actor?._id === actorId)?.actor;
+		if (!actor) actor = game.actors.entities.find(a => a._id === actorId);
+		return actor;
+	}
+
+	// Prefer token actors over game.actors to avoid consumables and spells being missdepleted.
+	function getActorByName(actorName) {
+		let actor = canvas.tokens.placeables.find(p => p.data.name === actorName).actor;
+		if (!actor) actor = game.actors.entities.find(e => e.name === actorName);
+		return actor;
+	}
 	
 	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
 		if ( data.type !== "Item" ) return true;
