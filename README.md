@@ -1,5 +1,5 @@
 # Better Rolls for 5e - A FoundryVTT Module
-A module for modifying certain sheet functions on Foundry VTT Character sheets for D&D 5th Edition. It allows for quick, compounded rolls for items, ability checks saving throws, and just about any roll you might want in 5th Edition D&D.
+A module for modifying certain sheet functions on Foundry VTT Character sheets for DnD5e. It allows for quick, compounded rolls for items, ability checks saving throws, and just about any roll you might want in 5th Edition DnD.
 
 Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play.
 
@@ -70,9 +70,7 @@ Clicking with/without the Alt key:
 - Additional macro support
 
 ## Known Issues
-- Consumable logic is currently not working. Sit tight as the dnd5e system improves!
-- Blind rolls do not work with Better Rolls. This is due to the way that blind roll message logic is implemented in Foundry.
-- Chat Damage Buttons may not work for your players if you use Combat Utility Belt and have its "Hide NPC Names" feature enabled. This is because that feature overwrites click events in the messages. Make sure to disable the CUB feature if you wish to continue using Better Rolls's chat damage buttons.
+- None which are major.
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
