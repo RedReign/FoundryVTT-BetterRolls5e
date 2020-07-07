@@ -8,7 +8,7 @@ import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template
 let dnd5e = DND5E;
 let DEBUG = false;
 
-const blankRoll = new Roll("").roll();
+const blankRoll = new Roll("0").roll();
 
 function debug() {
 	if (DEBUG) {
@@ -405,7 +405,7 @@ export class CustomItemRoll {
 		this.checkEvent();
 		this.setRollState();
 		this.updateConfig();
-		this.dicePool = new Roll("").roll();
+		this.dicePool = new Roll("0").roll();
 	}
 	
 	// Update config settings in the roll.
