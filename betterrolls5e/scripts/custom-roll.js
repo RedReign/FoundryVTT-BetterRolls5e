@@ -104,7 +104,7 @@ export class CustomRoll {
 
 	// Gets the dice pool from a single template. Used for non-item rolls.
 	static getDicePool(template) {
-		let dicePool = new Roll("").roll();
+		let dicePool = new Roll("0").roll();
 		template.data.rolls.forEach(roll => {
 			roll.dice.forEach(die => {
 				dicePool._dice.push(die);
@@ -452,7 +452,7 @@ export class CustomItemRoll {
 
 	// Adds a roll's results to the custom roll's dice pool, for the purposes of 3D dice rendering.
 	addToDicePool(roll) {
-		roll.dice.forEach(die => {
+		roll?.dice?.forEach(die => {
 			this.dicePool._dice.push(die);
 		});
 	}
@@ -484,8 +484,9 @@ export class CustomItemRoll {
 		this.templates = await this.allFieldsToTemplates();
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
+		let chargeCheck = "";
 		if (params.useCharge) {
-			let chargeCheck = await this.consumeCharge();
+			chargeCheck = await this.consumeCharge();
 			if (chargeCheck === "error") { return "error"; }
 		}
 		
@@ -526,6 +527,8 @@ export class CustomItemRoll {
 		});
 		this.content = content;
 		
+		if (chargeCheck === "destroy") { await actor.deleteOwnedItem(item.id); }
+
 		return this.content;
 	}
 	
@@ -1132,6 +1135,8 @@ export class CustomItemRoll {
 		} else {
 			damageFormula = itemData.damage.parts[damageIndex][0];
 		}
+
+		if (!damageFormula) { return null; }
 		
 		let type = itm.data.type,
 			parts = [],
@@ -1383,8 +1388,14 @@ export class CustomItemRoll {
 			critRoll = await this.critRoll(formula, rollData, baseRoll);
 		}
 		
-		let damageRoll = this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
-		return damageRoll;
+		let output = this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
+
+		
+		[baseRoll, critRoll].forEach(roll => {
+			this.addToDicePool(roll);
+		});
+
+		return output;
 	}
 	
 	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
@@ -1545,6 +1556,7 @@ export class CustomItemRoll {
 		const recharge = itemData.recharge || {};
 		const usesRecharge = !!recharge.value;
 		const current = uses.value || 0;
+		const autoDestroy = uses.autoDestroy;
 
 		const remaining = usesCharges ? Math.max(current - 1, 0) : current;
 
@@ -1568,6 +1580,7 @@ export class CustomItemRoll {
 
 		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: this.hasAttack});
 		if ( allowed === false ) { return "error"; }
+		if ( itemData.quantity <= 0 && autoDestroy ) { ui.notifications.warn(i18n("br5e.error.autoDestroy")); return "destroy"; }
 		return "success";
 	}
 }
