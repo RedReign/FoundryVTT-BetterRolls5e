@@ -123,8 +123,11 @@ export class CustomRoll {
 
 	/**
 	 * Creates a chat message used to roll only damage. Usually called when autoroll is disabled
-	 * @param {Item} item	The item to call 
-	 * @param event			An optional event object that can auto-apply modifier keys. 
+	 * @param {Item} item			The item to call 
+	 * @param event					An optional event object that can auto-apply modifier keys.
+	 * @param {Array} damageIndices	A list of indices to calculate damage for related to the original item
+	 * @param {Boolean} versatile	Whether to replace the first damage entry with the versatile version
+	 * @param {Boolean} crit		Whether the hit was a crit. The event modifiers override this parameter.
 	 */
 	static async fullRollDamage(item, { event = null, slotLevel = null, damageIndices = [], versatile = false, crit = false}) {
 		const actor = item.actor;
@@ -137,13 +140,14 @@ export class CustomRoll {
 			crit = false;
 		}
 		
-		const params = { event, slotLevel, forceCrit: crit };
-
+		const numDamageParts = item.data.data.damage.parts.length;
 		const fields = [];
 		for (let i = 0; i < damageIndices.length; i++) {
-			// only the first is flagged versatile
-			let isVersatile = (i == 0) && versatile;
-			fields.push(["damage", {index:damageIndices[i], versatile:isVersatile}]);
+			const index = damageIndices[i];
+			let isVersatile = (i == 0) && versatile; // only the first is flagged versatile
+			if (index < numDamageParts) {
+				fields.push(["damage", { index, versatile: isVersatile }]);
+			}
 		}
 
 		if (fields.length === 0) {
@@ -151,6 +155,7 @@ export class CustomRoll {
 			return;
 		}
 
+		const params = { event, slotLevel, forceCrit: crit };
 		new CustomItemRoll(item, params, fields).toMessage();
 	}
 	
