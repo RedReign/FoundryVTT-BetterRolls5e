@@ -29,6 +29,18 @@ Hooks.once("init", () => {
 			3: i18n("br5e.d20Mode.choices.3")
 		}
 	});
+
+	/**
+	 * Register damage auto roll. If disabled, shows a button on the roll.
+	 */
+	game.settings.register("betterrolls5e", "autoRollDamage", {
+		name: i18n("br5e.autoRollDamage.name"),
+		hint: i18n("br5e.autoRollDamage.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
 	
 	/**
 	* Register added roll buttons

@@ -1,5 +1,5 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons, i18n } from "./betterrolls5e.js";
+import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
 
 
 export class BetterRollsHooks {

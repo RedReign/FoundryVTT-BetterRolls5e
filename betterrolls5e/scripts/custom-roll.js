@@ -120,7 +120,39 @@ export class CustomRoll {
 		if (keyboard.isCtrl(ev)) { output.disadv = 1; }
 		return output;
 	}
-	
+
+	/**
+	 * Creates a chat message used to roll only damage. Usually called when autoroll is disabled
+	 * @param {Item} item	The item to call 
+	 * @param event			An optional event object that can auto-apply modifier keys. 
+	 */
+	static async fullRollDamage(item, { event = null, slotLevel = null, damageIndices = [], versatile = false, crit = false}) {
+		const actor = item.actor;
+
+		// Override crit if overriden by a modifier key
+		const eventData = CustomRoll.eventToAdvantage(event);
+		if (eventData.adv) {
+			crit = true;
+		} else if (eventData.disadv) {
+			crit = false;
+		}
+		
+		const params = { event, slotLevel, forceCrit: crit };
+
+		const fields = [];
+		for (let i = 0; i < damageIndices.length; i++) {
+			// only the first is flagged versatile
+			let isVersatile = (i == 0) && versatile;
+			fields.push(["damage", {index:damageIndices[i], versatile:isVersatile}]);
+		}
+
+		if (fields.length === 0) {
+			console.warn("BetterRolls5e: Nothing to roll for damage");
+			return;
+		}
+
+		new CustomItemRoll(item, params, fields).toMessage();
+	}
 	
 	// Creates a chat message with the requested skill check.
 	static async fullRollSkill(actor, skill, params) {
@@ -425,6 +457,7 @@ export class CustomItemRoll {
 			altSecondaryEnabled: game.settings.get("betterrolls5e", "altSecondaryEnabled"),
 			d20Mode: game.settings.get("betterrolls5e", "d20Mode"),
 			hideDC: game.settings.get("betterrolls5e", "hideDC"),
+			autoRollDamage: game.settings.get("betterrolls5e", "autoRollDamage")
 		};
 	}
 	
@@ -595,6 +628,15 @@ export class CustomItemRoll {
 						forceCrit: crit
 					}));
 				}
+
+				break;
+			case 'damagebutton':
+				if (typeof fieldArgs[0] === "object") {
+					this.templates.push(await this.rollDamageButton({ 
+						damageIndices: fieldArgs[0].damageIndices, 
+						versatile: fieldArgs[0].versatile
+					}));
+				}
 				break;
 			case 'savedc':
 				// {customAbl: null, customDC: null}
@@ -743,24 +785,37 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
 			
+			let damageList = [];
 			switch (preset) {
 				case 0: // Quick Roll
-					if (brFlags.quickDamage && (brFlags.quickDamage.value.length > 0)) {
-						for (let i = 0; i < brFlags.quickDamage.value.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
-							if (brFlags.quickDamage.value[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
-						}
-					}
+					damageList = brFlags.quickDamage.value;
 					break;
 				case 1: // Alt Quick Roll
-					if (brFlags.quickDamage && (brFlags.quickDamage.altValue.length > 0)) {
-						for (let i = 0; i < brFlags.quickDamage.altValue.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
-							if (brFlags.quickDamage.altValue[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
-						}
-					}
+					damageList = brFlags.quickDamage.altValue;
 					break;
 			}
+
+			if (brFlags.quickDamage && (damageList.length > 0)) {
+				// Get enabled entries
+				const damageIndices = [];
+				for (let i = 0; i < damageList.length; i++) {
+					if (damageList[i]) { damageIndices.push(i) }
+				}
+
+				if (this.config.autoRollDamage) {
+					for (const i of damageIndices) {
+						let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
+						fields.push(["damage", {index:i, versatile:isVersatile}]);
+					}
+				} else {
+					fields.push(["damagebutton", { 
+						versatile: flagIsTrue("quickVersatile"),
+						damageIndices,
+						crit: this.isCrit
+					}]);
+				}
+			}
+			
 			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
 			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable") || this.item.data.data.consume?.type) { useCharge = true; }
@@ -1248,11 +1303,34 @@ export class CustomItemRoll {
 		return damageRoll;
 	}
 	
+	/**
+	 * Renders and returns a button that can be used to roll damage
+	 * @param {Array} damageIndices		The formula indices to render when pressed
+	 * @param {Boolean} isVersatile		Whether to use the versatile formula instead of the first one
+	 */
+	async rollDamageButton({damageIndices = [], versatile = false}) {
+		const damageLabel = i18n("br5e.buttons.damage");
+
+		let button = {
+			type: "rollDamage",
+			html: await renderTemplate("modules/betterrolls5e/templates/red-damage-button.html", {
+				action: versatile ? "verDamageRoll" : "damageRoll",
+				damageLabel,
+				actorId: this.item.actor && this.item.actor.id,
+				itemId: this.item.id,
+				damageIndices: damageIndices.join(","),
+				slotLevel: this.params.slotLevel,
+				crit: this.isCrit
+			})
+		}
+		
+		return button;
+	}
+	
 	/*
 	* Rolls critical damage based on a damage roll's formula and output.
 	* This critical damage should not overwrite the base damage - it should be seen as "additional damage dealt on a crit", as crit damage may not be used even if it was rolled.
 	*/
-
 	async critRoll(rollFormula, rollData, baseRoll) {
 		let itm = this.item;
 		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;

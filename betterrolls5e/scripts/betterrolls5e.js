@@ -210,7 +210,7 @@ Hooks.on(`createOwnedItem`, (outerData, id, innerData) => {
 });
 
 Hooks.on(`renderChatMessage`, (message, html, data) => {
-	updateSaveButtons(html);
+	updateChatButtons(html);
 });
 
 /**
@@ -488,11 +488,12 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	}
 }
 
-export function updateSaveButtons(html) {
+export function updateChatButtons(html) {
 	html.find(".card-buttons").off()
 	html.find(".card-buttons button").off().click(event => {
 		const button = event.currentTarget;
-		if (button.dataset.action === "save") {
+		const action = button.dataset.action
+		if (action === "save") {
 			event.preventDefault();
 			let actors = getTargetActors();
 			let ability = button.dataset.ability;
@@ -502,6 +503,19 @@ export function updateSaveButtons(html) {
 					CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
 				}
 			}
+			setTimeout(() => {button.disabled = false;}, 1);
+		} else if (["damageRoll", "verDamageRoll"].includes(action)) {
+			event.preventDefault();
+			const actor = game.actors.get(button.dataset.actor);
+			const item = actor && actor.getOwnedItem(button.dataset.item);
+			if (!actor) { return ui.notifications.error(`${i18n("br5e.error.noActorWithId")}`); }
+			else if (!item) { return ui.notifications.error(`${i18n("br5e.error.noItemWithId")} ${actor.name}`); }
+
+			const versatile = action === "verDamageRoll" ? true : false;
+			const damageIndices = button.dataset.indices.split(",").map(i => parseInt(i));
+			const slotLevel = button.dataset.slotlevel;
+			const crit = (button.dataset.crit || "").toLowerCase() === "true";
+			CustomRoll.fullRollDamage(item, { event, versatile, damageIndices, slotLevel, crit });
 			setTimeout(() => {button.disabled = false;}, 1);
 		}
 	});
