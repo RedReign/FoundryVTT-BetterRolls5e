@@ -45,7 +45,8 @@
 		"./scripts/init.js",
 		"./scripts/chat-damage-buttons.js",
 		"./scripts/utils.js",
-		"./scripts/hooks.js"
+		"./scripts/hooks.js",
+		"./scripts/item-tab.js"
 	],
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],

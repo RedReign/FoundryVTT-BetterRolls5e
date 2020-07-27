@@ -1,5 +1,6 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
+import { addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
+import { addBetterRollsContent } from "./item-tab.js";
 
 
 export class BetterRollsHooks {
@@ -33,7 +34,7 @@ export class BetterRollsHooks {
 	static addItemSheet(sheetName) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app.object, html, data) : null;
+			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
 		});
 	}
 	
