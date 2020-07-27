@@ -116,7 +116,7 @@ export class CustomRoll {
 	// Returns an {adv, disadv} object when given an event
 	static eventToAdvantage(ev) {
 		let output = {adv:0, disadv:0};
-		if (ev.shiftKey) { output.adv = 1; }
+		if (ev.shiftKey || ev.altKey) { output.adv = 1; }
 		if (keyboard.isCtrl(ev)) { output.disadv = 1; }
 		return output;
 	}
@@ -132,7 +132,7 @@ export class CustomRoll {
 	static async fullRollDamage(item, { event = null, slotLevel = null, damageIndices = [], versatile = false, crit = false}) {
 		const actor = item.actor;
 
-		// Override crit if overriden by a modifier key
+		// Override crit if overriden by a modifier
 		const eventData = CustomRoll.eventToAdvantage(event);
 		if (eventData.adv) {
 			crit = true;
@@ -807,7 +807,7 @@ export class CustomItemRoll {
 					if (damageList[i]) { damageIndices.push(i) }
 				}
 
-				if (this.config.autoRollDamage) {
+				if (!isAttack(item) || this.config.autoRollDamage) {
 					for (const i of damageIndices) {
 						let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
 						fields.push(["damage", {index:i, versatile:isVersatile}]);
@@ -1420,9 +1420,9 @@ export class CustomItemRoll {
 		}
 	}
 	
-	/*
-	Rolls the Other Formula field. Is subject to crits.
-	*/
+	/**
+	 * Rolls the Other Formula field. Is subject to crits.
+	 */
 	async rollOther(preArgs) {
 		let args = mergeObject({}, preArgs || {});
 		let item = this.item;
