@@ -5,9 +5,7 @@ name: CI
 # Controls when the action will run. Triggers the workflow on push requests
 on:
   push:
-    tags: 
-      - v*
-      - p*
+    branches: [auto-damage-config]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,19 +25,21 @@ jobs:
         files: betterrolls5e/
         dest: betterrolls5e.zip
         
-    - name: Create a Release
-      id: create_release
+    - uses: Klemensas/action-autotag@stable
+      id: update_tag
+      with:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        tag_prefix: "proto"
+        
+    - name: Create Release
+      if: steps.update_tag.outputs.tagname
       uses: actions/create-release@v1
+      id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        # The name of the tag. This should come from the webhook payload, `github.GITHUB_REF` when a user pushes a new tag
-        tag_name:  ${{ github.ref }}
-        # The name of the release. For example, `Release v1.0.1`
-        release_name:  Release ${{ github.ref }}
-        # Text describing the contents of the tag.
-        body: Automated Release
-        # `true` to identify the release as a prerelease. `false` to identify the release as a full release. Default: `false`
+        tag_name: ${{ steps.update_tag.outputs.tagname }}
+        release_name: Release ${{ steps.update_tag.outputs.tagname }}
         prerelease: true
       
     - name: Upload a Release Asset
