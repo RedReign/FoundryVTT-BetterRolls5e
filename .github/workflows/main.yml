@@ -6,6 +6,8 @@ name: CI
 on:
   push:
     branches: [ publish ]
+    tags:
+      - proto*
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -37,8 +39,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.update_tag.outputs.tagname }}
-        release_name: Release ${{ steps.update_tag.outputs.tagname }}
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
         prerelease: true
       
     - name: Upload a Release Asset
