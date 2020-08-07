@@ -27,3 +27,4 @@ jobs:
       with:
         files: betterrolls5e/
         dest: betterrolls5e.zip
+        path: ${{ github.workspace }}/betterrolls5e.zip
