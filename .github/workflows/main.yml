@@ -28,7 +28,6 @@ jobs:
     - uses: Klemensas/action-autotag@stable
       id: update_tag
       with:
-        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         tag_prefix: "proto"
         
     - name: Create Release
