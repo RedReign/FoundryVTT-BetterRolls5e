@@ -5,7 +5,7 @@ name: CI
 # Controls when the action will run. Triggers the workflow on push requests
 on:
   push:
-    branches: [auto-damage-config]
+    branches: [ publish ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
