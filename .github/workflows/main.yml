@@ -29,6 +29,7 @@ jobs:
         dest: betterrolls5e.zip
         
     - name: Create a Release
+      id: create_release
       uses: actions/create-release@v1
       with:
         # The name of the tag. This should come from the webhook payload, `github.GITHUB_REF` when a user pushes a new tag
@@ -42,6 +43,8 @@ jobs:
       
     - name: Upload a Release Asset
       uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         # The URL for uploading assets to the release
         upload_url: ${{ steps.create_release.outputs.upload_url }}
