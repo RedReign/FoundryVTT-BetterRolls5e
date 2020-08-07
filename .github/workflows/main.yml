@@ -27,13 +27,7 @@ jobs:
         files: betterrolls5e/
         dest: betterrolls5e.zip
         
-    - uses: Klemensas/action-autotag@stable
-      id: update_tag
-      with:
-        tag_prefix: "proto"
-        
     - name: Create Release
-      if: steps.update_tag.outputs.tagname
       uses: actions/create-release@v1
       id: create_release
       env:
