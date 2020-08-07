@@ -27,4 +27,8 @@ jobs:
       with:
         files: betterrolls5e/
         dest: betterrolls5e.zip
+        
+    - uses: actions/upload-artifact@v1
+      with:
+        name: my-artifact
         path: ${{ github.workspace }}/betterrolls5e.zip
