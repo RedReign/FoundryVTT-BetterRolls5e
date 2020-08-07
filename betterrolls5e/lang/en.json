@@ -48,6 +48,9 @@
 	"br5e.d20Mode.choices.1": "Single Roll (Shift Advantage, Ctrl Disadvantage)",
 	"br5e.d20Mode.choices.2": "Dual Rolls",
 	"br5e.d20Mode.choices.3": "ゴゴ Triple Threat ゴゴ",
+
+	"br5e.autoRollDamage.name": "Always Autoroll Damage",
+	"br5e.autoRollDamage.hint": "If enabled, damage is always rolled preemptively. Disable to show a damage button for attack rolls.",
 	
 	"br5e.critBehavior.name": "Critical Damage",
 	"br5e.critBehavior.hint": "Determines how critical damage is calculated.",

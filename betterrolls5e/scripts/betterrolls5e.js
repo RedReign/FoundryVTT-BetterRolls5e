@@ -717,6 +717,7 @@ export function BetterRolls() {
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.fullRollSkill,
 		rollItem:CustomRoll.newItemRoll,
+		rollDamage:CustomRoll.fullRollDamage
 	};
 }
 
