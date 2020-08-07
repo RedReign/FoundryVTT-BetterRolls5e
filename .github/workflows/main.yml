@@ -28,7 +28,26 @@ jobs:
         files: betterrolls5e/
         dest: betterrolls5e.zip
         
-    - uses: actions/upload-artifact@v1
+    - name: Create a Release
+      uses: actions/create-release@v1
       with:
-        name: my-artifact
-        path: ${{ github.workspace }}/betterrolls5e.zip
+        # The name of the tag. This should come from the webhook payload, `github.GITHUB_REF` when a user pushes a new tag
+        tag_name:  ${{ github.GITHUB_REF }}
+        # The name of the release. For example, `Release v1.0.1`
+        release_name:  Release ${{ github.GITHUB_REF }}
+        # Text describing the contents of the tag.
+        body: Automated Release
+        # `true` to identify the release as a prerelease. `false` to identify the release as a full release. Default: `false`
+        prerelease: true
+      
+    - name: Upload a Release Asset
+      uses: actions/upload-release-asset@v1.0.2
+      with:
+        # The URL for uploading assets to the release
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        # The path to the asset you want to upload
+        asset_path: ${{ github.workspace }}/betterrolls5e.zip
+        # The name of the asset you want to upload
+        asset_name: betterrolls5e.zip
+        # The content-type of the asset you want to upload. See the supported Media Types here: https://www.iana.org/assignments/media-types/media-types.xhtml for more information
+        asset_content_type: application/zip
