@@ -973,7 +973,7 @@ export class CustomItemRoll {
 			critThreshold = args.critThreshold;
 		// Otherwise, determine it from character & item data
 		} else {
-			if (itm.data.type == "weapon") {
+			if (['mwak', 'rwak'].includes(itemData.actionType)) {
 				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
 			} else {
 				critThreshold = Math.min(critThreshold, itemCrit);
@@ -1505,9 +1505,8 @@ export class CustomItemRoll {
 				window.PH.actor = actor;
 				window.PH.item = item;
 				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
-				console.log(spellFormData);
 				lvl = spellFormData.get("level");
-				consume = Boolean(spellFormData.get("consume"));
+				consume = Boolean(spellFormData.get("consumeSlot"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
 				// console.log(lvl, consume, placeTemplate);
 			}
@@ -1526,6 +1525,11 @@ export class CustomItemRoll {
 		// Update Actor data
 		if ( consume && (lvl !== 0) ) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
+			const slots = parseInt(actor.data.data.spells[spellSlot].value);
+      if ( slots === 0 || Number.isNaN(slots) ) {
+				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
+				return "error";
+			}
 			await actor.update({
 				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
 			});
