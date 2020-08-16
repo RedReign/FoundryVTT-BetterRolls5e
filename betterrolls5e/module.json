@@ -4,7 +4,7 @@
 	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
 	"minimumCoreVersion": "0.6.0",
 	"compatibleCoreVersion": "0.6.5",
-	"version": "1.1.9",
+	"version": "1.1.10",
 	"author": "Red Reign#5128",
 	"languages": [
 		{
@@ -26,6 +26,11 @@
 			"lang": "pt-BR",
 			"name": "Português (Brasil)",
 			"path": "lang/pt-BR.json"
+		},
+		{
+			"lang": "de",
+			"name": "Deutsch (German)",
+			"path": "lang/de.json"
 		},
 		{
 			"lang": "ja",

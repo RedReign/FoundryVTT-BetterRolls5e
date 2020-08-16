@@ -81,7 +81,8 @@
 }
 
 .dnd5e.sheet.item .item-betterRolls label.checkbox {
-    display: flex;
+		display: inline-table;
+		padding: 0px 8px;
 }
 
 .card-buttons .adice5e.dmg.rolled {

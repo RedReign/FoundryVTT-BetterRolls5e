@@ -2,8 +2,6 @@ import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFla
 import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -1498,10 +1496,16 @@ export class CustomItemRoll {
 		let placeTemplate = false;
 		let isPact = false;
 		
+		console.log("asdf")
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {
-				const spellFormData = await SpellCastDialog.create(actor, item);
+				console.log("level > 0")
+				window.PH = {};
+				window.PH.actor = actor;
+				window.PH.item = item;
+				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
+				console.log(spellFormData);
 				lvl = spellFormData.get("level");
 				consume = Boolean(spellFormData.get("consume"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
@@ -1538,7 +1542,7 @@ export class CustomItemRoll {
 	placeTemplate() {
 		let item = this.item;
 		if (item.hasAreaTarget) {
-			const template = AbilityTemplate.fromItem(item);
+			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
 			if ( template ) template.drawPreview(event);
 			if (item.actor && item.actor.sheet) {
 				if (item.sheet.rendered) item.sheet.minimize();
