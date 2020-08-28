@@ -2,6 +2,8 @@ import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFla
 import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -115,7 +117,7 @@ export class CustomRoll {
 	static async eventToAdvantage(ev, itemType) {
 		if (ev.shiftKey) {
 			return {adv:1, disadv:0};
-		} else if (keyboard.isCtrl(ev)) {
+		} else if ((keyboard.isCtrl(ev))) {
 			return {adv:0, disadv:1};
 		} else if (game.settings.get("betterrolls5e", "queryingEnabled")) {
 			// Don't show dialog for items that aren't tool or weapon.
@@ -124,25 +126,25 @@ export class CustomRoll {
 			}
 			return new Promise(resolve => {
 				new Dialog({
-					title: i18n("br5e.query.title"),
+					title: i18n("br5e.querying.title"),
 					buttons: {
-						advantage: {
-							label: i18n("br5e.query.disadvantage"),
+						disadvantage: {
+							label: i18n("br5e.querying.disadvantage"),
 							callback: () => resolve({adv:0, disadv:1})
 						},
-						regular: {
-							label: i18n("br5e.query.normal"),
+						normal: {
+							label: i18n("br5e.querying.normal"),
 							callback: () => resolve({adv:0, disadv:0})
 						},
-						disadvantage: {
-							label: i18n("br5e.query.advantage"),
+						advantage: {
+							label: i18n("br5e.querying.advantage"),
 							callback: () => resolve({adv:1, disadv:0})
 						}
 					}
 				}).render(true);
 			});
 		} else {
-			return {adv:0, disadv:0}
+			return {adv:0, disadv:0};
 		}
 	}
 	
@@ -1000,7 +1002,7 @@ export class CustomItemRoll {
 			critThreshold = args.critThreshold;
 		// Otherwise, determine it from character & item data
 		} else {
-			if (['mwak', 'rwak'].includes(itemData.actionType)) {
+			if (itm.data.type == "weapon") {
 				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
 			} else {
 				critThreshold = Math.min(critThreshold, itemCrit);
@@ -1523,17 +1525,12 @@ export class CustomItemRoll {
 		let placeTemplate = false;
 		let isPact = false;
 		
-		console.log("asdf")
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {
-				console.log("level > 0")
-				window.PH = {};
-				window.PH.actor = actor;
-				window.PH.item = item;
-				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
+				const spellFormData = await SpellCastDialog.create(actor, item);
 				lvl = spellFormData.get("level");
-				consume = Boolean(spellFormData.get("consumeSlot"));
+				consume = Boolean(spellFormData.get("consume"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
 				// console.log(lvl, consume, placeTemplate);
 			}
@@ -1552,11 +1549,6 @@ export class CustomItemRoll {
 		// Update Actor data
 		if ( consume && (lvl !== 0) ) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
-			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-      if ( slots === 0 || Number.isNaN(slots) ) {
-				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
-				return "error";
-			}
 			await actor.update({
 				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
 			});
@@ -1573,7 +1565,7 @@ export class CustomItemRoll {
 	placeTemplate() {
 		let item = this.item;
 		if (item.hasAreaTarget) {
-			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
+			const template = AbilityTemplate.fromItem(item);
 			if ( template ) template.drawPreview(event);
 			if (item.actor && item.actor.sheet) {
 				if (item.sheet.rendered) item.sheet.minimize();

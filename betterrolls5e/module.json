@@ -1,7 +1,7 @@
 {
 	"name": "betterrolls5e",
 	"title": "Better Rolls for 5e feat. Thandulfan",
-	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs. Modified by Thandulfan.",
+	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs. Modified by Thandulfan to add querying for roll type like in Roll20.",
 	"minimumCoreVersion": "0.6.0",
 	"compatibleCoreVersion": "0.6.5",
 	"version": "1.1.12",
@@ -26,11 +26,6 @@
 			"lang": "pt-BR",
 			"name": "Português (Brasil)",
 			"path": "lang/pt-BR.json"
-		},
-		{
-			"lang": "de",
-			"name": "Deutsch (German)",
-			"path": "lang/de.json"
 		},
 		{
 			"lang": "ja",

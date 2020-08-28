@@ -29,13 +29,13 @@ Hooks.once("init", () => {
 			3: i18n("br5e.d20Mode.choices.3")
 		}
 	});
-	
+
 	/**
-	* Query disadv/normal/adv in Roll20 style.
+	* Query roll type in Roll20 style
 	*/
 	game.settings.register("betterrolls5e", "queryingEnabled", {
-		name: i18n("br5e.settings.queryTitle"),
-		hint: i18n("br5e.settings.queryDescription"),
+		name: i18n("br5e.config.queryingTitle"),
+		hint: i18n("br5e.config.queryingDescription"),
 		scope: "world",
 		config: true,
 		default: true,

@@ -1,4 +1,6 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
+import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
@@ -437,7 +439,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 	
 	let tabSelector = html.find(`form nav.sheet-navigation.tabs`),
 		settingsContainer = html.find(`.sheet-body`),
-		betterRollsTabString = `<a class="item" data-tab="betterRolls5e" style="margin: 0 4px">${i18n("Better Rolls")}</a>`,
+		betterRollsTabString = `<a class="item" data-group="primary" data-tab="betterRolls5e">${i18n("Better Rolls")}</a>`,
 		tab = tabSelector.append($(betterRollsTabString));
 	
 	let betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
