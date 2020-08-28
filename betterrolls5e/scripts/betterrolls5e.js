@@ -494,7 +494,7 @@ export function updateSaveButtons(html) {
 			event.preventDefault();
 			let actors = getTargetActors();
 			let ability = button.dataset.ability;
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			for (let i = 0; i < actors.length; i++) {
 				if (actors[i]) {
 					CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
@@ -593,7 +593,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "check", params);
 		});
 	}
@@ -607,7 +607,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "save", params);
 		});
 	}
@@ -618,7 +618,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		skillName.off();
 		skillName.click(event => {
 			event.preventDefault();
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.fullRollSkill(actor, skill, params);
 		});
@@ -631,7 +631,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		itemImage.click(async event => {
 			let li = $(event.currentTarget).parents(".item"),
 				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event, item.type);
 			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
 			} else if (event.altKey) {

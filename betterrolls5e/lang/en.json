@@ -146,5 +146,12 @@
 	"Concentration": "Concentration",
 	"AC": "AC",
 	"Equipped": "Equipped",
-	"Stealth Disadv.": "Stealth Disadv."
+	"Stealth Disadv.": "Stealth Disadv.",
+
+	"br5e.settings.queryTitle": "Query Roll Type",
+	"br5e.settings.queryDescription": "Enable to show Disadvantage/Normal/Advantage query for rolls (in Roll20 style)",
+	"br5e.query.title": "Choose type of roll",
+	"br5e.query.advantage": "Advantage",
+	"br5e.query.normal": "Normal",
+	"br5e.query.disadvantage": "Disadvantage"
 }

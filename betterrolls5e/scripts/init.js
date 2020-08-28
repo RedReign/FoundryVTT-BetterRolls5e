@@ -31,6 +31,18 @@ Hooks.once("init", () => {
 	});
 	
 	/**
+	* Query disadv/normal/adv in Roll20 style.
+	*/
+	game.settings.register("betterrolls5e", "queryingEnabled", {
+		name: i18n("br5e.settings.queryTitle"),
+		hint: i18n("br5e.settings.queryDescription"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean
+	});
+	
+	/**
 	* Register added roll buttons
 	*/
 	game.settings.register("betterrolls5e", "rollButtonsEnabled", {

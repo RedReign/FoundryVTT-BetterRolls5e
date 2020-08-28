@@ -1,11 +1,11 @@
 {
 	"name": "betterrolls5e",
-	"title": "Better Rolls for 5e",
-	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
+	"title": "Better Rolls for 5e feat. Thandulfan",
+	"description": "This module adds special roll functionality for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs. Modified by Thandulfan.",
 	"minimumCoreVersion": "0.6.0",
 	"compatibleCoreVersion": "0.6.5",
-	"version": "1.1.11",
-	"author": "Red Reign#5128",
+	"version": "1.1.12",
+	"author": "Red Reign#5128, Thandulfan#0087",
 	"languages": [
 		{
 			"lang": "en",
@@ -54,7 +54,7 @@
 	],
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],
-	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",
-	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json",
-	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip"
+	"url": "https://github.com/krysztalzg/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",
+	"manifest": "https://raw.githubusercontent.com/krysztalzg/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json",
+	"download": "https://github.com/krysztalzg/FoundryVTT-BetterRolls5e/raw/master/betterrolls5e.zip"
 }
