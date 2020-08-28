@@ -488,7 +488,7 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 
 export function updateSaveButtons(html) {
 	html.find(".card-buttons").off()
-	html.find(".card-buttons button").off().click(event => {
+	html.find(".card-buttons button").off().click(async event => {
 		const button = event.currentTarget;
 		if (button.dataset.action === "save") {
 			event.preventDefault();
@@ -589,7 +589,7 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (checkName.length > 0) {
 		checkName.off();
 		checkName.addClass("rollable");
-		checkName.click(event => {
+		checkName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
@@ -603,7 +603,7 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (saveName.length > 0) {
 		saveName.off();
 		saveName.addClass("rollable");
-		saveName.click(event => {
+		saveName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
@@ -616,7 +616,7 @@ export function changeRollsToDual (actor, html, data, params) {
 	let skillName = html.find(paramRequests.skillButton);
 	if (skillName.length > 0) {
 		skillName.off();
-		skillName.click(event => {
+		skillName.click(async event => {
 			event.preventDefault();
 			let params = await CustomRoll.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
