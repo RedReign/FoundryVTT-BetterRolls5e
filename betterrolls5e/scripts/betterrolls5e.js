@@ -490,13 +490,13 @@ export async function addBetterRollsContent(item, protoHtml, data) {
 
 export function updateSaveButtons(html) {
 	html.find(".card-buttons").off()
-	html.find(".card-buttons button").off().click(event => {
+	html.find(".card-buttons button").off().click(async event => {
 		const button = event.currentTarget;
 		if (button.dataset.action === "save") {
 			event.preventDefault();
 			let actors = getTargetActors();
 			let ability = button.dataset.ability;
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			for (let i = 0; i < actors.length; i++) {
 				if (actors[i]) {
 					CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
@@ -591,11 +591,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (checkName.length > 0) {
 		checkName.off();
 		checkName.addClass("rollable");
-		checkName.click(event => {
+		checkName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "check", params);
 		});
 	}
@@ -605,11 +605,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (saveName.length > 0) {
 		saveName.off();
 		saveName.addClass("rollable");
-		saveName.click(event => {
+		saveName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "save", params);
 		});
 	}
@@ -618,9 +618,9 @@ export function changeRollsToDual (actor, html, data, params) {
 	let skillName = html.find(paramRequests.skillButton);
 	if (skillName.length > 0) {
 		skillName.off();
-		skillName.click(event => {
+		skillName.click(async event => {
 			event.preventDefault();
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.fullRollSkill(actor, skill, params);
 		});
@@ -633,7 +633,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		itemImage.click(async event => {
 			let li = $(event.currentTarget).parents(".item"),
 				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event, item.type);
 			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
 			} else if (event.altKey) {

@@ -114,11 +114,38 @@ export class CustomRoll {
 	}
 	
 	// Returns an {adv, disadv} object when given an event
-	static eventToAdvantage(ev) {
-		let output = {adv:0, disadv:0};
-		if (ev.shiftKey) { output.adv = 1; }
-		if (keyboard.isCtrl(ev)) { output.disadv = 1; }
-		return output;
+	static async eventToAdvantage(ev, itemType) {
+		if (ev.shiftKey) {
+			return {adv:1, disadv:0};
+		} else if ((keyboard.isCtrl(ev))) {
+			return {adv:0, disadv:1};
+		} else if (game.settings.get("betterrolls5e", "queryingEnabled")) {
+			// Don't show dialog for items that aren't tool or weapon.
+			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
+				return {adv:0, disadv:0};
+			}
+			return new Promise(resolve => {
+				new Dialog({
+					title: i18n("br5e.querying.title"),
+					buttons: {
+						disadvantage: {
+							label: i18n("br5e.querying.disadvantage"),
+							callback: () => resolve({adv:0, disadv:1})
+						},
+						normal: {
+							label: i18n("br5e.querying.normal"),
+							callback: () => resolve({adv:0, disadv:0})
+						},
+						advantage: {
+							label: i18n("br5e.querying.advantage"),
+							callback: () => resolve({adv:1, disadv:0})
+						}
+					}
+				}).render(true);
+			});
+		} else {
+			return {adv:0, disadv:0};
+		}
 	}
 	
 	
