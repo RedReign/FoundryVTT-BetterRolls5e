@@ -154,7 +154,7 @@ export class CustomRoll {
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
-					alias: actor.token?.data?.name || actor.name
+					alias: actor.token?.name || actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
@@ -271,7 +271,7 @@ export class CustomRoll {
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
-					alias: actor.token?.data?.name || actor.name
+					alias: actor.token?.name || actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
@@ -693,7 +693,7 @@ export class CustomItemRoll {
 				speaker: {
 					actor: this.actor._id,
 					token: this.actor.token,
-					alias: this.actor.token?.data?.name || this.actor.name
+					alias: this.actor.token?.name || this.actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
