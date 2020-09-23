@@ -28,11 +28,6 @@
 			"path": "lang/pt-BR.json"
 		},
 		{
-			"lang": "de",
-			"name": "Deutsch (German)",
-			"path": "lang/de.json"
-		},
-		{
 			"lang": "ja",
 			"name": "日本語 (Japanese)",
 			"path": "lang/ja.json"
