@@ -2,8 +2,6 @@ import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFla
 import { Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import SpellCastDialog from "../../../systems/dnd5e/module/apps/spell-cast-dialog.js";
-import AbilityTemplate from "../../../systems/dnd5e/module/pixi/ability-template.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -355,7 +353,6 @@ export class CustomRoll {
 	}
 	
 	static async rollAbilitySave(actor, abl, params = {}) {
-		//console.log(abl);
 		let actorData = actor.data.data;
 		let parts = [];
 		let data = {mod: []};
@@ -702,10 +699,7 @@ export class CustomItemRoll {
 	}
 	
 	async toMessage() {
-		if (this.rolled) {
-			console.log("Already rolled!", this);
-		} else {
-		
+		if (!this.rolled) {
 			let content = await this.roll();
 			if (content === "error") return;
 			
@@ -793,7 +787,6 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable") || this.item.data.data.consume?.type) { useCharge = true; }
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 		} else { 
-			//console.log("Request made to Quick Roll item without flags!");
 			fields.push(["desc"]);
 			properties = true;
 		}
@@ -921,11 +914,6 @@ export class CustomItemRoll {
 	* @param {String} selector		The CSS class selection to add the colors to
 	*/
 	static tagCrits(args, rolls, selector, critThreshold, critChecks=true) {
-		/*console.log(array);
-		console.log(rolls);
-		console.log(selector);
-		console.log(critThreshold);
-		*/
 		if (typeof args !== "object") { args = {
 			html: args,
 			isCrit: false
@@ -941,9 +929,6 @@ export class CustomItemRoll {
 			rolls[i].dice.forEach( function(d) {
 				// Add crit for improved crit threshold
 				let threshold = critThreshold || d.faces;
-				if (debug) {
-					//console.log("SIZE",d.faces,"VALUE",d.total);
-				}
 				if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
 					d.results.forEach( function(result) {
 						if (result >= threshold) { high += 1; }
@@ -995,14 +980,13 @@ export class CustomItemRoll {
 		catch(error) { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
 		
 		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
-		//	console.log(critThreshold, characterCrit, itemCrit);
 		
 		// If a specific critThreshold is set, use that
 		if (args.critThreshold) {
 			critThreshold = args.critThreshold;
 		// Otherwise, determine it from character & item data
 		} else {
-			if (itm.data.type == "weapon") {
+			if (['mwak', 'rwak'].includes(itemData.actionType)) {
 				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
 			} else {
 				critThreshold = Math.min(critThreshold, itemCrit);
@@ -1025,21 +1009,18 @@ export class CustomItemRoll {
 		if (abl.length) {
 			parts.push(`@abl`);
 			rollData.abl = actorData.abilities[abl]?.mod;
-			//console.log("Adding Ability mod", abl);
 		}
 		
 		// Add proficiency, expertise, or Jack of all Trades
 		if ( itm.data.type == "spell" || itm.data.type == "feat" || itemData.proficient ) {
 			parts.push(`@prof`);
 			rollData.prof = Math.floor(actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
 		}
 		
 		// Add item's bonus
 		if ( itemData.attackBonus ) {
 			parts.push(`@bonus`);
 			rollData.bonus = itemData.attackBonus;
-			//console.log("Adding Bonus mod!", itemData);
 		}
 		
 		// Add custom situational bonus
@@ -1193,7 +1174,6 @@ export class CustomItemRoll {
 		
 		// Users may add "+ @mod" to their rolls to manually add the ability modifier to their rolls.
 		rollData.mod = (abl !== "") ? rollData.abilities[abl]?.mod : 0;
-		//console.log(rollData.mod);
 		
 		// Prepare roll label
 		let titlePlacement = this.config.damageTitlePlacement.toString(),
@@ -1475,14 +1455,12 @@ export class CustomItemRoll {
 		if ( itemData.proficient ) {
 			parts.push(`@prof`);
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
 		}
 		
 		// Add item's bonus
 		if ( itemData.bonus ) {
 			parts.push(`@bonus`);
 			rollData.bonus = itemData.bonus.value;
-			//console.log("Adding Bonus mod!");
 		}
 		
 		if (args.bonus) {
@@ -1528,11 +1506,13 @@ export class CustomItemRoll {
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {
-				const spellFormData = await SpellCastDialog.create(actor, item);
+				window.PH = {};
+				window.PH.actor = actor;
+				window.PH.item = item;
+				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
 				lvl = spellFormData.get("level");
-				consume = Boolean(spellFormData.get("consume"));
+				consume = Boolean(spellFormData.get("consumeSlot"));
 				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
-				// console.log(lvl, consume, placeTemplate);
 			}
 			catch(error) { return "error"; }
 		}
@@ -1549,6 +1529,11 @@ export class CustomItemRoll {
 		// Update Actor data
 		if ( consume && (lvl !== 0) ) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
+			const slots = parseInt(actor.data.data.spells[spellSlot].value);
+      if ( slots === 0 || Number.isNaN(slots) ) {
+				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
+				return "error";
+			}
 			await actor.update({
 				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
 			});
@@ -1565,7 +1550,7 @@ export class CustomItemRoll {
 	placeTemplate() {
 		let item = this.item;
 		if (item.hasAreaTarget) {
-			const template = AbilityTemplate.fromItem(item);
+			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
 			if ( template ) template.drawPreview(event);
 			if (item.actor && item.actor.sheet) {
 				if (item.sheet.rendered) item.sheet.minimize();
