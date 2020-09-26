@@ -1,6 +1,5 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
-import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 
