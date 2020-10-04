@@ -772,4 +772,5 @@ export function BetterRolls() {
 
 Hooks.on(`ready`, () => {
 	window.BetterRolls = BetterRolls();
+	Hooks.call('betterRollsAddedToWindow');
 });
