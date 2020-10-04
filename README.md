@@ -72,6 +72,17 @@ Clicking with/without the Alt key:
 ## Known Issues
 - None which are major.
 
+## Implementation
+Custom sheet creators can register their sheet with Better Rolls 5e using the hooks added to `window` by listening for the `betterRollsAddedToWindow` hook. See the [hooks](betterrolls5e/scripts/hooks.js) file for what is available on the window.
+
+```js
+Hooks.once('betterRollsAddedToWindow', function () {
+  if (window.BetterRolls) {
+    window.BetterRolls.hooks.addActorSheet('OGL5eCharacterSheet');
+  }
+});
+```
+
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
 - Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
