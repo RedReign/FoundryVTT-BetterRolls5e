@@ -6,6 +6,8 @@
 	
 	"br5e.diceEnabled.name": "Enable Better Rolls",
 	"br5e.diceEnabled.hint": "Enables the improved dice outputs for DnD5e. Affects all ability checks, saving throws, items, spells, and features on the sheet. Requires reopening the sheet.",
+	"br5e.queryAdvantageEnabled.name": "Query for (Dis)Advantage",
+	"br5e.queryAdvantageEnabled.hint": "Adds a Query for Advantage/Normal/Disadvantage roll types. Ctrl + Shift may still be used.",
 	"br5e.rollButtonsEnabled.name": "Add Roll Buttons to Sheet",
 	"br5e.rollButtonsEnabled.hint": "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
 	"br5e.imageButtonEnabled.name": "Make Item Image Auto-roll",
@@ -123,6 +125,12 @@
 	"br5e.chat.other": "Other",
 	"br5e.chat.advantage": "Advantage",
 	"br5e.chat.disadvantage": "Disadvantage",
+	"br5e.chat.normal": "Normal",
+
+	"br5e.querying.title": "What type of roll?",
+	"br5e.querying.disadvantage": "Disadvantage",
+	"br5e.querying.normal": "Normal",
+	"br5e.querying.advantage": "Advantage",
 	
 	"br5e.chat.damageButtons.fullDamage.hint": "Click to apply full damage to selected token(s).",
 	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",

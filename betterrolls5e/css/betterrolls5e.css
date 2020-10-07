@@ -53,6 +53,11 @@
 	font-size: 12px;
 }
 
+.br5e-roll-label {
+	text-align: center;
+	font-size: 12px;
+}
+
 .red-full .br-flavor {
 	font-style: italic;
 }
@@ -75,7 +80,9 @@
 	overflow-y: auto;
 }
 
-.dnd5e.sheet.item .item-betterRolls input[type="text"], .dnd5e.sheet.item .item-betterRolls select {
+.dnd5e.sheet.item .item-betterRolls input[type="text"],
+.dnd5e.sheet.item .item-betterRolls input[type="number"],
+.dnd5e.sheet.item .item-betterRolls select {
     border: 1px solid #7a7971;
     background: rgba(0, 0, 0, 0.05);
 }

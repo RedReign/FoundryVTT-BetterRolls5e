@@ -72,6 +72,7 @@
 	"br5e.error.noActorWithName": "그러한 이름을 가진 액터가 존재하지 않습니다",
 	"br5e.error.noItemWithId": "액터에 대한 ID로 알려진 아이템이 없습니다",
 	"br5e.error.noChargesLeft": "이 아이템은 차지가 다 떨어졌습니다",
+	"br5e.error.autoDestroy": "마지막 충전량이 소비되어 항목이 사라집니다.",
 	
 	"br5e.settings.critThreshold": "치명타 한계점",
 	"br5e.settings.critDamage": "추가 치명타 피해",

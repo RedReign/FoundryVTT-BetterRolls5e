@@ -1,6 +1,4 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-
-import { Utils } from "./utils.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 
@@ -420,81 +418,15 @@ export async function redUpdateFlags(item) {
 	return item.data.flags.betterRolls5e;
 }
 
-/**
- * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
- */
-export async function addBetterRollsContent(item, protoHtml, data) {
-	if (item.actor && item.actor.permission < 3) { return; }
-	
-	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
-	redUpdateFlags(item);
-	
-	let html = protoHtml;
-	
-	if (html[0].localName !== "div") {
-		html = $(html[0].parentElement.parentElement);
-	}
-	
-	let tabSelector = html.find(`form nav.sheet-navigation.tabs`),
-		settingsContainer = html.find(`.sheet-body`),
-		betterRollsTabString = `<a class="item" data-tab="betterRolls5e" style="margin: 0 4px">${i18n("Better Rolls")}</a>`,
-		tab = tabSelector.append($(betterRollsTabString));
-	
-	let betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
-		altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
-
-	let canConsume = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value || item.data.type == "consumable";
-	
-	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
-		DND5E: CONFIG.DND5E,
-		item: item,
-		isConsumable: canConsume,
-		isAttack: isAttack(item),
-		isSave: isSave(item),
-		flags: item.data.flags,
-		damageTypes: CONFIG.betterRolls5e.combinedDamageTypes,
-		altSecondaryEnabled: altSecondaryEnabled,
-		itemHasTemplate: item.hasAreaTarget
-	});
-	let extraTabContent = settingsContainer.append(betterRollsTemplate);
-	
-	// Add damage context input
-	if (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") {
-		let damageRolls = html.find(`.tab.details .damage-parts .damage-part input`);
-		// Placeholder is either "Context" or "Label" depending on system settings
-		let placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
-		
-		for (let i = 0; i < damageRolls.length; i++) {
-			let contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
-			damageRolls[i].after(contextField[0]);
-			// Add event listener to delete context when damage is deleted
-			$($($(damageRolls[i])[0].parentElement).find(`a.delete-damage`)).click(async event => {
-				let contextFlags = Object.values(item.data.flags.betterRolls5e.quickDamage.context);
-				contextFlags.splice(i, 1);
-				item.update({
-					[`flags.betterRolls5e.quickDamage.context`]: contextFlags,
-				});
-			});
-		}
-		
-		// Add context field for Other Formula field
-		if (getProperty(item, "data.flags.betterRolls5e.quickOther")) {
-			let otherRoll = html.find(`.tab.details .form-fields input[name="data.formula"]`);
-			let otherContextField = $(`<input type="text" name="flags.betterRolls5e.quickOther.context" value="${(item.data.flags.betterRolls5e.quickOther.context || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
-			if (otherRoll[0]) { otherRoll[0].after(otherContextField[0]); }
-		}
-	}
-}
-
 export function updateSaveButtons(html) {
 	html.find(".card-buttons").off()
-	html.find(".card-buttons button").off().click(event => {
+	html.find(".card-buttons button").off().click(async event => {
 		const button = event.currentTarget;
 		if (button.dataset.action === "save") {
 			event.preventDefault();
 			let actors = getTargetActors();
 			let ability = button.dataset.ability;
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			for (let i = 0; i < actors.length; i++) {
 				if (actors[i]) {
 					CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
@@ -572,11 +504,11 @@ export function changeRollsToDual (actor, html, data, params) {
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
-							callback: () => CustomRoll.fullRollAttribute(actor, ability, "check")
+							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "check"); }
 						},
 						save: {
 							label: i18n("Saving Throw"),
-							callback: () => CustomRoll.fullRollAttribute(actor, ability, "save")
+							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "save"); }
 						}
 					}
 				}).render(true);
@@ -589,11 +521,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (checkName.length > 0) {
 		checkName.off();
 		checkName.addClass("rollable");
-		checkName.click(event => {
+		checkName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "check", params);
 		});
 	}
@@ -603,11 +535,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	if (saveName.length > 0) {
 		saveName.off();
 		saveName.addClass("rollable");
-		saveName.click(event => {
+		saveName.click(async event => {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			CustomRoll.fullRollAttribute(actor, ability, "save", params);
 		});
 	}
@@ -616,9 +548,9 @@ export function changeRollsToDual (actor, html, data, params) {
 	let skillName = html.find(paramRequests.skillButton);
 	if (skillName.length > 0) {
 		skillName.off();
-		skillName.click(event => {
+		skillName.click(async event => {
 			event.preventDefault();
-			let params = CustomRoll.eventToAdvantage(event);
+			let params = await CustomRoll.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.fullRollSkill(actor, skill, params);
 		});
@@ -631,7 +563,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		itemImage.click(async event => {
 			let li = $(event.currentTarget).parents(".item"),
 				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
-				params = CustomRoll.eventToAdvantage(event);
+				params = await CustomRoll.eventToAdvantage(event);
 			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
 			} else if (event.altKey) {
@@ -772,4 +704,5 @@ export function BetterRolls() {
 
 Hooks.on(`ready`, () => {
 	window.BetterRolls = BetterRolls();
+	Hooks.call("readyBetterRolls")
 });

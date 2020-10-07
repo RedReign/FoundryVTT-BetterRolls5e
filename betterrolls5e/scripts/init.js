@@ -29,6 +29,18 @@ Hooks.once("init", () => {
 			3: i18n("br5e.d20Mode.choices.3")
 		}
 	});
+
+	/**
+	* Query roll type in Roll20 style
+	*/
+	game.settings.register("betterrolls5e", "queryAdvantageEnabled", {
+		name: i18n("br5e.queryAdvantageEnabled.name"),
+		hint: i18n("br5e.queryAdvantageEnabled.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean
+	});
 	
 	/**
 	* Register added roll buttons

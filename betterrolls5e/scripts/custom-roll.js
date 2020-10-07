@@ -112,11 +112,38 @@ export class CustomRoll {
 	}
 	
 	// Returns an {adv, disadv} object when given an event
-	static eventToAdvantage(ev) {
-		let output = {adv:0, disadv:0};
-		if (ev.shiftKey) { output.adv = 1; }
-		if (keyboard.isCtrl(ev)) { output.disadv = 1; }
-		return output;
+	static async eventToAdvantage(ev, itemType) {
+		if (ev.shiftKey) {
+			return {adv:1, disadv:0};
+		} else if ((keyboard.isCtrl(ev))) {
+			return {adv:0, disadv:1};
+		} else if (game.settings.get("betterrolls5e", "queryAdvantageEnabled")) {
+			// Don't show dialog for items that aren't tool or weapon.
+			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
+				return {adv:0, disadv:0};
+			}
+			return new Promise(resolve => {
+				new Dialog({
+					title: i18n("br5e.querying.title"),
+					buttons: {
+						disadvantage: {
+							label: i18n("br5e.querying.disadvantage"),
+							callback: () => resolve({adv:0, disadv:1})
+						},
+						normal: {
+							label: i18n("br5e.querying.normal"),
+							callback: () => resolve({adv:0, disadv:0})
+						},
+						advantage: {
+							label: i18n("br5e.querying.advantage"),
+							callback: () => resolve({adv:1, disadv:0})
+						}
+					}
+				}).render(true);
+			});
+		} else {
+			return {adv:0, disadv:0};
+		}
 	}
 	
 	
@@ -154,7 +181,7 @@ export class CustomRoll {
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
-					alias: actor.name
+					alias: actor.token?.name || actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
@@ -271,7 +298,7 @@ export class CustomRoll {
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
-					alias: actor.name
+					alias: actor.token?.name || actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
@@ -693,7 +720,7 @@ export class CustomItemRoll {
 				speaker: {
 					actor: this.actor._id,
 					token: this.actor.token,
-					alias: this.actor.name
+					alias: this.actor.token?.name || this.actor.name
 				},
 				type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 				roll: blankRoll,
@@ -1072,7 +1099,7 @@ export class CustomItemRoll {
 		let baseTooltip = await baseRoll.getTooltip(),
 			templateTooltip;
 		
-		if (baseRoll.parts.length === 0) return;
+		if (baseRoll.terms.length === 0) return;
 		
 		if (critRoll) {
 			let critTooltip = await critRoll.getTooltip();
@@ -1090,8 +1117,8 @@ export class CustomItemRoll {
 			formula: baseRoll.formula,
 			crittext: this.config.critString,
 			damageType:type,
-			maxRoll: Roll.maximize(baseRoll.formula).total,
-			maxCrit: critRoll ? Roll.maximize(critRoll.formula).total : null
+			maxRoll: await new Roll(baseRoll.formula).evaluate({maximize:true}).total,
+			maxCrit: critRoll ? await new Roll(critRoll.formula).evaluate({maximize:true}).total : null
 		};
 		
 		let html = {
@@ -1105,7 +1132,7 @@ export class CustomItemRoll {
 			html: html["html"],
 			data: chatData
 		}
-		
+
 		return output;
 	}
 	
@@ -1164,7 +1191,6 @@ export class CustomItemRoll {
 		
 		// Users may add "+ @mod" to their rolls to manually add the ability modifier to their rolls.
 		rollData.mod = (abl !== "") ? rollData.abilities[abl]?.mod : 0;
-		//console.log(rollData.mod);
 		
 		// Prepare roll label
 		let titlePlacement = this.config.damageTitlePlacement.toString(),
@@ -1241,8 +1267,9 @@ export class CustomItemRoll {
 		if ((forceCrit == true || (this.isCrit && forceCrit !== "never")) && critBehavior !== "0") {
 			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
 		}
-			
+		
 		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels, type:damageType});
+
 		return damageRoll;
 	}
 	
@@ -1496,7 +1523,6 @@ export class CustomItemRoll {
 		let placeTemplate = false;
 		let isPact = false;
 		
-		console.log("asdf")
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {

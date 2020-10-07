@@ -1,11 +1,19 @@
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { addBetterRollsContent, addItemSheetButtons, changeRollsToDual, updateSaveButtons, i18n } from "./betterrolls5e.js";
+import { addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
+import { addBetterRollsContent } from "./item-tab.js";
 
 
 export class BetterRollsHooks {
 	
+	static addActorSheet() {
+		return;
+	}
+
+	static addItemSheet() {
+		return;
+	}
+
 	/*
-	Registers the necessary hooks to support a sheet in Better Rolls.
+	Registers the necessary hooks to support a sheet in Better Rolls. SHEET CREATORS SHOULD NO LONGER USE THIS!
 	sheetName			Class name of the sheet to be supported.
 	triggeringElement	Container for the element that must be clicked for the extra buttons to be shown.
 	buttonContainer		Container for the element the extra buttons will display in.
@@ -18,7 +26,7 @@ export class BetterRollsHooks {
 		singleAbilityButton	Boolean to determine if the ability button should be able to roll both checks AND saves.
 	}
 	*/
-	static addActorSheet(
+	static registerActorSheet(
 		sheetName,
 		triggeringElement = ".item .item-name h4",
 		buttonContainer = ".item-properties",
@@ -30,10 +38,10 @@ export class BetterRollsHooks {
 		});
 	}
 	
-	static addItemSheet(sheetName) {
+	static registerItemSheet(sheetName) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app.object, html, data) : null;
+			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
 		});
 	}
 	
@@ -54,26 +62,8 @@ export class BetterRollsHooks {
 	}
 }
 
-BetterRollsHooks.addActorSheet("ActorSheet5eNPC");
-BetterRollsHooks.addActorSheet("ActorSheet5eCharacter");
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheet", ".item .npc-item-name", ".item-summary", {
-	itemButton: '.item .rollable', 
-	abilityButton: ".ability h4.ability-name.rollable", 
-	checkButton: ".ability div span.ability-mod", 
-	saveButton: ".saves-div .save .rollable"
-});
-BetterRollsHooks.addActorSheet("BetterNPCActor5eSheetDark", ".item .npc-item-name", ".item-summary", {
-	itemButton: '.item .rollable', 
-	abilityButton: ".ability h4.ability-name.rollable", 
-	checkButton: ".ability div span.ability-mod", 
-	saveButton: ".saves-div .save .rollable"
-});
-BetterRollsHooks.addActorSheet("ActorSheet5eCharacterDark");
-BetterRollsHooks.addActorSheet("ActorSheet5eNPCDark");
-BetterRollsHooks.addActorSheet("Alt5eSheet");
-BetterRollsHooks.addItemSheet("ItemSheet5e");
-BetterRollsHooks.addItemSheet("ItemSheet5eDark");
-
+BetterRollsHooks.registerActorSheet("ActorSheet5e");
+BetterRollsHooks.registerItemSheet("ItemSheet5e");
 
 Hooks.on("renderChatMessage", (message, html, data) => {
 	if (!html.find(".red-full").length) { return; }
