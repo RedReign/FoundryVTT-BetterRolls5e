@@ -77,9 +77,10 @@ export async function addBetterRollsContent(app, protoHtml, data) {
 		}
 	}
 
-	// Activate the tab if anything changes in any sub-field
+	// Activate the tab if anything changes in any sub-field	
 	const newSection = settingsContainer.find(".tab.item-betterRolls");
 	newSection.find("input[type=text]").change((evt) => activate = true);
+	newSection.find("input[type=number]").change((evt) => activate = true);
 	newSection.find("input[type=checkbox]").change((evt) => activate = true);
 	newSection.find("select").change((evt) => activate = true);
 } 

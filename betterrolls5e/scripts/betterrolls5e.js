@@ -462,6 +462,7 @@ export function getTotalDamage(html) {
  * Also replaces the default button on items with a "standard" roll.
  */
 export function changeRollsToDual (actor, html, data, params) {
+
 	if (actor && actor.permission < 3) { return; }
 	
 	let paramRequests = mergeObject({
@@ -562,10 +563,21 @@ export function changeRollsToDual (actor, html, data, params) {
 		itemImage.off();
 		itemImage.click(async event => {
 			let li = $(event.currentTarget).parents(".item"),
-				item = actor.getOwnedItem(String(li.attr("data-item-id"))),
+				actorID = actor.id,
+				itemID = String(li.attr("data-item-id")),
+				item = actor.getOwnedItem(itemID),
 				params = await CustomRoll.eventToAdvantage(event);
-			if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
+
+			// Case 1 - If the image button should roll an "Item Macro" macro
+			if (window.ItemMacro?.hasMacro(item)) {
+				event.preventDefault();
+				window.ItemMacro.runMacro(actorID, itemID);
+
+			// Case 2 - If the image button should roll a vanilla roll
+			} else if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
 				item.actor.sheet._onItemRoll(event);
+
+			// Case 3 - If Alt is pressed
 			} else if (event.altKey) {
 				if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
 					event.preventDefault();
@@ -573,6 +585,7 @@ export function changeRollsToDual (actor, html, data, params) {
 				} else {
 					item.actor.sheet._onItemRoll(event);
 				}
+			// Case 4 - If Alt is not pressed
 			} else {
 				event.preventDefault();
 				CustomRoll.newItemRoll(item, mergeObject(params, {preset:0})).toMessage();

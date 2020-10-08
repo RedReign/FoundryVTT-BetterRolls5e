@@ -914,16 +914,12 @@ export class CustomItemRoll {
 	
 	/**
 	* A function for returning a roll template with crits and fumbles appropriately colored.
-	* @param {Object} args			Object containing the html for the roll and whether or not the roll is a crit
-	* @param {Roll} roll			The desired roll to check for crits or fumbles
-	* @param {String} selector		The CSS class selection to add the colors to
+	* @param {Object} args					Object containing the html for the roll and whether or not the roll is a crit
+	* @param {Roll} rolls						The desired roll to check for crits or fumbles
+	* @param {String} selector			The CSS class selection to add the colors to
+	* @param {Number} critThreshold	The minimum number required for a critical success (defaults to max roll on the die)
 	*/
 	static tagCrits(args, rolls, selector, critThreshold, critChecks=true) {
-		/*console.log(array);
-		console.log(rolls);
-		console.log(selector);
-		console.log(critThreshold);
-		*/
 		if (typeof args !== "object") { args = {
 			html: args,
 			isCrit: false
@@ -939,13 +935,12 @@ export class CustomItemRoll {
 			rolls[i].dice.forEach( function(d) {
 				// Add crit for improved crit threshold
 				let threshold = critThreshold || d.faces;
-				if (debug) {
-					//console.log("SIZE",d.faces,"VALUE",d.total);
-				}
+				debug("SIZE " + d.faces);
+				debug("VALUE " + d.total);
 				if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
 					d.results.forEach( function(result) {
-						if (result >= threshold) { high += 1; }
-						else if (result == 1) { low += 1; }
+						if (result.result >= threshold) { high += 1; }
+						else if (result.result == 1) { low += 1; }
 					});
 				}
 			});
@@ -1241,7 +1236,7 @@ export class CustomItemRoll {
 			labels[p] = labels[p].join(" - ");
 		};
 		
-		if (damageIndex === 0) { damageFormula = this.scaleDamage(damageIndex) || damageFormula; }
+		if (damageIndex === 0) { damageFormula = this.scaleDamage(damageIndex, isVersatile) || damageFormula; }
 		
 		let bonusAdd = "";
 		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
@@ -1284,26 +1279,26 @@ export class CustomItemRoll {
 		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRollData = duplicate(rollData);
 		critRollData.mod = 0;
-		let critRoll = await new Roll(critFormula, critRollData);
+		let critRoll = await new Roll(critFormula);
 		let savage;
 		if (itm.data.type === "weapon") {
 			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
 			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
 		}
 		let add = (itm.actor && savage) ? 1 : 0;
-		critRoll.alter(add);
+		critRoll.alter(1, add);
 		critRoll.roll();
 		
 		// If critBehavior = 2, maximize base dice
 		if (critBehavior === "2") {
-			critRoll = Roll.maximize(critRoll.formula);
+			critRoll = await new Roll(critRoll.formula).evaluate({maximize:true});
 		}
 		
 		// If critBehavior = 3, maximize base and crit dice
 		else if (critBehavior === "3") {
 			let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = Roll.maximize(newFormula);
+			critRoll = await new Roll(newFormula).evaluate({maximize:true});
 		}
 
 		this.addToDicePool(critRoll);
@@ -1311,7 +1306,7 @@ export class CustomItemRoll {
 		return critRoll;
 	}
 	
-	scaleDamage(damageIndex, scaleInterval = null) {
+	scaleDamage(damageIndex, versatile) {
 		let item = this.item;
 		let itemData = item.data.data;
 		let actorData = item.actor.data.data;
@@ -1325,10 +1320,9 @@ export class CustomItemRoll {
 			let formula = parts[damageIndex];
 			const add = Math.floor((level + 1) / 6);
 			if ( add === 0 ) {}
-			else if ( scale && (scale !== formula) ) {
-				formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${add}d${d}`);
-			} else {
-				formula = formula.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${parseInt(nd)+add}d${d}`);
+			else {
+				formula = item._scaleDamage([formula], scale || formula, add);
+				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add); }
 			}
 			return formula;
 		}
@@ -1339,13 +1333,10 @@ export class CustomItemRoll {
 			let level = itemData.level;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
-			const add = Math.floor((spellLevel - itemData.level)/(scaleInterval || 1));
+			const add = Math.floor((spellLevel - level)/(scaleInterval || 1));
 			if (add > 0) {
-				if ( scale && (scale !== formula) ) {
-					formula = formula + " + " + scale.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${Math.floor(add*nd)}d${d}`);
-				} else {
-					formula = formula.replace(new RegExp(Roll.diceRgx, "g"), (match, nd, d) => `${Math.floor(parseInt(nd)+add)}d${d}`);
-				}
+				formula = item._scaleDamage([formula], scale || formula, add);
+				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add); }
 			}
 			
 			return formula;
