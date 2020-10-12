@@ -1306,7 +1306,7 @@ export class CustomItemRoll {
 		return critRoll;
 	}
 	
-	scaleDamage(damageIndex, versatile) {
+	scaleDamage(damageIndex, versatile, scaleInterval = null) {
 		let item = this.item;
 		let itemData = item.data.data;
 		let actorData = item.actor.data.data;
