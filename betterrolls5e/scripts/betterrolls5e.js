@@ -125,6 +125,7 @@ CONFIG.betterRolls5e = {
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		spellFlags: {
 			critRange: { type: "String", value: "" },
@@ -139,6 +140,7 @@ CONFIG.betterRolls5e = {
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		equipmentFlags: {
 			critRange: { type: "String", value: "" },
@@ -151,6 +153,7 @@ CONFIG.betterRolls5e = {
 			quickCharges: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		featFlags: {
 			critRange: { type: "String", value: "" },
@@ -164,6 +167,7 @@ CONFIG.betterRolls5e = {
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		toolFlags: {
 			critRange: { type: "String", value: "" },
@@ -171,6 +175,7 @@ CONFIG.betterRolls5e = {
 			quickCheck: { type: "Boolean", value: true, altValue: true },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		consumableFlags: {
 			critRange: { type: "String", value: "" },
@@ -184,6 +189,7 @@ CONFIG.betterRolls5e = {
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
+			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		}
 	}
 };
@@ -717,5 +723,5 @@ export function BetterRolls() {
 
 Hooks.on(`ready`, () => {
 	window.BetterRolls = BetterRolls();
-	Hooks.call("readyBetterRolls")
+	Hooks.call("readyBetterRolls");
 });

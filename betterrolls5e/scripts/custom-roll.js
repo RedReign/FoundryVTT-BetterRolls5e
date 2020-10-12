@@ -6,7 +6,7 @@ import { DND5E } from "../../../systems/dnd5e/module/config.js";
 let dnd5e = DND5E;
 let DEBUG = false;
 
-const blankRoll = new Roll("0").roll();
+const blankRoll = new Roll("0").roll(); // Used for CHAT_MESSAGE_TYPES.ROLL, which requires a roll that Better Rolls otherwise does not need
 
 function debug() {
 	if (DEBUG) {
@@ -742,7 +742,6 @@ export class CustomItemRoll {
 	*/
 	updateForPreset() {
 		let item = this.item,
-			chatData = item.getChatData(),
 			itemData = item.data.data,
 			flags = item.data.flags,
 			brFlags = flags.betterRolls5e,
@@ -1142,7 +1141,8 @@ export class CustomItemRoll {
 			isVersatile = false,
 			slotLevel = this.params.slotLevel;
 		
-		rollData.item = itemData;
+		rollData.item = duplicate(itemData);
+		rollData.item.level = slotLevel;
 		this.addToRollData(rollData);
 
 		// Makes the custom roll flagged as having a damage roll.
@@ -1315,6 +1315,7 @@ export class CustomItemRoll {
 		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
 			let parts = itemData.damage.parts.map(d => d[0]);
+			console.log(parts);
 			let level = item.actor.data.type === "character" ? Utils.getCharacterLevel(item.actor) : actorData.details.cr;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
@@ -1333,7 +1334,7 @@ export class CustomItemRoll {
 			let level = itemData.level;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
-			const add = Math.floor((spellLevel - level)/(scaleInterval || 1));
+			const add = Math.floor(spellLevel - level);
 			if (add > 0) {
 				formula = item._scaleDamage([formula], scale || formula, add);
 				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add); }
@@ -1447,7 +1448,7 @@ export class CustomItemRoll {
 			title = args.title || ((this.config.rollTitlePlacement != "0") ? i18n("br5e.chat.check") : null),
 			parts = [],
 			rollData = duplicate(actorData);
-		rollData.item = itm;
+		rollData.item = itemData;
 		this.addToRollData(rollData);
 		
 		// Add ability modifier bonus
@@ -1502,7 +1503,7 @@ export class CustomItemRoll {
 		
 		return {
 			type: "flavor",
-			html: `<div class="flavor-text br-flavor">${args.text}</div>`
+			html: `<div class="br5e-roll-label br-flavor">${args.text}</div>`
 		};
 	}
 	
@@ -1580,32 +1581,45 @@ export class CustomItemRoll {
 		let usesCharges = !!uses.per && (uses.max > 0);
 		const recharge = itemData.recharge || {};
 		const usesRecharge = !!recharge.value;
-		const current = uses.value || 0;
 		const autoDestroy = uses.autoDestroy;
-
+		const current = uses.value || 0;
 		const remaining = usesCharges ? Math.max(current - 1, 0) : current;
 
-		if ( usesRecharge ) { await item.update({"data.recharge.charged": false}); }
+		// The following code is adapted from dnd5e/module/apps/item/entity.js
+
+		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
+		if ( allowed === false ) { return "error"; }
+
+		if ( usesRecharge ) await item.update({"data.recharge.charged": false});
+		else if ( item.data.type == "feat" && current) {
+			await item.update({"data.uses.value": remaining});
+		}
 		else {
-			const q = Number(itemData.quantity);
-			if (!uses.value && !uses.max && uses.per == "charges") { // Check for items that must consume their own quantity
-				let amount = Number(itemData.consume.amount);
-				if (itemData.consume.amount === null) { amount = 1; }
-				if (itemData.quantity < amount) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
-				await item.update({"data.quantity": q - amount});
-			} else if (uses.per && itemData.quantity) {
-				if (itemData.uses.value >= 1) {
-					item.update({"data.uses.value": uses.value - 1});
-				} else { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
-			} else if ( ( remaining === 0 ) && (q > 1) ) {
-				item.update({"data.quantity": q - 1, "data.uses.value": uses.max});
+			const q = itemData.quantity;
+			// Case 1, reduce charges
+			if ( remaining ) {
+				await item.update({"data.uses.value": remaining});
 			}
-			else item.update({"data.uses.value": remaining});
+			// Case 2, reduce quantity
+			else if ( q > 1 ) {
+				await item.update({"data.quantity": q - 1, "data.uses.value": uses.max || 0});
+			}
+			// Case 3, destroy the item
+			else if ( (q <= 1) && autoDestroy ) {
+				ui.notifications.warn(i18n("br5e.error.autoDestroy"));
+				return "destroy";
+			}
+			// Case 4, reduce item to 0 quantity and 0 charges
+			else if ( (q === 1) ) {
+				await item.update({"data.quantity": q - 1, "data.uses.value": 0});
+			}
+			// Case 5, item unusable, display warning and do nothing
+			else {
+				ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name}));
+				return "error";
+			}
 		}
 
-		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: this.hasAttack});
-		if ( allowed === false ) { return "error"; }
-		if ( itemData.quantity <= 0 && autoDestroy ) { ui.notifications.warn(i18n("br5e.error.autoDestroy")); return "destroy"; }
 		return "success";
 	}
 }

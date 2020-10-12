@@ -26,7 +26,7 @@ export class BetterRollsHooks {
 		singleAbilityButton	Boolean to determine if the ability button should be able to roll both checks AND saves.
 	}
 	*/
-	static registerActorSheet(
+	static registerActorSheet( // SHEET CREATORS SHOULD NO LONGER USE THIS!
 		sheetName,
 		triggeringElement = ".item .item-name h4",
 		buttonContainer = ".item-properties",
@@ -38,7 +38,7 @@ export class BetterRollsHooks {
 		});
 	}
 	
-	static registerItemSheet(sheetName) {
+	static registerItemSheet(sheetName) { // SHEET CREATORS SHOULD NO LONGER USE THIS!
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
 			game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
@@ -57,13 +57,14 @@ export class BetterRollsHooks {
 		triggeringElement = ".item .item-name h4", 
 		buttonContainer = ".item-properties",
 		itemButton = ".item .rollable") {
-		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
-		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
+		(game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
+		(game.settings.get("betterrolls5e", "diceEnabled") && itemButton) ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
 	}
 }
 
 BetterRollsHooks.registerActorSheet("ActorSheet5e");
 BetterRollsHooks.registerItemSheet("ItemSheet5e");
+
 
 Hooks.on("renderChatMessage", (message, html, data) => {
 	if (!html.find(".red-full").length) { return; }
@@ -73,3 +74,11 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 		html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 	}
 });
+
+/*
+Hooks.on("renderedMagicItems", (actor, html, data) => {
+	if (window.MagicItems && game.settings.get("betterrolls5e", "diceEnabled")) {
+		changeRollsToDual(actor.actor, html, null, {itemButton: ".magic-items-head ~ .item-list .item .rollable"});
+	}
+});
+*/
