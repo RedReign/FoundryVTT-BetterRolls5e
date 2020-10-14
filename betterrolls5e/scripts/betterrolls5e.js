@@ -42,13 +42,7 @@ export function getWhisperData() {
 	if ( rollMode === "blindroll" ) blind = true;
 	else if ( rollMode === "selfroll" ) whisper = [game.user._id];
 	
-	let output = {
-		rollMode: rollMode,
-		whisper: whisper,
-		blind: blind
-	}
-	
-	return output;
+	return { rollMode, whisper, blind }
 }
 
 // Returns whether an item makes an attack roll
