@@ -91,9 +91,7 @@ export function getSave(item) {
 }
 
 export function isCheck(item) {
-	let itemData = item.data.data;
-	let output = (item.data.type === "tool" || (itemData.proficient && typeof itemData.proficient === "number")) ? true : false;
-	return output;
+	return item.data.type === "tool" || typeof item.data.data.proficient === "number";
 }
 
 let dnd5e = DND5E;
