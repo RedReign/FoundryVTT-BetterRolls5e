@@ -53,9 +53,8 @@ export function getWhisperData() {
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
-	let attacks = ["mwak", "rwak", "msak", "rsak"];
-	let output = (attacks.indexOf(item.data.data.actionType) !== -1) ? true : false;
-	return output;
+	const attacks = ["mwak", "rwak", "msak", "rsak"];
+	return attacks.includes(item.data.data.actionType);
 }
 
 // Returns whether an item requires a saving throw
