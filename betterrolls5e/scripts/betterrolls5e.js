@@ -439,13 +439,9 @@ export function updateSaveButtons(html) {
 export function getTargetActors() {
 	const character = game.user.character;
 	const controlled = canvas.tokens.controlled;
-	let actors = [];
 	if ( controlled.length === 0 ) return [character] || null;
 	if ( controlled.length > 0 ) {
-		let actors = [];
-		for (let i = 0; i < controlled.length; i++) {
-			actors.push(controlled[i].actor);
-		}
+		const actors = controlled.map(character => character.actor);
 		return actors;
 	}
 	else throw new Error(`You must designate a specific Token as the roll target`);
