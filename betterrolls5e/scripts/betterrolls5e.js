@@ -42,29 +42,22 @@ export function getWhisperData() {
 	if ( rollMode === "blindroll" ) blind = true;
 	else if ( rollMode === "selfroll" ) whisper = [game.user._id];
 	
-	let output = {
-		rollMode: rollMode,
-		whisper: whisper,
-		blind: blind
-	}
-	
-	return output;
+	return { rollMode, whisper, blind }
 }
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
-	let attacks = ["mwak", "rwak", "msak", "rsak"];
-	let output = (attacks.indexOf(item.data.data.actionType) !== -1) ? true : false;
-	return output;
+	const attacks = ["mwak", "rwak", "msak", "rsak"];
+	return attacks.includes(item.data.data.actionType);
 }
 
 // Returns whether an item requires a saving throw
 export function isSave(item) {
-	let itemData = item.data.data,
-		isTypeSave = (itemData.actionType === "save") ? true : false,
-		hasSaveDC = (itemData.save && itemData.save.ability) ? true : false,
-		output = (isTypeSave || hasSaveDC) ? true : false;
-	return output;
+	const itemData = item.data.data,
+		isTypeSave = itemData.actionType === "save",
+		hasSaveDC = (itemData.save && itemData.save.ability) ? true : false;
+
+	return isTypeSave || hasSaveDC;
 }
 
 // Returns an array with the save DC of the item. If no save is written in, one is calculated.
@@ -98,9 +91,7 @@ export function getSave(item) {
 }
 
 export function isCheck(item) {
-	let itemData = item.data.data;
-	let output = (item.data.type === "tool" || (itemData.proficient && typeof itemData.proficient === "number")) ? true : false;
-	return output;
+	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
 }
 
 let dnd5e = DND5E;
@@ -446,13 +437,10 @@ export function updateSaveButtons(html) {
 export function getTargetActors() {
 	const character = game.user.character;
 	const controlled = canvas.tokens.controlled;
-	let actors = [];
+
 	if ( controlled.length === 0 ) return [character] || null;
 	if ( controlled.length > 0 ) {
-		let actors = [];
-		for (let i = 0; i < controlled.length; i++) {
-			actors.push(controlled[i].actor);
-		}
+		const actors = controlled.map(character => character.actor);
 		return actors;
 	}
 	else throw new Error(`You must designate a specific Token as the roll target`);
@@ -616,9 +604,9 @@ export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
 			switch (mode) {
-				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
-				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`; break;
-				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`; break;
+				case "name": return `BetterRolls.quickRoll("${item.name}");`;
+				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`;
+				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`;
 			}
 		}
 		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
@@ -689,7 +677,7 @@ export function BetterRolls() {
 
 	// Prefer token actors over game.actors to avoid consumables and spells being missdepleted.
 	function getActorByName(actorName) {
-		let actor = canvas.tokens.placeables.find(p => p.data.name === actorName).actor;
+		let actor = canvas.tokens.placeables.find(p => p.data.name === actorName)?.actor;
 		if (!actor) actor = game.actors.entities.find(e => e.name === actorName);
 		return actor;
 	}

@@ -379,7 +379,7 @@ export class CustomRoll {
 		}
 		
 		if (data.mod !== "") {
-			parts.push("@mod");
+			parts.push("mod");
 		}
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
@@ -521,8 +521,6 @@ export class CustomItemRoll {
 		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[this.params.slotLevel] : null;
 			
 		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
-		
-		
 		
 		// Add token's ID to chat roll, if valid
 		let tokenId;
@@ -787,7 +785,7 @@ export class CustomItemRoll {
 			}
 			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
-			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable") || this.item.data.data.consume?.type) { useCharge = true; }
+			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable" || this.item.data.data.consume?.type)) { useCharge = true; }
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
@@ -1235,8 +1233,8 @@ export class CustomItemRoll {
 		for (let p in labels) {
 			labels[p] = labels[p].join(" - ");
 		};
-		
-		if (damageIndex === 0) { damageFormula = this.scaleDamage(damageIndex, isVersatile) || damageFormula; }
+
+		if (damageIndex === 0) { damageFormula = this.scaleDamage(damageIndex, isVersatile, rollData) || damageFormula; }
 		
 		let bonusAdd = "";
 		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
@@ -1306,7 +1304,7 @@ export class CustomItemRoll {
 		return critRoll;
 	}
 	
-	scaleDamage(damageIndex, versatile) {
+	scaleDamage(damageIndex, versatile, rollData) {
 		let item = this.item;
 		let itemData = item.data.data;
 		let actorData = item.actor.data.data;
@@ -1315,15 +1313,14 @@ export class CustomItemRoll {
 		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
 			let parts = itemData.damage.parts.map(d => d[0]);
-			console.log(parts);
 			let level = item.actor.data.type === "character" ? Utils.getCharacterLevel(item.actor) : actorData.details.cr;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
 			const add = Math.floor((level + 1) / 6);
 			if ( add === 0 ) {}
 			else {
-				formula = item._scaleDamage([formula], scale || formula, add);
-				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add); }
+				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData); }
 			}
 			return formula;
 		}
@@ -1336,8 +1333,8 @@ export class CustomItemRoll {
 			let formula = parts[damageIndex];
 			const add = Math.floor(spellLevel - level);
 			if (add > 0) {
-				formula = item._scaleDamage([formula], scale || formula, add);
-				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add); }
+				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData); }
 			}
 			
 			return formula;
@@ -1585,11 +1582,11 @@ export class CustomItemRoll {
 		const current = uses.value || 0;
 		const remaining = usesCharges ? Math.max(current - 1, 0) : current;
 
+		let useCase = null;
+		let output = "success";
+
 		// The following code is adapted from dnd5e/module/apps/item/entity.js
-
-		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
-		if ( allowed === false ) { return "error"; }
-
+		// Check if quantity/charge consumption will work, but do not update yet
 		if ( usesRecharge ) await item.update({"data.recharge.charged": false});
 		else if ( item.data.type == "feat" && current) {
 			await item.update({"data.uses.value": remaining});
@@ -1597,22 +1594,13 @@ export class CustomItemRoll {
 		else {
 			const q = itemData.quantity;
 			// Case 1, reduce charges
-			if ( remaining ) {
-				await item.update({"data.uses.value": remaining});
-			}
+			if ( remaining ) { useCase = 1; }
 			// Case 2, reduce quantity
-			else if ( q > 1 ) {
-				await item.update({"data.quantity": q - 1, "data.uses.value": uses.max || 0});
-			}
+			else if ( q > 1 ) { useCase = 2; }
 			// Case 3, destroy the item
-			else if ( (q <= 1) && autoDestroy ) {
-				ui.notifications.warn(i18n("br5e.error.autoDestroy"));
-				return "destroy";
-			}
+			else if ( (q <= 1) && autoDestroy ) { useCase = 3; }
 			// Case 4, reduce item to 0 quantity and 0 charges
-			else if ( (q === 1) ) {
-				await item.update({"data.quantity": q - 1, "data.uses.value": 0});
-			}
+			else if ( (q === 1) ) { useCase = 4; }
 			// Case 5, item unusable, display warning and do nothing
 			else {
 				ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name}));
@@ -1620,6 +1608,32 @@ export class CustomItemRoll {
 			}
 		}
 
-		return "success";
+		// Check for resource consumption
+		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
+		if ( allowed === false ) { output = "error"; }
+
+		// Handle quantity/charge consumption if handleResourceConsumption is successful.
+		else {
+			switch(useCase) {
+				case 1:
+					await item.update({"data.uses.value": remaining});
+					break;
+				case 2:
+					await item.update({"data.quantity": q - 1, "data.uses.value": uses.max || 0});
+					break;
+				case 3:
+					ui.notifications.warn(i18n("br5e.error.autoDestroy"));
+					output = "destroy";
+					break;
+				case 4:
+					await item.update({"data.quantity": q - 1, "data.uses.value": 0});
+					break;
+				default:
+					output = "error";
+					break;		
+			}
+		}
+
+		return output;
 	}
 }
