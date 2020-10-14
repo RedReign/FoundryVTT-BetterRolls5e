@@ -53,11 +53,11 @@ export function isAttack(item) {
 
 // Returns whether an item requires a saving throw
 export function isSave(item) {
-	let itemData = item.data.data,
-		isTypeSave = (itemData.actionType === "save") ? true : false,
-		hasSaveDC = (itemData.save && itemData.save.ability) ? true : false,
-		output = (isTypeSave || hasSaveDC) ? true : false;
-	return output;
+	const itemData = item.data.data,
+		isTypeSave = itemData.actionType === "save",
+		hasSaveDC = (itemData.save && itemData.save.ability) ? true : false;
+
+	return isTypeSave || hasSaveDC;
 }
 
 // Returns an array with the save DC of the item. If no save is written in, one is calculated.
