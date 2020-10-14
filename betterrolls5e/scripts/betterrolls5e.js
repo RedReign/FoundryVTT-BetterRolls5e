@@ -603,9 +603,9 @@ export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
 			switch (mode) {
-				case "name": return `BetterRolls.quickRoll("${item.name}");`; break;
-				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`; break;
-				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`; break;
+				case "name": return `BetterRolls.quickRoll("${item.name}");`;
+				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`;
+				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`;
 			}
 		}
 		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
