@@ -483,78 +483,79 @@ export class CustomItemRoll {
 	}
 	
 	async roll() {
-		let params = this.params,
+		const params = this.params,
 			item = this.item,
-			itemData = item.data.data,
-			actor = item.actor,
-			flags = item.data.flags,
-			save;
-		
+			actor = item.actor;
+
 		await redUpdateFlags(item);
-		
+
 		Hooks.call("preRollItemBetterRolls", this);
-		
+
 		if (Number.isInteger(params.preset)) {
 			this.updateForPreset();
 		}
-		
-		if (!params.slotLevel) {
-			if (item.data.type === "spell") {
-				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") { return "error"; }
+
+		if (!params.slotLevel && item.data.type === "spell") {
+			params.slotLevel = await this.configureSpell();
+
+			if (params.slotLevel === "error") {
+				return "error";
 			}
 		}
 
 		// Convert all requested fields into templates to be entered into the chat message.
 		this.templates = await this.allFieldsToTemplates();
-		
+
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
 		let chargeCheck = "";
 		if (params.useCharge) {
 			chargeCheck = await this.consumeCharge();
-			if (chargeCheck === "error") { return "error"; }
+
+			if (chargeCheck === "error") {
+				return "error";
+			}
 		}
-		
+
 		// Show properties
-		this.properties = (params.properties) ? this.listProperties() : null;
-		
-		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[this.params.slotLevel] : null;
-			
-		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
-		
+		this.properties = params.properties ? this.listProperties() : null;
+
+		const slotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[this.params.slotLevel] : null;
+
+		const title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item, slotLevel}));
+
 		// Add token's ID to chat roll, if valid
 		let tokenId;
 		if (actor.token) {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
-		
+
 		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
 			this.placeTemplate();
 		}
-		
+
 		this.rolled = true;
-		
+
 		await Hooks.callAll("rollItemBetterRolls", this);
-		
 		await new Promise(r => setTimeout(r, 25));
-		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
-			item: item,
-			actor: actor,
-			tokenId: tokenId,
+
+		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+			item,
+			actor,
+			tokenId,
+			title,
 			itemId: item.id,
 			isCritical: this.isCrit,
-			title: title,
 			templates: this.templates,
 			properties: this.properties
 		});
+
 		this.content = content;
-		
+
 		if (chargeCheck === "destroy") { await actor.deleteOwnedItem(item.id); }
 
 		return this.content;
 	}
-	
+
 /*
 	CustomItemRoll(item,
 	{

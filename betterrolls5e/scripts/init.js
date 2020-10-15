@@ -146,7 +146,7 @@ Hooks.once("init", () => {
 			default: false,
 			type: Boolean
 		});
-	})
+	});
 	
 	game.settings.register("betterrolls5e", "critBehavior", {
 		name: i18n("br5e.critBehavior.name"),
