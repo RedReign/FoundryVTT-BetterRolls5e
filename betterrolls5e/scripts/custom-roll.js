@@ -258,43 +258,39 @@ export class CustomRoll {
 	* @param {String} rollType		String of either "check" or "save" 
 	*/
 	static async fullRollAttribute(actor, ability, rollType, params) {
-		let multiRoll,
-			titleString,
-			abl = ability,
-			label = dnd5e.abilities[ability];
-		
-		let wd = getWhisperData();
-		
+		const label = dnd5e.abilities[ability];
+		const wd = getWhisperData();
+
+		let multiRoll;
+
 		if (rollType === "check") {
-			multiRoll = await CustomRoll.rollAbilityCheck(actor, abl, params);
-			titleString = `${i18n(label)} ${i18n("br5e.chat.check")}`;
+			multiRoll = await CustomRoll.rollAbilityCheck(actor, ability, params);
 		} else if (rollType === "save") {
-			multiRoll = await CustomRoll.rollAbilitySave(actor, abl, params);
-			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
+			multiRoll = await CustomRoll.rollAbilitySave(actor, ability, params);
 		}
 
-		// let titleImage = ((actor.data.img == DEFAULT_TOKEN) || actor.data.img == "" || actor.data.img.includes("*")) ? (actor.token && actor.token.data ? actor.token.data.img : actor.data.token.img) : actor.data.img;
-		let titleImage = CustomRoll.getImage(actor);
-		
-		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
+		const titleString = `${i18n(label)} ${i18n(`br5e.chat.${rollType}`)}`;
+		const titleImage = CustomRoll.getImage(actor);
+
+		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
 				img: titleImage,
 				name: titleString
 			}
 		});
-		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+
+		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
 
-		let has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
-		let playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
-		
-		let rollMessage = {
+		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds");
+
+		const rollMessage = {
 			chatData: {
 				user: game.user._id,
-				content: content,
+				content,
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
@@ -308,13 +304,13 @@ export class CustomRoll {
 			},
 			dicePool: CustomRoll.getDicePool(multiRoll)
 		};
-		
+
 		if (wd.whisper) { rollMessage.chatData.whisper = wd.whisper; }
 		
 		// Output the rolls to chat
 		return await createMessage(rollMessage);
 	}
-	
+
 	static async rollAbilityCheck(actor, abl, params = {}) {
 		const parts = ["@mod"];
 		const data = duplicate(actor.data.data);
