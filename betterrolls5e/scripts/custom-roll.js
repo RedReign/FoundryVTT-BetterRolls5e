@@ -1219,7 +1219,7 @@ export class CustomItemRoll {
 		
 		let titleString = "",
 			damageString = [],
-			contextString = flags.quickDamage.context[damageIndex];
+			contextString = flags.quickDamage.context && flags.quickDamage.context[damageIndex];
 		
 		// Show "Healing" prefix only if it's not inherently a heal action
 		if (dnd5e.healingTypes[damageType]) { titleString = ""; }
