@@ -116,50 +116,24 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	game.settings.register("betterrolls5e", "damageTitlePlacement", {
-		name: i18n("br5e.damageTitlePlacement.name"),
-		hint: i18n("br5e.damageTitlePlacement.hint"),
-		scope: "world",
-		config: true,
-		default: "1",
-		type: String,
-		choices: {
-			"0": i18n("br5e.damageRollPlacement.choices.0"),
-			"1": i18n("br5e.damageRollPlacement.choices.1"),
-			"2": i18n("br5e.damageRollPlacement.choices.2"),
-			"3": i18n("br5e.damageRollPlacement.choices.3")
-		}
-	});
-	
-	game.settings.register("betterrolls5e", "damageContextPlacement", {
-		name: i18n("br5e.damageContextEnabled.name"),
-		hint: i18n("br5e.damageContextEnabled.hint"),
-		scope: "world",
-		config: true,
-		default: "1",
-		type: String,
-		choices: {
-			"0": i18n("br5e.damageRollPlacement.choices.0"),
-			"1": i18n("br5e.damageRollPlacement.choices.1"),
-			"2": i18n("br5e.damageRollPlacement.choices.2"),
-			"3": i18n("br5e.damageRollPlacement.choices.3")
-		}
-	});
-	
-	game.settings.register("betterrolls5e", "damageRollPlacement", {
-		name: i18n("br5e.damageRollPlacement.name"),
-		hint: i18n("br5e.damageRollPlacement.hint"),
-		scope: "world",
-		config: true,
-		default: "1",
-		type: String,
-		choices: {
-			"0": i18n("br5e.damageRollPlacement.choices.0"),
-			"1": i18n("br5e.damageRollPlacement.choices.1"),
-			"2": i18n("br5e.damageRollPlacement.choices.2"),
-			"3": i18n("br5e.damageRollPlacement.choices.3")
-		}
-	});
+	const damagePlacementOptions = ["damageTitlePlacement", "damageContextPlacement", "damageRollPlacement"]
+
+	damagePlacementOptions.forEach(placementOption => {
+		game.settings.register("betterrolls5e", placementOption, {
+			name: i18n(`br5e.${placementOption}.name`),
+			hint: i18n(`br5e.${placementOption}.hint`),
+			scope: "world",
+			config: true,
+			default: "1",
+			type: String,
+			choices: {
+				"0": i18n("br5e.damageRollPlacement.choices.0"),
+				"1": i18n("br5e.damageRollPlacement.choices.1"),
+				"2": i18n("br5e.damageRollPlacement.choices.2"),
+				"3": i18n("br5e.damageRollPlacement.choices.3")
+			}
+		});
+	})
 	
 	game.settings.register("betterrolls5e", "contextReplacesTitle", {
 		name: i18n("br5e.contextReplacesTitle.name"),
