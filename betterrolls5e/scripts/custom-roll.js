@@ -149,35 +149,30 @@ export class CustomRoll {
 	
 	// Creates a chat message with the requested skill check.
 	static async fullRollSkill(actor, skill, params) {
-		let skl = actor.data.data.skills[skill],
-			label = dnd5e.skills[skill];
-			
-		let wd = getWhisperData();
-		
-		let multiRoll = await CustomRoll.rollSkillCheck(actor, skl, params);
-		
-		// let titleImage = (actor.data.img == "icons/svg/mystery-man.svg") ? actor.data.token.img : actor.data.img;
-		let titleImage = CustomRoll.getImage(actor);
-		
-		let titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
+		const label = dnd5e.skills[skill];
+		const wd = getWhisperData();
+		const multiRoll = await CustomRoll.rollSkillCheck(actor, actor.data.data.skills[skill], params);
+		const titleImage = CustomRoll.getImage(actor);
+
+		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
 				img: titleImage,
 				name: `${i18n(label)}`
 			}
 		});
-		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+
+		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
 
-		let has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
-		let playRollSounds = game.settings.get("betterrolls5e", "playRollSounds");
-		
-		let output = {
+		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds");
+
+		const output = {
 			chatData: {
 				user: game.user._id,
-				content: content,
+				content,
 				speaker: {
 					actor: actor._id,
 					token: actor.token,
@@ -193,7 +188,7 @@ export class CustomRoll {
 		};
 
 		if (wd.whisper) { output.chatData.whisper = wd.whisper; }
-		
+
 		// Output the rolls to chat
 		return await createMessage(output);
 	}
