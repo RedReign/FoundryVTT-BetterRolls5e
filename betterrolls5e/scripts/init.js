@@ -116,7 +116,7 @@ Hooks.once("init", () => {
 		}
 	});
 	
-	const damagePlacementOptions = ["damageTitlePlacement", "damageContextPlacement", "damageRollPlacement"]
+	const damagePlacementOptions = ["damageTitlePlacement", "damageContextPlacement", "damageRollPlacement"];
 
 	damagePlacementOptions.forEach(placementOption => {
 		game.settings.register("betterrolls5e", placementOption, {
@@ -133,25 +133,20 @@ Hooks.once("init", () => {
 				"3": i18n("br5e.damageRollPlacement.choices.3")
 			}
 		});
+	});
+
+	const contextReplacementOptions = ["contextReplacesTitle", "contextReplacesDamage"];
+
+	contextReplacementOptions.forEach(contextOption => {
+		game.settings.register("betterrolls5e", contextOption, {
+			name: i18n(`br5e.${contextOption}.name`),
+			hint: i18n(`br5e.${contextOption}.hint`),
+			scope: "world",
+			config: true,
+			default: false,
+			type: Boolean
+		});
 	})
-	
-	game.settings.register("betterrolls5e", "contextReplacesTitle", {
-		name: i18n("br5e.contextReplacesTitle.name"),
-		hint: i18n("br5e.contextReplacesTitle.hint"),
-		scope: "world",
-		config: true,
-		default: false,
-		type: Boolean
-	});
-	
-	game.settings.register("betterrolls5e", "contextReplacesDamage", {
-		name: i18n("br5e.contextReplacesDamage.name"),
-		hint: i18n("br5e.contextReplacesDamage.hint"),
-		scope: "world",
-		config: true,
-		default: false,
-		type: Boolean
-	});
 	
 	game.settings.register("betterrolls5e", "critBehavior", {
 		name: i18n("br5e.critBehavior.name"),
