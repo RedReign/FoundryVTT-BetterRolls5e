@@ -200,32 +200,29 @@ export class CustomRoll {
 	
 	// Rolls a skill check through a character
 	static async rollSkillCheck(actor, skill, params = {}) {
-		let parts = ["@mod"],
-			data = {mod: skill.total},
-			flavor = null;
-		
+		const parts = ["@mod"];
+		const data = { mod: skill.total };
+		const flavor = null;
 		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
+
 		if (skillBonus) {
 			parts.push("@skillBonus");
 			data["skillBonus"] = skillBonus;
 		}
-		
-		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
-			d20String = "1d20r<2";
-		}
+
+		const d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
 
 		if (getProperty(actor, "data.flags.dnd5e.reliableTalent") && skill.value >= 1) {
 			d20String = `{${d20String},10}kh`;
 		}
-		
-		let rollState = params ? CustomRoll.getRollState(params) : null;
-		
+
+		const rollState = params ? CustomRoll.getRollState(params) : null;
+
 		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
-		
+
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState, params.triggersCrit, "skill");
 	}
 
@@ -330,7 +327,7 @@ export class CustomRoll {
 			parts.push(`floor(@attributes.prof / 2)`);
 		}
 
-		const d20String = getProperty(actor, "data.flags.dnd5e.halflingLucky") ? "1d20r<2" : "1d20";
+		const d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
 		const rollState = params ? CustomRoll.getRollState(params) : null;
 
 		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
@@ -341,17 +338,17 @@ export class CustomRoll {
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
 
-	static async rollAbilitySave({ data: actor }, abl, params = {}) {
+	static async rollAbilitySave(actor, abl, params = {}) {
 		const data = { mod: [] };
 		const flavor = null;
 
 		// Support modifiers and global save bonus
-		const saveBonus = getProperty(actor.data, "bonuses.abilities.save") || null;
-		const ablData = actor.data.abilities[abl];
+		const saveBonus = getProperty(actor.data.data, "bonuses.abilities.save") || null;
+		const ablData = actor.data.data.abilities[abl];
 
 		const ablParts = {
 			mod: ablData.mod !== 0 ? ablData.mod.toString() : null,
-			prof: ((ablData.proficient || 0) * actor.data.attributes.prof).toString()
+			prof: ((ablData.proficient || 0) * actor.data.data.attributes.prof).toString()
 		};
 
 		const mods = [ablParts.mod, ablParts.prof, saveBonus];
@@ -359,7 +356,7 @@ export class CustomRoll {
 		data.mod = mods.filter(mod => mod && mod !== "0");
 		data.mod = data.mod.join("+");
 
-		const d20String = getProperty(actor, "data.flags.dnd5e.halflingLucky") ? "1d20r<2" : "1d20";
+		const d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
 		const parts = data.mod !== "" ? ["mod"] : [];
 		const rollState = params ? CustomRoll.getRollState(params) : null;
 
@@ -1047,13 +1044,9 @@ export class CustomItemRoll {
 			}
 		}
 		
-		let d20String = "1d20";
-		
 		// Halfling Luck check
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
-			d20String = "1d20r<2";
-		}
-		
+		const d20String = Utils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
+				
 		let output = mergeObject({type:"attack"}, await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold, rollState, args.triggersCrit));
 		if (output.isCrit) {
 			this.isCrit = true;
@@ -1427,7 +1420,7 @@ export class CustomItemRoll {
 			rollData = duplicate(actorData);
 		rollData.item = itemData;
 		this.addToRollData(rollData);
-		
+
 		// Add ability modifier bonus
 		if ( itemData.ability ) {
 			let abl = (itemData.ability),
@@ -1437,30 +1430,27 @@ export class CustomItemRoll {
 				rollData.mod = mod;
 			}
 		}
-		
+
 		// Add proficiency, expertise, or Jack of all Trades
 		if ( itemData.proficient ) {
 			parts.push(`@prof`);
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
 			//console.log("Adding Proficiency mod!");
 		}
-		
+
 		// Add item's bonus
 		if ( itemData.bonus ) {
 			parts.push(`@bonus`);
 			rollData.bonus = itemData.bonus.value;
 			//console.log("Adding Bonus mod!");
 		}
-		
+
 		if (args.bonus) {
 			parts.push(bonus);
 		}
-		
-		let d20String = "1d20";
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
-			d20String = "1d20r<2";
-		}
-		
+
+		const d20String = Utils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
+
 		//(numRolls = 1, dice = "1d20", parts = [], data = {}, title, critThreshold, rollState, triggersCrit = false)
 		let output = await CustomRoll.rollMultiple(this.config.d20Mode, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);
 		if (output.isCrit && triggersCrit) {
