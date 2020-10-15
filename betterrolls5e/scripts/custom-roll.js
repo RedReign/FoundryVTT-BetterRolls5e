@@ -237,20 +237,18 @@ export class CustomRoll {
 		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
 	}
 
-	static getImage(actor) {
-		let actorImage = (actor.data.img && actor.data.img != DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
-		let tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
+	static getImage({ data: actor, token}) {
+		const actorImage = (actor.img && actor.img != DEFAULT_TOKEN && !actor.img.includes("*")) ? actor.img : false;
+		const tokenImage = token?.data?.img ? token.data.img : actor.token.img;
 
 		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {
 			case "actor":
 				return actorImage || tokenImage;
-				break;
 			case "token":
 				return tokenImage || actorImage;
-				break;
 		}
 	}
-	
+
 	/**
 	* Creates a chat message with the requested ability check or saving throw.
 	* @param {Actor5e} actor		The actor object to reference for the roll.
