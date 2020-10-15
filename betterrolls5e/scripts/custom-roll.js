@@ -618,6 +618,12 @@ export class CustomItemRoll {
 						forceCrit: crit
 					}));
 				}
+				if (this._ammo) {
+					this.item = this._ammo;
+					delete this._ammo;
+					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit}]);
+					this.item = item;
+				}
 				break;
 			case 'savedc':
 				// {customAbl: null, customDC: null}
@@ -1030,6 +1036,20 @@ export class CustomItemRoll {
 			parts.push(`@bonus`);
 			rollData.bonus = itemData.attackBonus;
 			//console.log("Adding Bonus mod!", itemData);
+		}
+
+		const consume = itemData.consume;
+		if ( consume?.type === "ammo" ) {
+		  const ammo = this.actor.items.get(consume.target);
+		  if(ammo?.data){
+			let ammoBonus = ammo.data.data.attackBonus;
+			if ( ammoBonus ) {
+			parts.push("@ammo");
+			rollData["ammo"] = ammoBonus;
+			title += ` [${ammo.name}]`;
+			this._ammo = ammo;
+			}
+		  }
 		}
 		
 		// Add custom situational bonus
