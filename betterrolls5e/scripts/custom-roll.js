@@ -152,17 +152,17 @@ export class CustomRoll {
 		const label = dnd5e.skills[skill];
 		const wd = getWhisperData();
 		const multiRoll = await CustomRoll.rollSkillCheck(actor, actor.data.data.skills[skill], params);
-		const titleImage = CustomRoll.getImage(actor);
+		const img = CustomRoll.getImage(actor);
 
-		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
+		const title = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
-				img: titleImage,
+				img,
 				name: `${i18n(label)}`
 			}
 		});
 
 		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
-			title: titleTemplate,
+			title,
 			templates: [multiRoll]
 		});
 
