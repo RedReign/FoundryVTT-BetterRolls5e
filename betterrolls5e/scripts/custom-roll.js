@@ -379,7 +379,7 @@ export class CustomRoll {
 		}
 		
 		if (data.mod !== "") {
-			parts.push("mod");
+			parts.push("@mod");
 		}
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
@@ -1453,7 +1453,7 @@ export class CustomItemRoll {
 			let abl = (itemData.ability),
 				mod = abl ? actorData.abilities[abl].mod : 0;
 			if (mod !== 0) {
-				parts.push(`@mod`);
+				parts.push("@mod");
 				rollData.mod = mod;
 			}
 		}

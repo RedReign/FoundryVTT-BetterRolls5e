@@ -198,8 +198,8 @@ Hooks.on(`ready`, () => {
 });
 
 // Create flags for item when it's first created
-Hooks.on(`createOwnedItem`, (outerData, id, innerData) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? redUpdateFlags(outerData) : null;
+Hooks.on(`createOwnedItem`, (actor, itemData) => {
+	game.settings.get("betterrolls5e", "diceEnabled") ? redUpdateFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
 });
 
 Hooks.on(`renderChatMessage`, (message, html, data) => {
