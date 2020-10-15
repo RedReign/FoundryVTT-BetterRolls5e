@@ -5,7 +5,7 @@ let activate = false;
 /**
  * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
  */
-export async function addBetterRollsContent(app, protoHtml, _) {
+export async function addBetterRollsContent(app, protoHtml) {
 	const item = app.object;
 
 	if (item.actor && item.actor.permission < 3) { return; }
@@ -20,17 +20,18 @@ export async function addBetterRollsContent(app, protoHtml, _) {
 	}
 
 	// Create tab (for selection)
-	const tabSelector = html.find(`form nav.sheet-navigation.tabs`);
+	const tabSelector = html.find("form nav.sheet-navigation.tabs");
 	const betterRollsTabString = `<a class="item" data-group="primary" data-tab="betterRolls5e">${i18n("Better Rolls")}</a>`;
+
 	tabSelector.append($(betterRollsTabString));
 
-	const settingsContainer = html.find(`.sheet-body`),
-	  betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
-	  altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
+	const settingsContainer = html.find(".sheet-body");
+	const betterRollsTemplateString = "modules/betterrolls5e/templates/red-item-options.html";
+	const altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 
-	let isConsumable = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value || item.data.type == "consumable";
+	const isConsumable = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value || item.data.type == "consumable";
 
-	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
+	const betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		DND5E: CONFIG.DND5E,
 		item,
 		isConsumable,
@@ -41,6 +42,7 @@ export async function addBetterRollsContent(app, protoHtml, _) {
 		altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget
 	});
+
 	settingsContainer.append(betterRollsTemplate);
 
 	// Tab back to better rolls if we need (after certain events it may happen)
