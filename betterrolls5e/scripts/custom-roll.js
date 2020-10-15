@@ -316,15 +316,14 @@ export class CustomRoll {
 	}
 	
 	static async rollAbilityCheck(actor, abl, params = {}) {
-		let parts = ["@mod"],
-			data = duplicate(actor.data.data),
-			flavor = null;
-
-			data.mod = data.abilities[abl].mod;
-		
+		const parts = ["@mod"];
+		const data = duplicate(actor.data.data);
+		const flavor = null;
 		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
 		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
-		
+
+		data.mod = data.abilities[abl].mod;
+
 		if (checkBonus && parseInt(checkBonus) !== 0) {
 			parts.push("@checkBonus");
 			data["checkBonus"] = checkBonus;
@@ -337,21 +336,17 @@ export class CustomRoll {
 			parts.push(`floor(@attributes.prof / 2)`);
 		}
 
-		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
-			d20String = "1d20r<2";
-		}
-		
-		let rollState = params ? CustomRoll.getRollState(params) : null;
-		
+		const d20String = getProperty(actor, "data.flags.dnd5e.halflingLucky") ? "1d20r<2" : "1d20";
+		const rollState = params ? CustomRoll.getRollState(params) : null;
+
 		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
-		
+
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
-	
+
 	static async rollAbilitySave({ data: actor }, abl, params = {}) {
 		const data = { mod: [] };
 		const flavor = null;
