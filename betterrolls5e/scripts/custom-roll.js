@@ -29,80 +29,81 @@ export class CustomRoll {
 	* @param {String} rollType			The type of roll, such as "attack" or "damage"
 	*/
 	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false, rollType = "") {
-		let formula = [dice].concat(parts);
-		let rolls = [];
-		let tooltips = [];
-		
+		const formula = [dice].concat(parts);
+		const rolls = []
+		const tooltips = [];
+
 		// Step 1 - Get all rolls
-		for (let i=0; i<numRolls; i++) {
+		for (let i=0; i < numRolls; i++) {
 			rolls.push(await new Roll(formula.join("+"), data).roll());
 			tooltips.push(await rolls[i].getTooltip());
 		}
-		
-		let chatFormula = rolls[0].formula;
-		
+
 		// Step 2 - Setup chatData
-		let chatData = {
-			title: title,
-			formula: chatFormula,
-			tooltips: tooltips,
-			rolls: rolls,
-			rollState: rollState,
-			rollType: rollType
+		const chatData = {
+			title,
+			formula: rolls[0].formula,
+			tooltips,
+			rolls,
+			rollState,
+			rollType
 		}
-		
+
 		function tagIgnored() {
-			let rollTotals = rolls.map(r => r.total);
-			let chosenResult = rollTotals[0];
+			const rollTotals = rolls.map(r => r.total);
+			const chosenResult = rollTotals[0];
+
 			if (rollState) {
 				if (rollState == "highest") {
 					chosenResult = rollTotals.sort(function(a, b){return a-b})[rollTotals.length-1];
 				} else if (rollState == "lowest") {
 					chosenResult = rollTotals.sort(function(a, b){return a-b})[0];
 				}
-				
-			
+
 				rolls.forEach(r => {
 					if (r.total != chosenResult) { r.ignored = true; }
 				});
 			}
 		}
-		
+
+		// I think this is leftover code from a different implementation of the
+		// conditional above. It should probably be removed.
 		switch (rollState) {
 			case 'highest':
 				break;
 			case 'lowest':
 				break;
 		}
-		
+
 		tagIgnored();
-		
+
 		// Step 3 - Create HTML using custom template
-		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
-		
-		let template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+		const multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
+		const template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+
 		template.isCrit = template.isCrit && triggersCrit;
-		
-		let output = {
-			html:template.html,
-			isCrit:template.isCrit,
-			data:chatData
+
+		return {
+			html: template.html,
+			isCrit: template.isCrit,
+			data: chatData
 		};
-		return output;
 	}
-	
+
 	static getRollState(args) {
-		let adv = args.adv || 0;
-		let disadv = args.disadv || 0;
+		const adv = args.adv || 0;
+		const disadv = args.disadv || 0;
+
 		if (adv > 0 || disadv > 0) {
-			if (adv > disadv) { return "highest"; }
-			else if (adv < disadv) { return "lowest"; }
-		} else { return null; }
+			return (adv > disadv) ? "highest" : "lowest";
+		}
+
+		return null;
 	}
 
 	// Gets the dice pool from a single template. Used for non-item rolls.
 	static getDicePool(template) {
-		let dicePool = new Roll("0").roll();
+		const dicePool = new Roll("0").roll();
 		template.data.rolls.forEach(roll => {
 			roll.dice.forEach(die => {
 				dicePool._dice.push(die);
@@ -110,7 +111,7 @@ export class CustomRoll {
 		});
 		return dicePool;
 	}
-	
+
 	// Returns an {adv, disadv} object when given an event
 	static async eventToAdvantage(ev, itemType) {
 		if (ev.shiftKey) {
@@ -145,8 +146,7 @@ export class CustomRoll {
 			return {adv:0, disadv:0};
 		}
 	}
-	
-	
+
 	// Creates a chat message with the requested skill check.
 	static async fullRollSkill(actor, skill, params) {
 		const label = dnd5e.skills[skill];
