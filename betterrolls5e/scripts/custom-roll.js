@@ -352,48 +352,38 @@ export class CustomRoll {
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
 	
-	static async rollAbilitySave(actor, abl, params = {}) {
-		//console.log(abl);
-		let actorData = actor.data.data;
-		let parts = [];
-		let data = {mod: []};
-		let flavor = null;
-		
+	static async rollAbilitySave({ data: actor }, abl, params = {}) {
+		const data = { mod: [] };
+		const flavor = null;
+
 		// Support modifiers and global save bonus
-		const saveBonus = getProperty(actorData, "bonuses.abilities.save") || null;
-		let ablData = actor.data.data.abilities[abl];
-		let ablParts = {};
-		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
-		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
-		let mods = [ablParts.mod, ablParts.prof, saveBonus];
-		for (let i=0; i<mods.length; i++) {
-			if (mods[i] && mods[i] !== "0") {
-				data.mod.push(mods[i]);
-			}
-		}
+		const saveBonus = getProperty(actor.data, "bonuses.abilities.save") || null;
+		const ablData = actor.data.abilities[abl];
+
+		const ablParts = {
+			mod: ablData.mod !== 0 ? ablData.mod.toString() : null,
+			prof: ((ablData.proficient || 0) * actor.data.attributes.prof).toString()
+		};
+
+		const mods = [ablParts.mod, ablParts.prof, saveBonus];
+
+		data.mod = mods.filter(mod => mod && mod !== "0");
 		data.mod = data.mod.join("+");
-		
-		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
-			d20String = "1d20r<2";
-		}
-		
-		if (data.mod !== "") {
-			parts.push("mod");
-		}
-		
-		let rollState = params ? CustomRoll.getRollState(params) : null;
-		
+
+		const d20String = getProperty(actor, "data.flags.dnd5e.halflingLucky") ? "1d20r<2" : "1d20";
+		const parts = data.mod !== "" ? ["mod"] : [];
+		const rollState = params ? CustomRoll.getRollState(params) : null;
+
 		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
 		if (rollState && numRolls == 1) {
 			numRolls = 2;
 		}
-		
+
 		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
 	}
-	
+
 	static newItemRoll(item, params, fields) {
-		let roll = new CustomItemRoll(item, params, fields);
+		const roll = new CustomItemRoll(item, params, fields);
 		return roll;
 	}
 }
