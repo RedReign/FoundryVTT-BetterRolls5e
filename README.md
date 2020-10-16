@@ -67,9 +67,13 @@ Clicking with/without the Alt key:
 ![](https://i.imgur.com/fMMWz3m.gif)
 - Custom damage labels. Add written context to damage rolls to convey what the damage comes from, or when it occurs.
 ![](https://i.imgur.com/L9NTE7G.png)
+- Extended support for thrown items, consumables, ammunition, and items with otherwise limited uses.
+![](https://i.imgur.com/yQpSJgb.png)
 
 ## Planned Features
 - Additional macro support
+- Extended prompts to configure messages on a roll-by-roll basis
+- Additional hooks suppot and chat message flags for module cross-compatibility
 
 ## Known Issues
 - In versions prior to 1.1.12, there exists a bug where, if used alongside tidy5e, Actor data may increase exponentially. This has since been addressed in 1.1.12. **If you are using Foundry Virtual Tabletop 0.7.0 or higher, please update to Better Rolls 1.1.12.**
