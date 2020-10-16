@@ -40,10 +40,9 @@ Hooks.on('renderChatMessage', (_, html, _) => {
     }
 
     const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
-    dmgElements.forEach(element => { addButtons(element) });
-	
     const customElements = html.find('[data-type=custom] .red-base-die').toArray();
-    customElements.forEach(element => { addButtons(element) });
+    
+    [...dmgElements, ...customElements].forEach(element => { addButtons(element) });
 
     // adding click events to the buttons, this gets redone since they can break through rerendering of the card
 	html.find('.dmgBtn-container-br button').click(async ev => {
