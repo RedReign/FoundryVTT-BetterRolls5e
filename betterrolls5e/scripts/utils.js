@@ -1,3 +1,6 @@
+import { i18n } from "./betterrolls5e.js";
+import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
+
 export class Utils {
 	static getCharacterLevel(actor) {
 		// Determine character level
@@ -21,7 +24,7 @@ export class Utils {
 		const rangeUnit = range.units ? dnd5e.distanceUnits[data.range.units] : "";
 	
 		return `${standardRange}${longRange} ${rangeUnit}`.trim();
-	}	
+	}
 
 	static isHalfling(actor) {
 		return getProperty(actor, "data.flags.dnd5e.halflingLucky");
