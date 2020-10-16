@@ -849,7 +849,7 @@ export class CustomItemRoll {
 				properties = [
 					dnd5e.spellSchools[data.school],
 					dnd5e.spellLevels[data.level],
-					components.ritual ? i18n("Ritual") : null,
+					data.components.ritual ? i18n("Ritual") : null,
 					activation,
 					duration,
 					data.components.concentration ? i18n("Concentration") : null,
