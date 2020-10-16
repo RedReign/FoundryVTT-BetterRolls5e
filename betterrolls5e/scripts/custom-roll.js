@@ -822,7 +822,8 @@ export class CustomItemRoll {
 		let data = item.data.data,
 		
 		const range = Utils.getRange(item);
-		let target = (data.target && data.target.type) ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null;
+		const target = Utils.getTarget(item);
+
 		let activation = (data.activation && (data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null;
 		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
 		let activationCondition = (data.activation && data.activation.condition) ? "(" + data.activation.condition + ")" : null;
