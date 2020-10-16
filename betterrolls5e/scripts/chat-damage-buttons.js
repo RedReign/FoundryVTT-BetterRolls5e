@@ -1,28 +1,44 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
 
-Hooks.on('renderChatMessage', (message, html, data) => {
+Hooks.on('renderChatMessage', (html) => {
 	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
     let chatCard = html.find('.red-full');
     if (chatCard.length === 0) { return; }
 	
-	
 	function addButtons(dmgElement) {
         // creating the buttons and container
-        let fullDamageButton = $(`<button data-modifier="1"><i class="fas fa-user-minus" title="${i18n("br5e.chat.damageButtons.fullDamage.hint")}"></i></button>`);
-        let halfDamageButton = $(`<button data-modifier="0.5"><i class="fas fa-user-shield" title="${i18n("br5e.chat.damageButtons.halfDamage.hint")}"></i></button>`);
-        let doubleDamageButton = $(`<button data-modifier="2"><i class="fas fa-user-injured" title="${i18n("br5e.chat.damageButtons.doubleDamage.hint")}"></i></button>`);
-        let fullHealingButton = $(`<button data-modifier="-1"><i class="fas fa-user-plus" title="${i18n("br5e.chat.damageButtons.healing.hint")}"></i></button>`);
+        const fullDamageButton = $(`
+            <button data-modifier="1">
+                <i class="fas fa-user-minus" title="${i18n("br5e.chat.damageButtons.fullDamage.hint")}"></i>
+            </button>
+        `);
 
-        let btnContainer = $('<span class="dmgBtn-container-br"></span>');
+        const halfDamageButton = $(`
+            <button data-modifier="0.5">
+                <i class="fas fa-user-shield" title="${i18n("br5e.chat.damageButtons.halfDamage.hint")}"></i>
+            </button>
+        `);
 
-        btnContainer.append(fullDamageButton);
-        btnContainer.append(halfDamageButton);
-        btnContainer.append(doubleDamageButton);
-        btnContainer.append(fullHealingButton);
+        const doubleDamageButton = $(`
+            <button data-modifier="2">
+                <i class="fas fa-user-injured" title="${i18n("br5e.chat.damageButtons.doubleDamage.hint")}"></i>
+            </button>
+        `);
+
+        const fullHealingButton = $(`
+            <button data-modifier="-1">
+                <i class="fas fa-user-plus" title="${i18n("br5e.chat.damageButtons.healing.hint")}"></i>
+            </button>
+        `);
+
+        const btnContainer = $('<span class="dmgBtn-container-br"></span>');
+
+        btnContainer.append(fullDamageButton, halfDamageButton, doubleDamageButton, fullHealingButton);
 
         // adding the buttons to the the target element
         $(dmgElement).append(btnContainer);
     }
+
     let dmgElements = html.find('.red-base-die').parents('.dice-total'); 
     for (let dmgElement of dmgElements) { addButtons(dmgElement); }
 	
