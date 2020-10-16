@@ -32,54 +32,54 @@ Hooks.on('renderChatMessage', (html) => {
         `);
 
         const btnContainer = $('<span class="dmgBtn-container-br"></span>');
-
         btnContainer.append(fullDamageButton, halfDamageButton, doubleDamageButton, fullHealingButton);
 
         // adding the buttons to the the target element
         $(dmgElement).append(btnContainer);
     }
 
-    let dmgElements = html.find('.red-base-die').parents('.dice-total'); 
-    for (let dmgElement of dmgElements) { addButtons(dmgElement); }
+    const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
+    dmgElements.forEach(element => { addButtons(element) });
 	
-	let customElements = html.find('[data-type=custom] .red-base-die');
-	for (let customElement of customElements) { addButtons(customElement); }
+    const customElements = html.find('[data-type=custom] .red-base-die').toArray();
+    customElements.forEach(element => { addButtons(element) });
 
     // adding click events to the buttons, this gets redone since they can break through rerendering of the card
 	html.find('.dmgBtn-container-br button').click(async ev => {
 		ev.preventDefault();
-			ev.stopPropagation();
-			// find out the proper dmg thats supposed to be applied
-			let dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
-			let dmg = dmgElement.find('.red-base-die').text();
-			if (dmgElement.find('.red-extra-die').length > 0) {
-				let critDmg = dmgElement.find('.red-extra-die').text();
+        ev.stopPropagation();
 
-				// set position on where to put the dialog
-				let position = { x: ev.originalEvent.screenX, y: ev.originalEvent.screenY };
-				dmg = await applyCritDamage(Number(dmg), Number(critDmg), position);
-			}
-			// wrapping in html since thats what the applyDamage function expects
-			let dmgHtml = $(`<div><h4 class="dice-total">${dmg}</h4></div>`)
+        // find out the proper dmg thats supposed to be applied
+        const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
+        let dmg = dmgElement.find('.red-base-die').text();
 
-			// getting the modifier depending on which of the buttons was pressed
-			let modifier = ev.target.dataset.modifier;
+        if (dmgElement.find('.red-extra-die').length > 0) {
+            const critDmg = dmgElement.find('.red-extra-die').text();
+            const dialogPosition = {
+                x: ev.originalEvent.screenX,
+                y: ev.originalEvent.screenY
+            };
 
-			// sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
-			if (modifier === undefined) {
-				modifier = $(ev.target).parent().attr('data-modifier');
-			}
+            dmg = await applyCritDamage(Number(dmg), Number(critDmg), dialogPosition);
+        }
 
-			// applying dmg to the targeted token and sending only the span that the button sits in 
-			let targetActors = getTargetActors();
-			for (let i=0; i<targetActors.length; i++) {
-				targetActors[i].applyDamage(dmg, modifier);
-			}
-			setTimeout(() => { 
-				if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
-					canvas.hud.token.render();
-				}
-			}, 50);
+        // getting the modifier depending on which of the buttons was pressed
+        let modifier = ev.target.dataset.modifier;
+
+        // sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
+        if (modifier === undefined) {
+            modifier = $(ev.target).parent().attr('data-modifier');
+        }
+
+        // applying dmg to the targeted token and sending only the span that the button sits in 
+        const targetActors = getTargetActors() || [];
+        targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
+        
+        setTimeout(() => { 
+            if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
+                canvas.hud.token.render();
+            }
+        }, 50);
     });
 
     // logic to only show the buttons when the mouse is within the chatcard
