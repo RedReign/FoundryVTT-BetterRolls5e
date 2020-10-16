@@ -20,8 +20,8 @@ export class Utils {
 		if (!range?.value && !range?.units) { return null; }
 	
 		const standardRange = range.value || "";
-		const longRange = (range.long !== 0 && range.long != range.value) ? `/${data.range.long}` : "";
-		const rangeUnit = range.units ? dnd5e.distanceUnits[data.range.units] : "";
+		const longRange = (range.long !== 0 && range.long != range.value) ? `/${range.long}` : "";
+		const rangeUnit = range.units ? dnd5e.distanceUnits[range.units] : "";
 	
 		return `${standardRange}${longRange} ${rangeUnit}`.trim();
 	}
