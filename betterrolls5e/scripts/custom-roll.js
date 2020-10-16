@@ -820,9 +820,8 @@ export class CustomItemRoll {
 		let item = this.item;
 		let properties = [];
 		let data = item.data.data,
-			ad = item.actor.data.data;
 		
-		let range = ((data.range) && (data.range.value || data.range.units)) ? (data.range.value || "") + (((data.range.long) && (data.range.long !== 0) && (data.rangelong != data.range.value)) ? "/" +data.range.long : "") + " " + (data.range.units ? dnd5e.distanceUnits[data.range.units] : "") : null;
+		const range = Utils.getRange(item);
 		let target = (data.target && data.target.type) ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null;
 		let activation = (data.activation && (data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null;
 		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
