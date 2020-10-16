@@ -45,6 +45,25 @@ export class Utils {
 		return `${standardRange}${longRange} ${rangeUnit}`.trim();
 	}
 
+	static getSpellComponents(item) {
+		const { vocal, somatic, material, materials } = item.data.data.components;
+
+		let componentString = "";
+
+		if (vocal) { componentString += i18n("br5e.chat.abrVocal"); }
+		if (somatic) { componentString += i18n("br5e.chat.abrSomatic"); }
+		if (material) { 
+			componentString += i18n("br5e.chat.abrMaterial");
+
+			if (materials.value) {
+				const materialConsumption = materials.consumed ? i18n("br5e.chat.consumedBySpell") : ""
+				componentString += ` (${materials.value}` +  ` ${materialConsumption})`;
+			}
+		}
+
+		return componentString || null;
+	}
+
 	static getTarget(item) {
 		const { target } = item.data.data;
 

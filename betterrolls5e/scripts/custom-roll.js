@@ -845,16 +845,7 @@ export class CustomItemRoll {
 				// Spell attack labels
 				data.damageLabel = data.actionType === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
 				data.isAttack = data.actionType === "attack";
-				
-				let components = data.components,
-					componentString = "";
-				if (components.vocal) { componentString += i18n("br5e.chat.abrVocal"); }
-				if (components.somatic) { componentString += i18n("br5e.chat.abrSomatic"); }
-				if (components.material) { 
-					componentString += i18n("br5e.chat.abrMaterial");
-					if (data.materials.value) { componentString += " (" + data.materials.value + (data.materials.consumed ? i18n("br5e.chat.consumedBySpell") : "") + ")"; }
-				}
-				
+
 				properties = [
 					dnd5e.spellSchools[data.school],
 					dnd5e.spellLevels[data.level],
@@ -862,7 +853,7 @@ export class CustomItemRoll {
 					activation,
 					duration,
 					data.components.concentration ? i18n("Concentration") : null,
-					componentString ? componentString : null,
+					Utils.getSpellComponents(item),
 					range,
 					target
 				];
