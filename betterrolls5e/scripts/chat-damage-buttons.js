@@ -1,8 +1,8 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
 
-Hooks.on('renderChatMessage', (html) => {
+Hooks.on('renderChatMessage', (_, html, _) => {
     const chatCard = html.find('.red-full');
-    
+
 	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
     if (chatCard.length === 0) { return; }
 	
