@@ -1,8 +1,9 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
 
 Hooks.on('renderChatMessage', (html) => {
+    const chatCard = html.find('.red-full');
+    
 	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
-    let chatCard = html.find('.red-full');
     if (chatCard.length === 0) { return; }
 	
 	function addButtons(dmgElement) {
@@ -94,13 +95,14 @@ Hooks.on('renderChatMessage', (html) => {
 });
 
 async function applyCritDamage(dmg, critdmg, position) {
-    let dialogResult = await new Promise(async (resolve, reject) => {
-        let options = {};
-        options.left = position.x;
-        options.top = position.y;
-        options.width = 100;
-        
-        let d = new Dialog({
+    const dialogResult = await new Promise(async (resolve, reject) => {
+        const options = {
+            left: position.x,
+            top: position.y,
+            width: 100 
+        };
+
+        const data = {
             title: i18n("br5e.chat.damageButtons.critPrompt.title"),
             content: "",
             buttons: {
@@ -115,9 +117,11 @@ async function applyCritDamage(dmg, critdmg, position) {
                     callback: () => { resolve(dmg); }
                 }
             },
-            default: "two",
-        }, options);
-        d.render(true);
+            default: "two"
+        }
+
+        new Dialog(data, options).render(true);
     });
+
     return dialogResult;
 }
