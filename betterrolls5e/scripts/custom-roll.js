@@ -824,8 +824,7 @@ export class CustomItemRoll {
 		const range = Utils.getRange(item);
 		const target = Utils.getTarget(item);
 		const activation = Utils.getActivationData(item)
-
-		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
+		const duration = Utils.getDuration(item);
 
 		switch(item.data.type) {
 			case "weapon":
@@ -872,18 +871,18 @@ export class CustomItemRoll {
 				properties = [
 					data.requirements,
 					activation,
-					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
+					duration,
 					range,
-					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
+					target,
 				];
 				break;
 			case "consumable":
 				properties = [
 					data.weight ? data.weight + " " + i18n("lbs.") : null,
 					activation,
-					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
+					duration,
 					range,
-					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
+					target,
 				];
 				break;
 			case "equipment":

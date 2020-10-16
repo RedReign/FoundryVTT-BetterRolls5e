@@ -25,6 +25,14 @@ export class Utils {
 		return null;
 	}
 
+	static getDuration(item) {
+		const {duration} = item.data.data;
+
+		if (!duration?.units) { return null; }
+
+		return `${duration.value ? duration.value : ""} ${dnd5e.timePeriods[duration.units]}`.trim()
+	}
+
 	static getRange(item) {
 		const { range } = item.data.data;
 	
