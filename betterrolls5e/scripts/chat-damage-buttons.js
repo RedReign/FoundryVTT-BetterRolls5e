@@ -69,7 +69,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
     // logic to only show the buttons when the mouse is within the chatcard
     html.find('.dmgBtn-container-br').hide();
     $(html).hover(evIn => {
-		if (canvas.tokens.controlled.length > 0) {
+		if (canvas?.tokens.controlled.length > 0) {
 			html.find('.dmgBtn-container-br').show();
 		}
     }, evOut => {

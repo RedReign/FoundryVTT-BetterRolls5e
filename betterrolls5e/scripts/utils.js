@@ -10,4 +10,8 @@ export class Utils {
 		});
 		return level;
 	}
+
+	static isHalfling(actor) {
+		return getProperty(actor, "data.flags.dnd5e.halflingLucky");
+	}
 }

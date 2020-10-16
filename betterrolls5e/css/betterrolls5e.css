@@ -53,6 +53,21 @@
 	font-size: 12px;
 }
 
+.br5e-consume-box {
+	background: rgba(0, 0, 0, 0.05);
+	border: 1px solid #999;
+	border-radius: 4px;
+	box-shadow: 0 0 2px #fff inset;
+	display: flex;
+	flex-flow: row wrap;
+	justify-content: space-between;
+}
+
+.br5e-consume-title {
+	padding-left: 6px;
+	font-size: 13px;
+}
+
 .red-full .br-flavor {
 	font-style: italic;
 }
@@ -117,8 +132,4 @@
 
 .better-npc-sheet .item.expanded .item-summary .item-buttons {
     line-height: 22px;
-}
-
-.dnd5e .item-betterRolls label.checkbox input[type="checkbox"] {
-	top: 0px;
 }

@@ -210,8 +210,9 @@ export class CustomRoll {
 			data["skillBonus"] = skillBonus;
 		}
 		
+		// Halfling Luck check
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (Utils.isHalfling(actor)) {
 			d20String = "1d20r<2";
 		}
 
@@ -337,8 +338,9 @@ export class CustomRoll {
 			parts.push(`floor(@attributes.prof / 2)`);
 		}
 
+		// Halfling Luck check
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (Utils.isHalfling(actor)) {
 			d20String = "1d20r<2";
 		}
 		
@@ -373,8 +375,9 @@ export class CustomRoll {
 		}
 		data.mod = data.mod.join("+");
 		
+		// Halfling Luck check
 		let d20String = "1d20";
-		if (getProperty(actor, "data.flags.dnd5e.halflingLucky")) {
+		if (Utils.isHalfling(actor)) {
 			d20String = "1d20r<2";
 		}
 		
@@ -404,7 +407,7 @@ let defaultParams = {
 	preset: false,
 	properties: true,
 	slotLevel: null,
-	useCharge: false,
+	useCharge: {},
 	useTemplate: false,
 	event: null,
 	adv: 0,
@@ -443,7 +446,7 @@ export class CustomItemRoll {
 			damageTitlePlacement: game.settings.get("betterrolls5e", "damageTitlePlacement"),
 			damageContextPlacement: game.settings.get("betterrolls5e", "damageContextPlacement"),
 			contextReplacesTitle: game.settings.get("betterrolls5e", "contextReplacesTitle"),
-			contextreplacesDamage: game.settings.get("betterrolls5e", "contextReplacesDamage"),
+			contextReplacesDamage: game.settings.get("betterrolls5e", "contextReplacesDamage"),
 			critString: game.settings.get("betterrolls5e", "critString"),
 			critBehavior: game.settings.get("betterrolls5e", "critBehavior"),
 			quickDefaultDescriptionEnabled: game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled"),
@@ -497,6 +500,13 @@ export class CustomItemRoll {
 		if (Number.isInteger(params.preset)) {
 			this.updateForPreset();
 		}
+
+		if (this.params.useCharge.resource) {
+			const consume = itemData.consume;
+			if ( consume?.type === "ammo" ) {
+				this.ammo = this.actor.items.get(consume.target);
+			}
+		}
 		
 		if (!params.slotLevel) {
 			if (item.data.type === "spell") {
@@ -509,11 +519,8 @@ export class CustomItemRoll {
 		this.templates = await this.allFieldsToTemplates();
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
-		let chargeCheck = "";
-		if (params.useCharge) {
-			chargeCheck = await this.consumeCharge();
-			if (chargeCheck === "error") { return "error"; }
-		}
+		let chargeCheck = await this.consumeCharge();
+		if (chargeCheck === "error") { return "error"; }
 		
 		// Show properties
 		this.properties = (params.properties) ? this.listProperties() : null;
@@ -562,7 +569,7 @@ export class CustomItemRoll {
 		quickRoll: false,
 		properties: true,
 		slotLevel: null,
-		useCharge: false,
+		useCharge: {},
 		useTemplate: false,
 		adv: 0,
 		disadv: 0,
@@ -576,7 +583,6 @@ export class CustomItemRoll {
 */
 	async fieldToTemplate(field){
 		let item = this.item;
-		let output;
 		let fieldType = field[0].toLowerCase();
 		let fieldArgs = field.slice();
 		fieldArgs.splice(0,1);
@@ -592,12 +598,13 @@ export class CustomItemRoll {
 				break;
 			case 'damage':
 				// {damageIndex: 0, forceVersatile: false, forceCrit: false}
-				let index, versatile, crit;
+				let index, versatile, crit, context;
 				let damagesToPush = [];
 				if (typeof fieldArgs[0] === "object") {
 					index = fieldArgs[0].index;
 					versatile = fieldArgs[0].versatile;
 					crit = fieldArgs[0].crit;
+					context = fieldArgs[0].context;
 				}
 				let oldIndex = index;
 				if (index === "all") {
@@ -615,8 +622,15 @@ export class CustomItemRoll {
 						damageIndex: index[i] || 0,
 						// versatile damage will only replace the first damage formula in an "all" damage request
 						forceVersatile: (i == 0 || oldIndex !== "all") ? versatile : false,
-						forceCrit: crit
+						forceCrit: crit,
+						customContext: context
 					}));
+				}
+				if (this.ammo) {
+					this.item = this.ammo;
+					delete this.ammo;
+					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit, context: `[${this.item.name}]`}]);
+					this.item = item;
 				}
 				break;
 			case 'savedc':
@@ -745,18 +759,20 @@ export class CustomItemRoll {
 			brFlags = flags.betterRolls5e,
 			preset = this.params.preset,
 			properties = false,
-			useCharge = false,
+			useCharge = {},
 			useTemplate = false,
-			fields = [];
-		
-		
+			fields = [],
+			val = (preset === 1) ? "altValue" : "value";
+			
 		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls
 			function flagIsTrue(flag) {
-				let val = "value";
-				if (preset === 1) { val = "altValue"; }
 				return (brFlags[flag] && (brFlags[flag][val] == true));
+			}
+
+			function getFlag(flag) {
+				return (brFlags[flag] ? (brFlags[flag][val]) : null);
 			}
 			
 			if (flagIsTrue("quickFlavor") && itemData.chatFlavor) { fields.push(["flavor"]); }
@@ -765,27 +781,20 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
 			
-			switch (preset) {
-				case 0: // Quick Roll
-					if (brFlags.quickDamage && (brFlags.quickDamage.value.length > 0)) {
-						for (let i = 0; i < brFlags.quickDamage.value.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
-							if (brFlags.quickDamage.value[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
-						}
-					}
-					break;
-				case 1: // Alt Quick Roll
-					if (brFlags.quickDamage && (brFlags.quickDamage.altValue.length > 0)) {
-						for (let i = 0; i < brFlags.quickDamage.altValue.length; i++) {
-							let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
-							if (brFlags.quickDamage.altValue[i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
-						}
-					}
-					break;
+			if (brFlags.quickDamage && (brFlags.quickDamage[val].length > 0)) {
+				for (let i = 0; i < brFlags.quickDamage[val].length; i++) {
+					let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
+					if (brFlags.quickDamage[val][i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
+				}
 			}
+
+
 			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
-			if (flagIsTrue("quickCharges") && (this.item.hasLimitedUses || this.item.type == "consumable" || this.item.data.data.consume?.type)) { useCharge = true; }
+
+			if (brFlags.quickCharges) {
+				useCharge = duplicate(getFlag("quickCharges"));
+			}
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
@@ -794,10 +803,12 @@ export class CustomItemRoll {
 		}
 		
 		this.params = mergeObject(this.params, {
-			properties: properties,
-			useCharge: useCharge,
-			useTemplate: useTemplate,
+			properties,
+			useCharge,
+			useTemplate,
 		});
+
+		console.log(this.params);
 		
 		this.fields = fields.concat((this.fields || []).slice());
 	}
@@ -1031,6 +1042,15 @@ export class CustomItemRoll {
 			rollData.bonus = itemData.attackBonus;
 			//console.log("Adding Bonus mod!", itemData);
 		}
+
+		if(this.ammo?.data) {
+			const ammoBonus = this.ammo.data.data.attackBonus;
+			if ( ammoBonus ) {
+				parts.push("@ammo");
+				rollData["ammo"] = ammoBonus;
+				title += ` [${this.ammo.name}]`;
+			}
+		}
 		
 		// Add custom situational bonus
 		if (args.bonus) {
@@ -1070,7 +1090,7 @@ export class CustomItemRoll {
 		let d20String = "1d20";
 		
 		// Halfling Luck check
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+		if (Utils.isHalfling(itm.actor)) {
 			d20String = "1d20r<2";
 		}
 		
@@ -1128,7 +1148,7 @@ export class CustomItemRoll {
 		return output;
 	}
 	
-	async rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0}) {
+	async rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0, customContext = null}) {
 		let itm = this.item;
 		let itemData = itm.data.data,
 			rollData = duplicate(itm.actor.data.data),
@@ -1199,7 +1219,7 @@ export class CustomItemRoll {
 		
 		let titleString = "",
 			damageString = [],
-			contextString = flags.quickDamage.context[damageIndex];
+			contextString = customContext || (flags.quickDamage.context && flags.quickDamage.context[damageIndex]);
 		
 		// Show "Healing" prefix only if it's not inherently a heal action
 		if (dnd5e.healingTypes[damageType]) { titleString = ""; }
@@ -1279,6 +1299,10 @@ export class CustomItemRoll {
 		critRollData.mod = 0;
 		let critRoll = await new Roll(critFormula);
 		let savage;
+
+		// If the crit formula has no dice, return null
+		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") { return null; }
+
 		if (itm.data.type === "weapon") {
 			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
 			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
@@ -1460,14 +1484,14 @@ export class CustomItemRoll {
 		
 		// Add proficiency, expertise, or Jack of all Trades
 		if ( itemData.proficient ) {
-			parts.push(`@prof`);
+			parts.push("@prof");
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
 			//console.log("Adding Proficiency mod!");
 		}
 		
 		// Add item's bonus
 		if ( itemData.bonus ) {
-			parts.push(`@bonus`);
+			parts.push("@bonus");
 			rollData.bonus = itemData.bonus.value;
 			//console.log("Adding Bonus mod!");
 		}
@@ -1476,8 +1500,9 @@ export class CustomItemRoll {
 			parts.push(bonus);
 		}
 		
+		// Halfling Luck check
 		let d20String = "1d20";
-		if (getProperty(itm, "actor.data.flags.dnd5e.halflingLucky")) {
+		if (Utils.isHalfling(itm,actor)) {
 			d20String = "1d20r<2";
 		}
 		
@@ -1574,65 +1599,84 @@ export class CustomItemRoll {
 	async consumeCharge() {
 		let item = this.item,
 			itemData = item.data.data;
-		const uses = itemData.uses || {};
-		let usesCharges = !!uses.per && (uses.max > 0);
+		
+		const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
+
+		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
-		const usesRecharge = !!recharge.value;
+		const uses = itemData.uses || {};
 		const autoDestroy = uses.autoDestroy;
 		const current = uses.value || 0;
-		const remaining = usesCharges ? Math.max(current - 1, 0) : current;
-
-		let useCase = null;
+		const remaining = request.use ? Math.max(current - 1, 0) : current;
+		const q = itemData.quantity;
+		const updates = {};
 		let output = "success";
 
-		// The following code is adapted from dnd5e/module/apps/item/entity.js
-		// Check if quantity/charge consumption will work, but do not update yet
-		if ( usesRecharge ) await item.update({"data.recharge.charged": false});
-		else if ( item.data.type == "feat" && current) {
-			await item.update({"data.uses.value": remaining});
-		}
-		else {
-			const q = itemData.quantity;
-			// Case 1, reduce charges
-			if ( remaining ) { useCase = 1; }
-			// Case 2, reduce quantity
-			else if ( q > 1 ) { useCase = 2; }
-			// Case 3, destroy the item
-			else if ( (q <= 1) && autoDestroy ) { useCase = 3; }
-			// Case 4, reduce item to 0 quantity and 0 charges
-			else if ( (q === 1) ) { useCase = 4; }
-			// Case 5, item unusable, display warning and do nothing
-			else {
-				ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name}));
-				return "error";
-			}
+		// Check for consuming uses, but not quantity
+		if (hasUses && request.use && !request.quantity) {
+			if (!current) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
-		// Check for resource consumption
-		const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
-		if ( allowed === false ) { output = "error"; }
-
-		// Handle quantity/charge consumption if handleResourceConsumption is successful.
-		else {
-			switch(useCase) {
-				case 1:
-					await item.update({"data.uses.value": remaining});
-					break;
-				case 2:
-					await item.update({"data.quantity": q - 1, "data.uses.value": uses.max || 0});
-					break;
-				case 3:
-					ui.notifications.warn(i18n("br5e.error.autoDestroy"));
-					output = "destroy";
-					break;
-				case 4:
-					await item.update({"data.quantity": q - 1, "data.uses.value": 0});
-					break;
-				default:
-					output = "error";
-					break;		
-			}
+		// Check for consuming quantity, but not uses
+		if (request.quantity && !request.use) {
+			if (!q) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
+
+		// Check for consuming quantity and uses
+		if (hasUses && request.use && request.quantity) {
+			if (!current && q <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+		}
+
+		// Check for consuming charge ("Action Recharge")
+		if (request.charge) {
+			if (!recharge.charged) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+		}
+
+		// Check for consuming resource.
+		// Note that _handleResourceConsumption() will actually consume the resource as well as perform the check, hence why it must be performed last.
+		if (hasResource && request.resource) {
+			const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
+			if (allowed === false) { return "error"; }
+		}
+
+		// Handle uses, but not quantity
+		if (hasUses && request.use && !request.quantity) {
+			updates["data.uses.value"] = remaining;
+		}
+		
+		// Handle quantity, but not uses
+		else if (request.quantity && !request.use) {
+			if (q <= 1 && autoDestroy) {
+				output = "destroy";
+			}
+			updates["data.quantity"] = q - 1;
+		}
+
+		// Handle quantity and uses
+		else if (hasUses && request.use && request.quantity) {
+			let remainingU = remaining;
+			let remainingQ = q;
+			console.log(remainingQ, remainingU);
+			if (remainingU < 1) {
+				remainingQ -= 1;
+				ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
+				if (remainingQ >= 1) {
+					remainingU = itemData.uses.max || 0;
+				} else { remainingU = 0; }
+				if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
+			}
+
+			updates["data.quantity"] = Math.max(remainingQ,0);
+			updates["data.uses.value"] = Math.max(remainingU,0);
+		}
+
+		// Handle charge ("Action Recharge")
+		if (request.charge) {
+			updates["data.recharge.charged"] = false;
+		}
+
+		item.update(updates);
 
 		return output;
 	}

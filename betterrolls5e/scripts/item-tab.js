@@ -5,8 +5,9 @@ let activate = false;
 /**
  * Adds adds the Better Rolls tab to an item's sheet. Should only be called when the sheet is rendered.
  */
-export async function addBetterRollsContent(app, protoHtml, _) {
+export async function addBetterRollsContent(app, protoHtml) {
 	const item = app.object;
+	const itemData = item.data.data;
 
 	if (item.actor && item.actor.permission < 3) { return; }
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
@@ -20,20 +21,34 @@ export async function addBetterRollsContent(app, protoHtml, _) {
 	}
 
 	// Create tab (for selection)
-	const tabSelector = html.find(`form nav.sheet-navigation.tabs`);
+	const tabSelector = html.find("form nav.sheet-navigation.tabs");
 	const betterRollsTabString = `<a class="item" data-group="primary" data-tab="betterRolls5e">${i18n("Better Rolls")}</a>`;
 	tabSelector.append($(betterRollsTabString));
 
-	const settingsContainer = html.find(`.sheet-body`),
-	  betterRollsTemplateString = `modules/betterrolls5e/templates/red-item-options.html`,
-	  altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
+	const settingsContainer = html.find(".sheet-body");
+	const betterRollsTemplateString = "modules/betterrolls5e/templates/red-item-options.html";
+	const altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 
-	let isConsumable = item.data.data.consume?.type || item.data.data.uses?.per || item.data.data.recharge?.value || item.data.type == "consumable";
+	// For items with quantity (weapons, tools, consumables...)
+	const hasQuantity = ("quantity" in itemData);
+	// For items with "Limited Uses" configured
+	const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per);
+	// For items with "Resource Consumption" configured
+	const hasResource = !!(itemData.consume?.target);
+	// For abilities with "Action Recharge" configured
+	const hasCharge = !!(itemData.recharge?.value);
+	
+	// For items that have at least one way to consume something
+	const canConsume = hasQuantity || hasUses || hasResource || hasCharge;
 
-	let betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
+	const betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
 		DND5E: CONFIG.DND5E,
 		item,
-		isConsumable,
+		canConsume,
+		hasQuantity,
+		hasUses,
+		hasResource,
+		hasCharge,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
 		flags: item.data.flags,
@@ -41,11 +56,13 @@ export async function addBetterRollsContent(app, protoHtml, _) {
 		altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget
 	});
+	
 	settingsContainer.append(betterRollsTemplate);
 
 	// Tab back to better rolls if we need (after certain events it may happen)
 	if (activate) {
 		app._tabs[0].activate("betterRolls5e");
+		app.setPosition();
 		activate = false;
 	}
 
@@ -54,8 +71,6 @@ export async function addBetterRollsContent(app, protoHtml, _) {
 		const damageRolls = html.find(".tab.details .damage-parts .damage-part input").toArray();
 		// Placeholder is either "Context" or "Label" depending on system settings
 		const placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
-
-		console.log(damageRolls);
 
 		damageRolls.forEach((damageRoll, i) => {
 			const contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
