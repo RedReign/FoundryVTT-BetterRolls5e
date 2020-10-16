@@ -438,21 +438,23 @@ export class CustomItemRoll {
 	
 	// Update config settings in the roll.
 	updateConfig() {
+		const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
+
 		this.config = {
-			playRollSounds: game.settings.get("betterrolls5e", "playRollSounds"),
+			playRollSounds: getBRSetting("playRollSounds"),
 			hasMaestroSound: hasMaestroSound(this.item),
-			damageRollPlacement: game.settings.get("betterrolls5e", "damageRollPlacement"),
-			rollTitlePlacement: game.settings.get("betterrolls5e", "rollTitlePlacement"),
-			damageTitlePlacement: game.settings.get("betterrolls5e", "damageTitlePlacement"),
-			damageContextPlacement: game.settings.get("betterrolls5e", "damageContextPlacement"),
-			contextReplacesTitle: game.settings.get("betterrolls5e", "contextReplacesTitle"),
-			contextReplacesDamage: game.settings.get("betterrolls5e", "contextReplacesDamage"),
-			critString: game.settings.get("betterrolls5e", "critString"),
-			critBehavior: game.settings.get("betterrolls5e", "critBehavior"),
-			quickDefaultDescriptionEnabled: game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled"),
-			altSecondaryEnabled: game.settings.get("betterrolls5e", "altSecondaryEnabled"),
-			d20Mode: game.settings.get("betterrolls5e", "d20Mode"),
-			hideDC: game.settings.get("betterrolls5e", "hideDC"),
+			damageRollPlacement: getBRSetting("damageRollPlacement"),
+			rollTitlePlacement: getBRSetting("rollTitlePlacement"),
+			damageTitlePlacement: getBRSetting("damageTitlePlacement"),
+			damageContextPlacement: getBRSetting("damageContextPlacement"),
+			contextReplacesTitle: getBRSetting("contextReplacesTitle"),
+			contextReplacesDamage: getBRSetting("contextReplacesDamage"),
+			critString: getBRSetting("critString"),
+			critBehavior: getBRSetting("critBehavior"),
+			quickDefaultDescriptionEnabled: getBRSetting("quickDefaultDescriptionEnabled"),
+			altSecondaryEnabled: getBRSetting("altSecondaryEnabled"),
+			d20Mode: getBRSetting("d20Mode"),
+			hideDC: getBRSetting("hideDC")
 		};
 	}
 	
