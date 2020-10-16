@@ -823,10 +823,10 @@ export class CustomItemRoll {
 		
 		const range = Utils.getRange(item);
 		const target = Utils.getTarget(item);
+		const activation = Utils.getActivationData(item)
 
-		let activation = (data.activation && (data.activation.type !== "") && (data.activation.type !== "none")) ? data.activation.cost + " " + data.activation.type : null;
 		let duration = (data.duration && data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null;
-		let activationCondition = (data.activation && data.activation.condition) ? "(" + data.activation.condition + ")" : null;
+
 		switch(item.data.type) {
 			case "weapon":
 				properties = [
@@ -871,7 +871,7 @@ export class CustomItemRoll {
 			case "feat":
 				properties = [
 					data.requirements,
-					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
+					activation,
 					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
 					range,
 					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,
@@ -880,7 +880,7 @@ export class CustomItemRoll {
 			case "consumable":
 				properties = [
 					data.weight ? data.weight + " " + i18n("lbs.") : null,
-					((data.activation.type !== "") && (data.activation.type !== "none")) ? (data.activation.cost ? data.activation.cost + " " : "") + dnd5e.abilityActivationTypes[data.activation.type] : null,
+					activation,
 					(data.duration.units) ? (data.duration.value ? data.duration.value + " " : "") + dnd5e.timePeriods[data.duration.units] : null,
 					range,
 					data.target.type ? i18n("Target: ").concat(dnd5e.targetTypes[data.target.type]) + ((data.target.units ) && (data.target.units !== "none") ? " (" + data.target.value + " " + dnd5e.distanceUnits[data.target.units] + ")" : "") : null,

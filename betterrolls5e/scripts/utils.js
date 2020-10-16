@@ -14,6 +14,17 @@ export class Utils {
 		return level;
 	}
 
+	static getActivationData(item) {
+		const { activation } = item.data.data;
+		const activationCost = activation.cost ? activation.cost : ""
+
+		if (activation?.type !== "" && activation?.type !== "none") {
+			return `${activationCost} ${dnd5e.abilityActivationTypes[data.activation.type]}`.trim();
+		}
+
+		return null;
+	}
+
 	static getRange(item) {
 		const { range } = item.data.data;
 	
