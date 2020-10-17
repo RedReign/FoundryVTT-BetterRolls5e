@@ -9,8 +9,10 @@ export class Utils {
 				const classLevels = parseInt(item.data.levels) || 1;
 				runningTotal += classLevels;
 			}
+
 			return runningTotal;
 		});
+
 		return level;
 	}
 
@@ -28,7 +30,9 @@ export class Utils {
 	static getDuration(item) {
 		const {duration} = item.data.data;
 
-		if (!duration?.units) { return null; }
+		if (!duration?.units) {
+			return null;
+		}
 
 		return `${duration.value ? duration.value : ""} ${dnd5e.timePeriods[duration.units]}`.trim()
 	}
@@ -36,10 +40,12 @@ export class Utils {
 	static getRange(item) {
 		const { range } = item.data.data;
 	
-		if (!range?.value && !range?.units) { return null; }
+		if (!range?.value && !range?.units) {
+			return null;
+		}
 	
 		const standardRange = range.value || "";
-		const longRange = (range.long && range.long != range.value) ? `/${range.long}` : "";
+		const longRange = (range.long && range.long !== range.value) ? `/${range.long}` : "";
 		const rangeUnit = range.units ? dnd5e.distanceUnits[range.units] : "";
 	
 		return `${standardRange}${longRange} ${rangeUnit}`.trim();
@@ -50,14 +56,20 @@ export class Utils {
 
 		let componentString = "";
 
-		if (vocal) { componentString += i18n("br5e.chat.abrVocal"); }
-		if (somatic) { componentString += i18n("br5e.chat.abrSomatic"); }
-		if (material) { 
+		if (vocal) {
+			componentString += i18n("br5e.chat.abrVocal");
+		}
+
+		if (somatic) {
+			componentString += i18n("br5e.chat.abrSomatic");
+		}
+
+		if (material) {
 			componentString += i18n("br5e.chat.abrMaterial");
 
 			if (materials.value) {
 				const materialConsumption = materials.consumed ? i18n("br5e.chat.consumedBySpell") : ""
-				componentString += ` (${materials.value}` +  ` ${materialConsumption})`;
+				componentString += ` (${materials.value}` + ` ${materialConsumption})`;
 			}
 		}
 
@@ -67,7 +79,9 @@ export class Utils {
 	static getTarget(item) {
 		const { target } = item.data.data;
 
-		if (!target?.type) { return null; }
+		if (!target?.type) {
+			return null;
+		}
 
 		const targetDistance = target?.units !== "none" ? ` (${target.value} ${dnd5e.distanceUnits[target.units]})` : "";
 		
@@ -113,8 +127,8 @@ export class Utils {
 	 * @param {Actor} actor
 	 */
 	static getImage(actor) {
-		let actorImage = (actor.data.img && actor.data.img != DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
-		let tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
+		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
+		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
 
 		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {
 			case "actor":
@@ -134,6 +148,7 @@ export class Utils {
 	static getDiceSound(hasMaestroSound=false) {
 		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
 		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
+
 		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
 			return CONFIG.sounds.dice;
 		}
