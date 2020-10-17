@@ -1458,7 +1458,7 @@ export class CustomItemRoll {
 		if ( consume && (lvl !== 0) ) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
 			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-      if ( slots === 0 || Number.isNaN(slots) ) {
+	  if ( slots === 0 || Number.isNaN(slots) ) {
 				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
 				return "error";
 			}

@@ -125,13 +125,13 @@ export class Utils {
 	}
 
 	/**
-     * The sound to play for dice rolling. Returns null if an alternative sound
+	 * The sound to play for dice rolling. Returns null if an alternative sound
 	 * from maestro or dice so nice is registered.
-     * This should be added to the chat message under sound.
+	 * This should be added to the chat message under sound.
 	 * @param {boolean} hasMaestroSound optional parameter to denote that maestro is enabled
 	 * @returns {string}
-     */
-    static getDiceSound(hasMaestroSound=false) {
+	 */
+	static getDiceSound(hasMaestroSound=false) {
 		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
 		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
 		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
@@ -139,7 +139,7 @@ export class Utils {
 		}
 		
 		return null;
-    }
+	}
 }
 
 /**
@@ -175,25 +175,25 @@ export class DiceCollection {
 	 * for the purposes of 3D dice rendering.
 	 * @param  {...Roll} rolls 
 	 */
-    push(...rolls) {
-        for (const roll of rolls) {
-            this.pool._dice.push(...roll.dice);
-        }
-    }
+	push(...rolls) {
+		for (const roll of rolls) {
+			this.pool._dice.push(...roll.dice);
+		}
+	}
 
-    /**
-     * Displays the collected dice to any subsystem that is interested.
-     * Currently its just Dice So Nice (if enabled).
-     * @returns {Promise<boolean>} if there were dice in the pool
-     */
-    async flush() {
-        const hasDice = this.pool.dice.length > 0;
-        if (game.dice3d && hasDice) {
-            const wd = getWhisperData();
-            await game.dice3d.showForRoll(this.pool, game.user, true, wd.whisper, wd.blind || false);
-        }
+	/**
+	 * Displays the collected dice to any subsystem that is interested.
+	 * Currently its just Dice So Nice (if enabled).
+	 * @returns {Promise<boolean>} if there were dice in the pool
+	 */
+	async flush() {
+		const hasDice = this.pool.dice.length > 0;
+		if (game.dice3d && hasDice) {
+			const wd = getWhisperData();
+			await game.dice3d.showForRoll(this.pool, game.user, true, wd.whisper, wd.blind || false);
+		}
 
-        this.pool = new Roll("0").roll();
-        return hasDice;
-    }
+		this.pool = new Roll("0").roll();
+		return hasDice;
+	}
 }
