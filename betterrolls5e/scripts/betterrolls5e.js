@@ -33,9 +33,9 @@ export function hasMaestroSound(item) {
 
 // Gets the IDs to send a message to
 export function getWhisperData() {
-	let rollMode = null,
-		whisper = null,
-		blind = null;
+	let rollMode = null;
+	let whisper = undefined;
+	let blind = null;
 	
 	rollMode = game.settings.get("core", "rollMode");
 	if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
@@ -585,17 +585,6 @@ export function changeRollsToDual (actor, html, data, params) {
 				CustomRoll.newItemRoll(item, mergeObject(params, {preset:0})).toMessage();
 			}
 		});
-	}
-}
-
-// Creates message out of a Custom Roll. Rolls the necessary 3D dice using the custom roll data, only rendering the message when the roll is finished.
-export async function createMessage(customRoll) {
-	if (game.dice3d && customRoll.dicePool) {
-		let wd = getWhisperData();
-		game.dice3d.showForRoll(customRoll.dicePool, game.user, true, wd.whisper, wd.blind || false).then(async () => { let output = await ChatMessage.create(customRoll.chatData); return output; });
-	} else {
-		let output = await ChatMessage.create(customRoll.chatData);
-		return output;
 	}
 }
 
