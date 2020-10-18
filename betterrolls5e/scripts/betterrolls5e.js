@@ -18,35 +18,6 @@ function hasProperty(object, key) {
 	return true;
 }
 
-// Checks for Maestro, allowing for cross-module compatibility
-function isMaestroOn() {
-	let output = false;
-	try { if (game.settings.get("maestro", "enableItemTrack")) {
-		output = true;
-	} }
-	catch { return false; }
-	return output;
-}
-
-// Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
-export function hasMaestroSound(item) {
-	return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
-}
-
-// Gets the IDs to send a message to
-export function getWhisperData() {
-	let rollMode = null;
-	let whisper = undefined;
-	let blind = null;
-	
-	rollMode = game.settings.get("core", "rollMode");
-	if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
-	if ( rollMode === "blindroll" ) blind = true;
-	else if ( rollMode === "selfroll" ) whisper = [game.user._id];
-	
-	return { rollMode, whisper, blind }
-}
-
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
 	const attacks = ["mwak", "rwak", "msak", "rsak"];

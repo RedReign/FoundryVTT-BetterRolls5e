@@ -1,5 +1,5 @@
-import { i18n, hasMaestroSound, isAttack, isSave, getSave, isCheck, redUpdateFlags, getWhisperData } from "./betterrolls5e.js";
-import { DiceCollection, Utils } from "./utils.js";
+import { i18n, isAttack, isSave, getSave, isCheck, redUpdateFlags } from "./betterrolls5e.js";
+import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
@@ -60,7 +60,6 @@ export class CustomRoll {
 				} else if (rollState == "lowest") {
 					chosenResult = rollTotals.sort(function(a, b){return a-b})[0];
 				}
-				
 			
 				rolls.forEach(r => {
 					if (r.total != chosenResult) { r.ignored = true; }
@@ -144,7 +143,7 @@ export class CustomRoll {
 
 		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
-				img: Utils.getImage(actor),
+				img: ActorUtils.getImage(actor),
 				name: `${i18n(label)}`
 			}
 		});
@@ -153,8 +152,6 @@ export class CustomRoll {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
-
-		const wd = getWhisperData();
 
 		const chatData = {
 			user: game.user._id,
@@ -166,9 +163,7 @@ export class CustomRoll {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			roll: blankRoll,
-			rollMode: wd.rollMode,
-			blind: wd.blind,
-			whisper: wd.whisper,
+			...Utils.getWhisperData(),
 			sound: Utils.getDiceSound()
 		};
 		
@@ -190,8 +185,8 @@ export class CustomRoll {
 		}
 		
 		// Halfling Luck + Reliable Talent check
-		let d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		if (Utils.hasReliableTalent(actor) && skill.value >= 1) {
+		let d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
+		if (ActorUtils.hasReliableTalent(actor) && skill.value >= 1) {
 			d20String = `{${d20String},10}kh`;
 		}
 		
@@ -233,7 +228,7 @@ export class CustomRoll {
 		
 		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
 			item: {
-				img: Utils.getImage(actor),
+				img: ActorUtils.getImage(actor),
 				name: titleString
 			}
 		});
@@ -242,8 +237,6 @@ export class CustomRoll {
 			title: titleTemplate,
 			templates: [multiRoll]
 		});
-
-		const wd = getWhisperData();
 
 		const chatData = {
 			user: game.user._id,
@@ -255,9 +248,7 @@ export class CustomRoll {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			roll: blankRoll,
-			rollMode: wd.rollMode,
-			blind: wd.blind,
-			whisper: wd.whisper,
+			...Utils.getWhisperData(),
 			sound: Utils.getDiceSound()
 		};
 		
@@ -289,7 +280,7 @@ export class CustomRoll {
 		}
 
 		// Halfling Luck check
-		const d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
 		
 		let rollState = params ? CustomRoll.getRollState(params) : null;
 		
@@ -323,7 +314,7 @@ export class CustomRoll {
 		data.mod = data.mod.join("+");
 		
 		// Halfling Luck check
-		const d20String = Utils.isHalfling(actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
 		
 		if (data.mod !== "") {
 			parts.push("@mod");
@@ -386,7 +377,7 @@ export class CustomItemRoll {
 
 		this.config = {
 			playRollSounds: getBRSetting("playRollSounds"),
-			hasMaestroSound: hasMaestroSound(this.item),
+			hasMaestroSound: ItemUtils.hasMaestroSound(this.item),
 			damageRollPlacement: getBRSetting("damageRollPlacement"),
 			rollTitlePlacement: getBRSetting("rollTitlePlacement"),
 			damageTitlePlacement: getBRSetting("damageTitlePlacement"),
@@ -656,8 +647,6 @@ export class CustomItemRoll {
 
 		const content = await this.roll();
 		if (content === "error") return;
-		
-		const wd = getWhisperData();
 
 		this.chatData = {
 			user: game.user._id,
@@ -669,9 +658,7 @@ export class CustomItemRoll {
 			},
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			roll: blankRoll,
-			rollMode: wd.rollMode,
-			blind: wd.blind,
-			whisper: wd.whisper,
+			...Utils.getWhisperData(),
 			sound: Utils.getDiceSound(this.config.hasMaestroSound)
 		};
 		
@@ -752,10 +739,10 @@ export class CustomItemRoll {
 		const data = item.data.data;
 		let properties = [];
 		
-		const range = Utils.getRange(item);
-		const target = Utils.getTarget(item);
-		const activation = Utils.getActivationData(item)
-		const duration = Utils.getDuration(item);
+		const range = ItemUtils.getRange(item);
+		const target = ItemUtils.getTarget(item);
+		const activation = ItemUtils.getActivationData(item)
+		const duration = ItemUtils.getDuration(item);
 
 		switch(item.data.type) {
 			case "weapon":
@@ -784,7 +771,7 @@ export class CustomItemRoll {
 					activation,
 					duration,
 					data.components.concentration ? i18n("Concentration") : null,
-					Utils.getSpellComponents(item),
+					ItemUtils.getSpellComponents(item),
 					range,
 					target
 				];
@@ -995,11 +982,11 @@ export class CustomItemRoll {
 		// Establish number of rolls using advantage/disadvantage and elven accuracy
 		const rollState = CustomRoll.getRollState({adv:args.adv, disadv:args.disadv});
 		let numRolls = rollState ? 2 : this.config.d20Mode;
-		if (numRolls == 2 && Utils.testElvenAccuracy(itm.actor, abl) && rollState !== "lowest") {
+		if (numRolls == 2 && ActorUtils.testElvenAccuracy(itm.actor, abl) && rollState !== "lowest") {
 			numRolls = 3;
 		}
 		
-		const d20String = Utils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
 		const rolls = await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold, rollState, args.triggersCrit);
 		const output = { ...rolls, type: "attack" };
 		if (output.isCrit) {
@@ -1240,7 +1227,7 @@ export class CustomItemRoll {
 		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
 			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = item.actor.data.type === "character" ? Utils.getCharacterLevel(item.actor) : actorData.details.cr;
+			let level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
 			let scale = itemData.scaling.formula;
 			let formula = parts[damageIndex];
 			const add = Math.floor((level + 1) / 6);
@@ -1398,7 +1385,7 @@ export class CustomItemRoll {
 		}
 		
 		// Halfling Luck check
-		const d20String = Utils.isHalfling(itm,actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(itm,actor) ? "1d20r<2" : "1d20";
 		
 		//(numRolls = 1, dice = "1d20", parts = [], data = {}, title, critThreshold, rollState, triggersCrit = false)
 		const output = await CustomRoll.rollMultiple(this.config.d20Mode, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);

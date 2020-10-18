@@ -1,7 +1,55 @@
-import { i18n, getWhisperData } from "./betterrolls5e.js";
+import { i18n } from "./betterrolls5e.js";
 import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
 
+/**
+ * Check if maestro is turned on.
+ */
+function isMaestroOn() {
+	let output = false;
+	try { if (game.settings.get("maestro", "enableItemTrack")) {
+		output = true;
+	} }
+	catch { return false; }
+	return output;
+}
+
 export class Utils {
+	/**
+	 * The sound to play for dice rolling. Returns null if an alternative sound
+	 * from maestro or dice so nice is registered.
+	 * This should be added to the chat message under sound.
+	 * @param {boolean} hasMaestroSound optional parameter to denote that maestro is enabled
+	 * @returns {string}
+	 */
+	static getDiceSound(hasMaestroSound=false) {
+		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
+		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
+
+		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
+			return CONFIG.sounds.dice;
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Additional data to attach to the chat message.
+	 */
+	static getWhisperData() {
+		let rollMode = null;
+		let whisper = undefined;
+		let blind = null;
+		
+		rollMode = game.settings.get("core", "rollMode");
+		if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
+		if ( rollMode === "blindroll" ) blind = true;
+		else if ( rollMode === "selfroll" ) whisper = [game.user._id];
+		
+		return { rollMode, whisper, blind }
+	}
+}
+
+export class ActorUtils {
 	static getCharacterLevel(actor) {
 		// Determine character level
 		const level = actor.data.items.reduce((runningTotal, item) => {
@@ -16,6 +64,58 @@ export class Utils {
 		return level;
 	}
 
+	/**
+	 * True if the actor has the halfling luck special trait.
+	 * @param {Actor} actor 
+	 */
+	static isHalfling(actor) {
+		return getProperty(actor, "data.flags.dnd5e.halflingLucky");
+	}
+		
+	/**
+	 * True if the actor has the reliable talent special trait.
+	 * @param {Actor} actor 
+	 */
+	static hasReliableTalent(actor) {
+		return getProperty(actor, "data.flags.dnd5e.reliableTalent");
+	}
+
+	/**
+	 * True if the actor has the elven accuracy feature
+	 * @param {Actor} actor 
+	 */
+	static hasElvenAccuracy(actor) {
+		return getProperty(actor, "data.flags.dnd5e.elvenAccuracy");
+	}
+	
+	/**
+	 * True if the actor has elven accuracy and the ability
+	 * successfully procs it.
+	 * @param {Actor} actor 
+	 * @param {string} ability ability mod shorthand
+	 */
+	static testElvenAccuracy(actor, ability) {
+		return ActorUtils.hasElvenAccuracy(actor) && ["dex", "int", "wis", "cha"].includes(ability);
+	}
+
+	/**
+	 * Returns the image to represent the actor. The result depends on BR settings.
+	 * @param {Actor} actor
+	 */
+	static getImage(actor) {
+		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
+		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
+
+		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {
+			case "actor":
+				return actorImage || tokenImage;
+			case "token":
+				return tokenImage || actorImage;
+		}
+	}
+}
+
+export class ItemUtils {
 	static getActivationData(item) {
 		const { activation } = item.data.data;
 		const activationCost = activation.cost ? activation.cost : ""
@@ -88,72 +188,11 @@ export class Utils {
 		return i18n("Target: ") + dnd5e.targetTypes[target.type] + targetDistance;
 	}
 
-	/**
-	 * True if the actor has the halfling luck special trait.
-	 * @param {Actor} actor 
+	/** 
+	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */
-	static isHalfling(actor) {
-		return getProperty(actor, "data.flags.dnd5e.halflingLucky");
-	}
-
-	/**
-	 * True if the actor has the reliable talent special trait.
-	 * @param {Actor} actor 
-	 */
-	static hasReliableTalent(actor) {
-		return getProperty(actor, "data.flags.dnd5e.reliableTalent");
-	}
-
-	/**
-	 * True if the actor has the elven accuracy feature
-	 * @param {Actor} actor 
-	 */
-	static hasElvenAccuracy(actor) {
-		return getProperty(actor, "data.flags.dnd5e.elvenAccuracy");
-	}
-
-	/**
-	 * True if the actor has elven accuracy and the ability
-	 * successfully procs it.
-	 * @param {Actor} actor 
-	 * @param {string} ability ability mod shorthand
-	 */
-	static testElvenAccuracy(actor, ability) {
-		return Utils.hasElvenAccuracy(actor) && ["dex", "int", "wis", "cha"].includes(ability);
-	}
-
-	/**
-	 * Returns the image to represent the actor. The result depends on BR settings.
-	 * @param {Actor} actor
-	 */
-	static getImage(actor) {
-		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
-		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
-
-		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {
-			case "actor":
-				return actorImage || tokenImage;
-			case "token":
-				return tokenImage || actorImage;
-		}
-	}
-
-	/**
-	 * The sound to play for dice rolling. Returns null if an alternative sound
-	 * from maestro or dice so nice is registered.
-	 * This should be added to the chat message under sound.
-	 * @param {boolean} hasMaestroSound optional parameter to denote that maestro is enabled
-	 * @returns {string}
-	 */
-	static getDiceSound(hasMaestroSound=false) {
-		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
-		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
-
-		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
-			return CONFIG.sounds.dice;
-		}
-		
-		return null;
+	static hasMaestroSound(item) {
+		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 	}
 }
 
@@ -204,7 +243,7 @@ export class DiceCollection {
 	async flush() {
 		const hasDice = this.pool.dice.length > 0;
 		if (game.dice3d && hasDice) {
-			const wd = getWhisperData();
+			const wd = Utils.getWhisperData();
 			await game.dice3d.showForRoll(this.pool, game.user, true, wd.whisper, wd.blind || false);
 		}
 
