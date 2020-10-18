@@ -266,33 +266,26 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 						createButton({ content: i18n("br5e.buttons.verDamage"), action: "verDamageRoll", value: "all" })
 					);
 				}
+
 				// Make a damage button for each damage type
 				if (itemData.damage.parts.length > 1) {
 					buttons.append(`<br>`);
 
-					for (let i = 0; i < itemData.damage.parts.length; i++) {
+					itemData.damage.parts.forEach(([_, damageType], i) => {
 						const damageString =
 							(contextEnabled && flags.quickDamage.context[i]) ||
-							CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]];
+							CONFIG.betterRolls5e.combinedDamageTypes[damageType];
 
-						buttons.append(
-							createButton({
-								content: `${i}: ${damageString}`,
-								action: "damageRoll",
-								value: i
-							})
-						);
+						let content = `${i}: ${damageString}`;
 
 						if (i === 0 && itemData.damage.versatile) {
-							buttons.append(
-								createButton({
-									content: `${0}: ${damageString} (${dnd5e.weaponProperties.ver})`,
-									action: "verDamageRoll",
-									value: 0
-								})
-							);
+							content += ` (${dnd5e.weaponProperties.ver})`;
 						}
-					}
+
+						buttons.append(
+							createButton({ content, action: "damageRoll", value: i })
+						);
+					});
 				}
 			}
 
