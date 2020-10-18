@@ -152,7 +152,7 @@ export class ItemUtils {
 	}
 
 	static getSpellComponents(item) {
-		const { vocal, somatic, material, materials } = item.data.data.components;
+		const { vocal, somatic, material } = item.data.data.components;
 
 		let componentString = "";
 
@@ -165,6 +165,7 @@ export class ItemUtils {
 		}
 
 		if (material) {
+			const materials = item.data.data.materials;
 			componentString += i18n("br5e.chat.abrMaterial");
 
 			if (materials.value) {
@@ -183,8 +184,7 @@ export class ItemUtils {
 			return null;
 		}
 
-		const targetDistance = target?.units !== "none" ? ` (${target.value} ${dnd5e.distanceUnits[target.units]})` : "";
-		
+		const targetDistance = target.units && target?.units !== "none" ? ` (${target.value} ${dnd5e.distanceUnits[target.units]})` : "";
 		return i18n("Target: ") + dnd5e.targetTypes[target.type] + targetDistance;
 	}
 
