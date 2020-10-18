@@ -29,40 +29,41 @@ export class CustomRoll {
 	* @param {String} rollType			The type of roll, such as "attack" or "damage"
 	*/
 	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false, rollType = "") {
-		let formula = [dice].concat(parts);
-		let rolls = [];
-		let tooltips = [];
+		const formula = [dice].concat(parts);
+		const rolls = [];
+		const tooltips = [];
 		
 		// Step 1 - Get all rolls
-		for (let i=0; i<numRolls; i++) {
+		for (let i=0; i < numRolls; i++) {
 			rolls.push(await new Roll(formula.join("+"), data).roll());
 			tooltips.push(await rolls[i].getTooltip());
 		}
 		
-		let chatFormula = rolls[0].formula;
-		
 		// Step 2 - Setup chatData
-		let chatData = {
-			title: title,
-			formula: chatFormula,
-			tooltips: tooltips,
-			rolls: rolls,
-			rollState: rollState,
-			rollType: rollType
-		}
+		const chatData = {
+			title,
+			tooltips,
+			rolls,
+			rollState,
+			rollType,
+			formula: rolls[0].formula
+		};
 		
 		function tagIgnored() {
-			let rollTotals = rolls.map(r => r.total);
+			const rollTotals = rolls.map(r => r.total);
 			let chosenResult = rollTotals[0];
+
 			if (rollState) {
-				if (rollState == "highest") {
-					chosenResult = rollTotals.sort(function(a, b){return a-b})[rollTotals.length-1];
-				} else if (rollState == "lowest") {
-					chosenResult = rollTotals.sort(function(a, b){return a-b})[0];
+				if (rollState === "highest") {
+					chosenResult = Math.max(...rollTotals);
+				} else if (rollState === "lowest") {
+					chosenResult = Math.min(...rollTotals);
 				}
 			
-				rolls.forEach(r => {
-					if (r.total != chosenResult) { r.ignored = true; }
+				rolls.forEach(roll => {
+					if (roll.total != chosenResult) {
+						roll.ignored = true;
+					}
 				});
 			}
 		}
@@ -77,17 +78,16 @@ export class CustomRoll {
 		tagIgnored();
 		
 		// Step 3 - Create HTML using custom template
-		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
+		const multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
 		
-		let template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
+		const template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
 		template.isCrit = template.isCrit && triggersCrit;
 		
-		let output = {
-			html:template.html,
-			isCrit:template.isCrit,
-			data:chatData
+		return {
+			html: template.html,
+			isCrit: template.isCrit,
+			data: chatData
 		};
-		return output;
 	}
 	
 	static getRollState(args) {
