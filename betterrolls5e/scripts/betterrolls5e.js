@@ -6,18 +6,6 @@ export function i18n(key) {
 	return game.i18n.localize(key);
 }
 
-function hasProperty(object, key) {
-	if ( !key ) return false;
-	let target = object;
-
-	for ( let p of key.split('.') ) {
-		if ( target.hasOwnProperty(p) ) target = target[p];
-		else return false;
-	}
-
-	return true;
-}
-
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
 	const attacks = ["mwak", "rwak", "msak", "rsak"];
