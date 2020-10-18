@@ -192,6 +192,21 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	}
 }
 
+/**
+ * Helper function for creating roll buttons.
+ * @param {Object} button
+ * @param {String} button.content - The text to display inside the button.
+ * @param {String} button.action - The value of the data-action attribute.
+ * @param {(String|Number|null)} [button.value=null] - The value of the data-value attribute.
+ */
+const createButton = ({ content, action, value = null }) => (
+	`<span class="tag">
+		<button data-action=${action} ${value ? `data-value="${value}"` : ""}>
+			${content}
+		</button>
+	</span>`
+)
+
 async function addButtonsToItemLi(li, actor, buttonContainer) {
 	
 	let item = actor.getOwnedItem(String(li.attr("data-item-id")));
@@ -219,20 +234,14 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 
 			if (diceEnabled) {
 				buttons.append(
-					`<span class="tag">
-						<button data-action="quickRoll">${i18n("br5e.buttons.roll")}</button>
-					</span>`,
-					`<span class="tag">
-						<button data-action="altRoll">${i18n("br5e.buttons.altRoll")}</button>
-					</span>`
+					createButton({ content: i18n("br5e.buttons.roll"), action: "quickRoll" }),
+					createButton({ content: i18n("br5e.buttons.altRoll"), action: "altRoll"})
 				)
 			};
 
 			if (isAttack(item)) {
 				buttons.append(
-					`<span class="tag">
-						<button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button>
-					</span>`
+					createButton({ content: i18n("br5e.buttons.attack"), action: "attackRoll"})
 				);
 			}
 
@@ -240,30 +249,21 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 				const  saveData = getSave(item);
 
 				buttons.append(
-					`<span class="tag">
-						<button data-action="save">
-							${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}
-						</button>
-					</span>`
+					createButton({
+						content: `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}`,
+						action: "save"
+					})
 				);
 			}
 
 			if (itemData.damage.parts.length > 0) {
 				buttons.append(
-					`<span class="tag">
-						<button data-action="damageRoll" data-value="all">
-							${i18n("br5e.buttons.damage")}
-						</button>
-					</span>`
+					createButton({ content: i18n("br5e.buttons.damage"), action: "damageRoll", value: "all" })
 				);
 
 				if (itemData.damage.versatile) {
 					buttons.append(
-						`<span class="tag">
-							<button data-action="verDamageRoll" data-value="all">
-								${i18n("br5e.buttons.verDamage")}
-							</button>
-						</span>`
+						createButton({ content: i18n("br5e.buttons.verDamage"), action: "verDamageRoll", value: "all" })
 					);
 				}
 				// Make a damage button for each damage type
@@ -276,20 +276,20 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 							CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]];
 
 						buttons.append(
-							`<span class="tag">
-								<button data-action="damageRoll" data-value=${i}>
-									${i}: ${damageString}
-								</button>
-							</span>`
+							createButton({
+								content: `${i}: ${damageString}`,
+								action: "damageRoll",
+								value: i
+							})
 						);
 
 						if (i === 0 && itemData.damage.versatile) {
 							buttons.append(
-								`<span class="tag">
-									<button data-action="verDamageRoll" data-value=0>
-										${0}: ${damageString} (${dnd5e.weaponProperties.ver})
-									</button>
-								</span>`
+								createButton({
+									content: `${0}: ${damageString} (${dnd5e.weaponProperties.ver})`,
+									action: "verDamageRoll",
+									value: 0
+								})
 							);
 						}
 					}
@@ -300,9 +300,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 				const otherString = contextEnabled && flags.quickOther.context || "br5e.settings.otherFormula";
 
 				buttons.append(
-					`<span class="tag">
-						<button data-action="otherFormulaRoll">${otherString}</button>
-					</span>`
+					createButton({ content: otherString, action: "otherFormulaRoll" })
 				);
 			}
 
@@ -312,20 +310,18 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			buttonsWereAdded = true;
 
 			buttons.append(
-				`<span class="tag">
-					<button data-action="toolCheck" data-ability="${itemData.ability.value}">
-						${i18n("br5e.buttons.itemUse")} ${item.name}
-					</button>
-				</span>`
+				createButton({
+					content: `${i18n("br5e.buttons.itemUse")} ${item.name}`,
+					action: "toolCheck",
+					value: itemData.ability.value
+				})
 			);
 
 			if (itemData.formula && itemData.formula.length > 0) {
 				const otherString = (contextEnabled && flags.quickOther.context) || "br5e.settings.otherFormula";
 
 				buttons.append(
-					`<span class="tag">
-						<button data-action="otherFormulaRoll">${otherString}</button>
-					</span>`
+					createButton({ content: otherString, action: "otherFormulaRoll" })
 				);
 			}
 
@@ -339,20 +335,14 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	// Add info button
 	if (diceEnabled) {
 		buttons.append(
-			`<span class="tag">
-				<button data-action="infoRoll">${i18n("br5e.buttons.info")}</button>
-			</span>`
+			createButton({ content: i18n("br5e.buttons.info"), action: "infoRoll" })
 		);
 	}
 	
 	// Add default roll button
 	buttons.append(
-		`<span class="tag">
-			<button data-action="vanillaRoll">
-				${i18n("br5e.buttons.defaultSheetRoll")}
-			</button>
-		</span>
-	`);
+		createButton({ content: i18n("br5e.buttons.defaultSheetRoll"), action: "vanillaRoll" })
+	);
 
 	if (buttonsWereAdded) {
 		buttons.append(`<br><header style="margin-top:6px"></header>`);
