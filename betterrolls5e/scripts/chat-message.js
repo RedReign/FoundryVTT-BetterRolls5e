@@ -1,4 +1,5 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
+import { DiceCollection, ItemUtils } from "./utils.js";
 
 Hooks.on('renderChatMessage', async (message, html, data) => {
     if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
@@ -14,6 +15,10 @@ class BetterRollsChatCard {
     constructor(id, html) {
         this.id = id;
         this.html = html;
+        this.actorId = this.html.attr("data-actor-id");
+        this.itemId = this.html.attr("data-item-id");
+        this.tokenId = this.html.attr("data-token-id");
+        this.dicePool = new DiceCollection();
         this._setupDamageButtons();
     }
 
@@ -32,6 +37,119 @@ class BetterRollsChatCard {
         return new BetterRollsChatCard(message.id, chatCard);
     }
 
+    get actor() {
+        if (this.tokenId) {
+            const [sceneId, tokenId] = this.tokenId.split(".");
+            
+            const scene = game.scenes.get(sceneId);
+            if (!scene) return null;
+
+            const tokenData = scene.getEmbeddedEntity("Token", tokenId);
+            if (!tokenData) return null;
+
+            const token = new Token(tokenData);
+            return token.actor;
+        }
+
+        return game.actors.get(this.actorId);
+    }
+
+    get item() {
+        return this.actor?.getOwnedItem(this.itemId);
+    }
+
+    /**
+     * Getter to retrieve if the current user has advanced permissions over the chat card.
+     */
+    get hasPermission() {
+        const message = game.messages.get(this.id);
+        return game.user.isGM || message?.isAuthor;
+    }
+
+    /**
+     * Rolls crit dice if its not already rolled for the current card.
+     * This is used when *augmenting* a roll to a crit, and not the initial render.
+     * The change is not sent to users until update() is called.
+     */
+    async rollCrit() {
+        // Do nothing if crit is already rolled or if we don't have permission
+        if (this._critAlreadyRolled || !this.hasPermission) {
+            return;
+        }
+
+        // Get the item, and check if it exists
+        const item = this.item;
+        if (!item) {
+            const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+            return ui.notifications.warn(message);
+        }
+
+        // Add crit to UI 
+        const damageRows = this.html.find('.red-base-damage').parents(".dice-roll");
+        for (const row of damageRows) {
+            const formula = $(row).find(".dice-formula").text();
+            const total = Number($(row).find(".red-base-damage").data("value"));
+            const critBehavior = game.settings.get("betterrolls5e", "critBehavior");
+            const critRoll = ItemUtils.getCritRoll(item, formula, total, critBehavior);
+
+            // Render crit roll damage
+            const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
+                righttotal: critRoll.total,
+                crittext: game.settings.get("betterrolls5e", "critString")
+            });
+
+            // Add crit die roll
+            $(row).find(".red-base-damage").after(template);
+
+            // Check if the tooltip is showing on the row
+            // We will need to show the new one if it is
+            const showing = $(row).find(".dice-tooltip").is(":visible");
+
+            // Render crit roll tooltip
+            const tooltip = await critRoll.getTooltip();
+            $(row).find('.dice-row.tooltips').append(
+                $(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
+            );
+
+            // Show all newly rendered tooltips if showing
+            if (showing) {
+                $(row).find(".dice-tooltip").show();
+            }
+
+            this.dicePool.push(critRoll);
+        }
+    }
+    
+    /**
+     * Updates a chat message to have this HTML as its content.
+     * Nothing updates until this method is called.
+     * @param message 
+     */
+    async update() {
+        const newRender = this.html.clone();
+        newRender.find('.temporary').remove();
+
+        const chatMessage = ChatMessage.collection.get(this.id);
+
+        if (chatMessage) {
+            await this.dicePool.flush();
+            await chatMessage.update({
+                content: newRender.get(0).outerHTML
+            });
+        }
+    }
+
+    /**
+     * Returns true if crit damage has already been rolled.
+     */
+    get _critAlreadyRolled() {
+        return this.html.find(".red-crit-damage").length > 0;
+    }
+
+    /**
+     * Internal method to setup the temporary buttons that that affect damage
+     * entries, like crit rolls and damage application.
+     */
     async _setupDamageButtons() {
         const { html } = this;
         const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
@@ -43,7 +161,7 @@ class BetterRollsChatCard {
         });
     
         // adding click events to the buttons, this gets redone since they can break through rerendering of the card
-        html.find('.dmgBtn-container-br button').click(async ev => {
+        html.find('.dmgBtn-container-br.right button').click(async ev => {
             ev.preventDefault();
             ev.stopPropagation();
     
@@ -58,7 +176,7 @@ class BetterRollsChatCard {
                     y: ev.originalEvent.screenY
                 };
     
-                dmg = await this._applyCritDamage(Number(dmg), Number(critDmg), dialogPosition);
+                dmg = await this._applyCritDamageToActor(Number(dmg), Number(critDmg), dialogPosition);
             }
     
             // getting the modifier depending on which of the buttons was pressed
@@ -79,19 +197,30 @@ class BetterRollsChatCard {
                 }
             }, 50);
         });
+
+        // Enable crit button
+        html.find('.crit-button').on('click', async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            await this.rollCrit();
+            await this.update();
+        });
     
         // logic to only show the buttons when the mouse is within the chatcard
         html.find('.dmgBtn-container-br').hide();
         $(html).hover(evIn => {
+            if (!this._critAlreadyRolled && this.hasPermission) {
+                html.find('.dmgBtn-container-br.left').show();
+            }
             if (canvas?.tokens.controlled.length > 0) {
-                html.find('.dmgBtn-container-br').show();
+                html.find('.dmgBtn-container-br.right').show();
             }
         }, evOut => {
             html.find('.dmgBtn-container-br').hide();
         });
     }
     
-    async _applyCritDamage(dmg, critdmg, position) {
+    async _applyCritDamageToActor(dmg, critdmg, position) {
         const dialogResult = await new Promise(async (resolve, reject) => {
             const options = {
                 left: position.x,

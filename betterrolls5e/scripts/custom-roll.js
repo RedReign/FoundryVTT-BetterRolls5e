@@ -999,19 +999,17 @@ export class CustomItemRoll {
 	}
 	
 	async damageTemplate ({baseRoll, critRoll, labels, type}) {
-		let baseTooltip = await baseRoll.getTooltip(),
-			templateTooltip;
+		let baseTooltip = await baseRoll.getTooltip();
 		
 		if (baseRoll.terms.length === 0) return;
 		
+		const tooltips = [baseTooltip];
 		if (critRoll) {
-			let critTooltip = await critRoll.getTooltip();
-			templateTooltip = await renderTemplate("modules/betterrolls5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
-		} else { templateTooltip = baseTooltip; }
-		
+			tooltips.push(await critRoll.getTooltip());
+		}
 		
 		let chatData = {
-			tooltip: templateTooltip,
+			tooltips,
 			lefttotal: baseRoll.total,
 			righttotal: (critRoll ? critRoll.total : null),
 			damagetop: labels[1],
@@ -1168,54 +1166,13 @@ export class CustomItemRoll {
 		const critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 
 		if ((forceCrit == true || (this.isCrit && forceCrit !== "never")) && critBehavior !== "0") {
-			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
+			critRoll = ItemUtils.getCritRoll(this.item, baseRoll.formula, baseRoll.total, critBehavior);
+			this.dicePool.push(critRoll);
 		}
 		
 		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels, type:damageType});
 
 		return damageRoll;
-	}
-	
-	/*
-	* Rolls critical damage based on a damage roll's formula and output.
-	* This critical damage should not overwrite the base damage - it should be seen as "additional damage dealt on a crit", as crit damage may not be used even if it was rolled.
-	*/
-
-	async critRoll(rollFormula, rollData, baseRoll) {
-		let itm = this.item;
-		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
-		let critRollData = duplicate(rollData);
-		critRollData.mod = 0;
-		let critRoll = await new Roll(critFormula);
-		let savage;
-
-		// If the crit formula has no dice, return null
-		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") { return null; }
-
-		if (itm.data.type === "weapon") {
-			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
-			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
-		}
-		let add = (itm.actor && savage) ? 1 : 0;
-		critRoll.alter(1, add);
-		critRoll.roll();
-		
-		// If critBehavior = 2, maximize base dice
-		if (critBehavior === "2") {
-			critRoll = await new Roll(critRoll.formula).evaluate({maximize:true});
-		}
-		
-		// If critBehavior = 3, maximize base and crit dice
-		else if (critBehavior === "3") {
-			let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
-			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = await new Roll(newFormula).evaluate({maximize:true});
-		}
-
-		this.dicePool.push(critRoll);
-
-		return critRoll;
 	}
 	
 	scaleDamage(damageIndex, versatile, rollData) {
@@ -1312,7 +1269,8 @@ export class CustomItemRoll {
 		const critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
 		if (isCrit && critBehavior !== "0") {
-			critRoll = await this.critRoll(formula, rollData, baseRoll);
+			critRoll = ItemUtils.getCritRoll(this.item, baseRoll.formula, baseRoll.total, critBehavior);
+			this.dicePool.push(critRoll);
 		}
 
 		this.dicePool.push(baseRoll, critRoll);

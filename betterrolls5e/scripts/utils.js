@@ -98,6 +98,14 @@ export class ActorUtils {
 		return ActorUtils.hasElvenAccuracy(actor) && ["dex", "int", "wis", "cha"].includes(ability);
 	}
 
+	static hasSavageAttacks(actor) {
+		try { 
+			return actor.getFlag("dnd5e", "savageAttacks");
+		} catch(error) {
+			return actor.getFlag("dnd5eJP", "savageAttacks");
+		}
+	}
+
 	/**
 	 * Returns the image to represent the actor. The result depends on BR settings.
 	 * @param {Actor} actor
@@ -193,6 +201,44 @@ export class ItemUtils {
 	 */
 	static hasMaestroSound(item) {
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
+	}
+
+	/**
+	 * Derives the formula for what should be rolled when a crit occurs
+	 * @param {string} rollFormula
+	 * @returns {string} the crit formula
+	 */
+	static getCritRoll(item, baseFormula, baseTotal, critBehavior) {
+		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
+		let critRoll = new Roll(critFormula);
+		
+		// If the crit formula has no dice, return null
+		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
+			return null;
+		}
+
+		let savage;
+		if (item.actor && item.data.type === "weapon") {
+			savage = ActorUtils.hasSavageAttacks(item.actor);
+		}
+		
+		const add = savage ? 1 : 0;
+		critRoll.alter(1, add);
+		critRoll.roll();
+
+		// If critBehavior = 2, maximize base dice
+		if (critBehavior === "2") {
+			critRoll = new Roll(critRoll.formula).evaluate({maximize:true});
+		}
+		
+		// If critBehavior = 3, maximize base and crit dice
+		else if (critBehavior === "3") {
+			let maxDifference = Roll.maximize(baseFormula).total - baseTotal;
+			let newFormula = critRoll.formula + "+" + maxDifference.toString();
+			critRoll = new Roll(newFormula).evaluate({maximize:true});
+		}
+
+		return critRoll
 	}
 }
 
