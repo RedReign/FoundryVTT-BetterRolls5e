@@ -1600,12 +1600,12 @@ export class CustomItemRoll {
 		let item = this.item,
 			itemData = item.data.data;
 		
-		const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const uses = itemData.uses || {};		
+		const hasUses = !!(uses.value || uses.max || uses.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
-		const uses = itemData.uses || {};
 		const autoDestroy = uses.autoDestroy;
 		const current = uses.value || 0;
 		const remaining = request.use ? Math.max(current - 1, 0) : current;
