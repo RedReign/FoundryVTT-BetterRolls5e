@@ -1012,11 +1012,11 @@ export class CustomItemRoll {
 			tooltips,
 			lefttotal: baseRoll.total,
 			righttotal: (critRoll ? critRoll.total : null),
+			crittext: this.config.critString,
 			damagetop: labels[1],
 			damagemid: labels[2],
 			damagebottom: labels[3],
 			formula: baseRoll.formula,
-			crittext: this.config.critString,
 			damageType:type,
 			maxRoll: await new Roll(baseRoll.formula).evaluate({maximize:true}).total,
 			maxCrit: critRoll ? await new Roll(critRoll.formula).evaluate({maximize:true}).total : null

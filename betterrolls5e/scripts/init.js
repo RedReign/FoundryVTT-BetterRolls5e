@@ -203,6 +203,12 @@ Hooks.once("init", () => {
 			"2": i18n("br5e.hideDC.choices.2"),
 		}
 	});
+
+	// Setup template partials
+	const prefix = "modules/betterrolls5e/templates"
+	loadTemplates([
+		`${prefix}/red-damage-crit.html`
+	]);
 });
 
 // Modify context menu for damage rolls (they break)
