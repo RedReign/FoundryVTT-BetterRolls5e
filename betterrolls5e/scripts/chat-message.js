@@ -1,5 +1,5 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
-import { DiceCollection, ItemUtils } from "./utils.js";
+import { DiceCollection, ItemUtils, Utils } from "./utils.js";
 
 Hooks.on('renderChatMessage', async (message, html, data) => {
     if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
@@ -94,7 +94,7 @@ class BetterRollsChatCard {
 
             // Render crit roll damage
             const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
-                righttotal: critRoll.total,
+                crit: Utils.processRoll(critRoll),
                 crittext: game.settings.get("betterrolls5e", "critString")
             });
 

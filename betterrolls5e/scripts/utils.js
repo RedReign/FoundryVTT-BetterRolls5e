@@ -47,6 +47,46 @@ export class Utils {
 		
 		return { rollMode, whisper, blind }
 	}
+
+	/**
+	 * Tests a roll to see if it crit, failed, or was mixed.
+	 * @param {Roll} roll 
+	 * @param {number} threshold optional crit threshold
+	 * @param {boolean|number[]} critChecks dice to test, true for all
+	 */
+	static processRoll(roll, threshold, critChecks=true) {
+		if (!roll) return null;
+
+		let high = 0;
+		let low = 0;
+		for (const d of roll.dice) {
+			if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
+				for (const result of d.results) {
+					if (result.result >= (threshold || d.faces)) {
+						high += 1;
+					} else if (result.result == 1) {
+						low += 1;
+					}
+				}
+			}
+		}
+
+		let critType = null;
+		if (high > 0 && low > 0) {
+			critType = "mixed";
+		} else if (high > 0) {
+			critType = "success";
+		} else if (low > 0) {
+			critType = "failure";
+		}
+
+		return { 
+			total: roll.total,
+			ignored: roll.ignored ? true : undefined, 
+			critType, 
+			isCrit: high > 1,
+		};
+	}
 }
 
 export class ActorUtils {

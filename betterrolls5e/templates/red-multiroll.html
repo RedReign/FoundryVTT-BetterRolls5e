@@ -10,8 +10,8 @@
 			{{/each}}	
 		</div>
 		<div class="dice-row red-totals">
-			{{#each rolls}}
-			<h4 class="dice-total dice-row-item red-base-die{{#if this.ignored}} ignored{{/if}}">{{this.total}}</h4>
+			{{#each rollEntries}}
+			<h4 class="dice-total dice-row-item red-base-die{{#if this.ignored}} ignored{{/if}} {{this.critType}}">{{this.total}}</h4>
 			{{/each}}
 		</div>
     </div>

@@ -77,17 +77,17 @@ export class CustomRoll {
 		tagIgnored();
 		
 		// Step 3 - Create HTML using custom template
-		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
-		
-		let template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
-		template.isCrit = template.isCrit && triggersCrit;
-		
-		let output = {
-			html:template.html,
-			isCrit:template.isCrit,
+		const rollEntries = chatData.rolls.map(r => Utils.processRoll(r, critThreshold, [20]));
+		let multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", {
+			...chatData,
+			rollEntries
+		});
+
+		return {
+			html: multiRoll,
+			isCrit: rollEntries.some(e => !e.ignored && e.isCrit),
 			data:chatData
 		};
-		return output;
 	}
 	
 	static getRollState(args) {
@@ -827,53 +827,7 @@ export class CustomItemRoll {
 		}, {});
 		data.prof = this.item.actor.data.data.attributes.prof;
 	}
-	
-	/**
-	 * A function for returning a roll template with crits and fumbles appropriately colored.
-	 * @param {Object} args					Object containing the html for the roll and whether or not the roll is a crit
-	 * @param {Roll} rolls						The desired roll to check for crits or fumbles
-	 * @param {String} selector			The CSS class selection to add the colors to
-	 * @param {Number} critThreshold	The minimum number required for a critical success (defaults to max roll on the die)
-	 */
-	static tagCrits(args, rolls, selector, critThreshold, critChecks=true) {
-		if (typeof args !== "object") { args = {
-			html: args,
-			isCrit: false
-		}; }
-		if (!rolls) {return args;}
-		if (!Array.isArray(rolls)) {rolls = [rolls];}
-		let $html = $(args.html);
-		let rollHtml = $html.find(selector);
-		let isCrit = false;
-		for (let i=0; i<rollHtml.length; i++) {
-			let high = 0,
-				low = 0;
-			rolls[i].dice.forEach( function(d) {
-				// Add crit for improved crit threshold
-				let threshold = critThreshold || d.faces;
-				debug("SIZE " + d.faces);
-				debug("VALUE " + d.total);
-				if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
-					d.results.forEach( function(result) {
-						if (result.result >= threshold) { high += 1; }
-						else if (result.result == 1) { low += 1; }
-					});
-				}
-			});
-			debug("CRITS", high);
-			debug("FUMBLES", low);
-			
-			if ((high > 0) && (low == 0)) $($html.find(selector)[i]).addClass("success");
-			else if ((high == 0) && (low > 0)) $($html.find(selector)[i]).addClass("failure");
-			else if ((high > 0) && (low > 0)) $($html.find(selector)[i]).addClass("mixed");
-			if ((high > 0) || (args.isCrit == true)) isCrit = true;
-		}
-		return {
-			html: $html[0].outerHTML,
-			isCrit: isCrit
-		};
-	}
-	
+
 	/**
 	 * Rolls an attack roll for the item.
 	 * @param {Object} args				Object containing all named parameters
@@ -1010,8 +964,8 @@ export class CustomItemRoll {
 		
 		let chatData = {
 			tooltips,
-			lefttotal: baseRoll.total,
-			righttotal: (critRoll ? critRoll.total : null),
+			base: Utils.processRoll(baseRoll),
+			crit: Utils.processRoll(critRoll),
 			crittext: this.config.critString,
 			damagetop: labels[1],
 			damagemid: labels[2],
@@ -1022,15 +976,10 @@ export class CustomItemRoll {
 			maxCrit: critRoll ? await new Roll(critRoll.formula).evaluate({maximize:true}).total : null
 		};
 		
-		let html = {
-			html: await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData)
-		};
-		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-base-die");
-		html = CustomItemRoll.tagCrits(html, critRoll, ".red-extra-die");
-		
+		let html = await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData);
 		let output = {
 			type: "damage",
-			html: html["html"],
+			html,
 			data: chatData
 		}
 

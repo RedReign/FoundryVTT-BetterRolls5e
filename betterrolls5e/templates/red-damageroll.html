@@ -11,7 +11,7 @@
 		</div>
 		<div class="dice-row">
 			<h4 class="dice-total dice-row-item red-damage" data-damageType="{{damageType}}">
-				<div class="red-base-die inline red-base-damage" data-value="{{lefttotal}}">{{lefttotal}}</div>
+				<div class="red-base-die inline red-base-damage {{base.critType}}" data-value="{{base.total}}">{{base.total}}</div>
 				{{> "modules/betterrolls5e/templates/red-damage-crit.html" }}
 				{{#if damagemid}}<div class="damage-type" style="line-height:12px">{{damagemid}}</div>{{/if}}
 			</h4>

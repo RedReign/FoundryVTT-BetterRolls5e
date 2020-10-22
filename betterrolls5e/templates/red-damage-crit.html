@@ -1,4 +1,4 @@
-{{#if righttotal}}
-    + <div class="red-extra-die inline red-crit-damage" data-value="{{righttotal}}">{{righttotal}}</div>
+{{#if crit}}
+    + <div class="red-extra-die inline red-crit-damage {{crit.critType}}" data-value="{{crit.total}}">{{crit.total}}</div>
     {{#if crittext}}<div class="inline br5e-roll-label">{{crittext}}</div>{{/if}}
 {{/if}}
