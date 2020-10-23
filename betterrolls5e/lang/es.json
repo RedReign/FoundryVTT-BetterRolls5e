@@ -107,6 +107,7 @@
     "br5e.chat.damageButtons.halfDamage.hint": "Clic para aplicar mitad del daño a token(s) seleccionado(s).",
     "br5e.chat.damageButtons.doubleDamage.hint": "Clic para aplicar doble daño a token(s) seleccionado(s).",
     "br5e.chat.damageButtons.healing.hint": "Clic para aplicar curación completa a token(s) seleccionado(s).",
+    "br5e.chat.damageButtons.crit.hint": "Clic para tirar daño crítico.",
     "br5e.chat.damageButtons.critPrompt.title": "¿Usar Daño Crít?",
     "br5e.chat.damageButtons.critPrompt.yes": "Sí",
     "br5e.chat.damageButtons.critPrompt.no": "No",

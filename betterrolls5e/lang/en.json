@@ -141,6 +141,7 @@
 	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",
 	"br5e.chat.damageButtons.doubleDamage.hint": "Click to apply double damage to selected token(s).",
 	"br5e.chat.damageButtons.healing.hint": "Click to apply full healing to selected token(s).",
+	"br5e.chat.damageButtons.crit.hint": "Click to roll crit damage.",
 	"br5e.chat.damageButtons.critPrompt.title": "Use Crit Damage?",
 	"br5e.chat.damageButtons.critPrompt.yes": "Yes",
 	"br5e.chat.damageButtons.critPrompt.no": "No",
