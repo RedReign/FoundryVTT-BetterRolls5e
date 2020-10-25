@@ -8,14 +8,18 @@ import { ActorUtils } from "./utils.js";
  * @property {string} img image path
  * @property {string} label visible label
  * @property {number?} slotLevel Optional displayed slot level 
- * 
+ */
+
+/**
  * Model data for rendering description or flavor text
  * @typedef DescriptionDataProps
  * @type {object}
  * @property {"description"} type
  * @property {boolean} isFlavor
  * @property {string} content
- *
+ */
+
+/**
  * Model data for rendering a multi roll.
  * @typedef MultiRollDataProps
  * @type {object}
@@ -26,12 +30,16 @@ import { ActorUtils } from "./utils.js";
  * @property {string} formula
  * @property {boolean} isCrit
  * @property {Array<{roll: Roll; ignored: boolean; critType: string}>} entries
- * 
+ */
+
+/**
  * Model data for rendering damage information.
  * @typedef DamageDataProps
  * @type {object}
  * @property {"damage"} type
- * 
+ */
+
+/**
  * Union type of all possible render model types, separatable by the type property.
  * @typedef {HeaderDataProps | DescriptionDataProps | MultiRollDataProps | DamageDataProps} RenderModel
  */

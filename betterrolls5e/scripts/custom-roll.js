@@ -7,6 +7,15 @@ import { Renderer } from "./renderer.js";
  * @typedef {"highest" | "lowest" | null} RollState
  */
 
+/**
+ * Parameters used when full rolling an actor
+ * @typedef FullRollActorParams
+ * @type {object}
+ * @property {number?} adv 
+ * @property {number?} disadv 
+ * @property {number?} critThreshold
+ */
+
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
 let dnd5e = DND5E;
@@ -137,7 +146,7 @@ export class CustomRoll {
 	}
 	
 	/**
-	 * 
+	 * Converts {args, disadv} params into a roll state object
 	 * @param {*} args
 	 * @returns {RollState} 
 	 */
@@ -196,7 +205,7 @@ export class CustomRoll {
 	 * @param {string} label 
 	 * @param {string} formula 
 	 * @param {string} rollType 
-	 * @param {object} params 
+	 * @param {FullRollActorParams} params 
 	 */
 	static async fullRollActor(actor, label, formula, rollType, params) {
 		const dicePool = new DiceCollection();
@@ -222,8 +231,8 @@ export class CustomRoll {
 	/**
 	 * Creates and displays a chat message to show a full skill roll
 	 * @param {*} actor 
-	 * @param {*} skill 
-	 * @param {*} params 
+	 * @param {string} skill shorthand referring to the skill name
+	 * @param {FullRollActorParams} params parameters
 	 */
 	static async fullRollSkill(actor, skill, params={}) {
 		const label = i18n(dnd5e.skills[skill]);
@@ -231,20 +240,33 @@ export class CustomRoll {
 		return CustomRoll.fullRollActor(actor, label, formula, "skill", params);
 	}
 
+	/**
+	 * Rolls a skill check for an actor
+	 * @param {*} actor 
+	 * @param {string} ability Ability shorthand 
+	 * @param {FullRollActorParams} params 
+	 */
 	static async rollCheck(actor, ability, params) {
 		return await CustomRoll.fullRollAttribute(actor, ability, "check", params);
 	}
-		
+	
+	/**
+	 * Rolls a saving throw for an actor
+	 * @param {*} actor 
+	 * @param {string} ability Ability shorthand 
+	 * @param {FullRollActorParams} params 
+	 */
 	static async rollSave(actor, ability, params) {
 		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
 	}
 	
 	/**
-	* Creates and displays a chat message with the requested ability check or saving throw.
-	* @param {Actor5e} actor		The actor object to reference for the roll.
-	* @param {String} ability		The ability score to roll.
-	* @param {String} rollType		String of either "check" or "save" 
-	*/
+	 * Creates and displays a chat message with the requested ability check or saving throw.
+	 * @param {Actor5e} actor		The actor object to reference for the roll.
+	 * @param {String} ability		The ability score to roll.
+	 * @param {String} rollType		String of either "check" or "save"
+	 * @param {FullRollActorParams} params
+	 */
 	static async fullRollAttribute(actor, ability, rollType, params={}) {
 		const label = dnd5e.abilities[ability];
 
@@ -364,12 +386,12 @@ export class CustomItemRoll {
 		}
 	}
 	
-	async roll() {
-		if (this.rolled) {
-			console.log("Already rolled!", this);
-			return;
-		}
-
+	/**
+	 * Internal function to perform the construction and rendering, returns what should be rendered.
+	 * DO NOT CALL THIS FUNCTION DIRECTLY. Internal use only and does not manage state.
+	 * @private
+	 */
+	async _roll() {
 		const { params, item } = this;
 		const itemData = item.data.data;
 		const actor = item.actor;
@@ -392,7 +414,9 @@ export class CustomItemRoll {
 		if (!params.slotLevel) {
 			if (item.data.type === "spell") {
 				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") { return "error"; }
+				if (params.slotLevel === "error") { 
+					return "error"; 
+				}
 			}
 		}
 
@@ -404,7 +428,9 @@ export class CustomItemRoll {
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
 		let chargeCheck = await this.consumeCharge();
-		if (chargeCheck === "error") { return "error"; }
+		if (chargeCheck === "error") {
+			return "error";
+		}
 		
 		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
 			this.placeTemplate();
@@ -415,14 +441,27 @@ export class CustomItemRoll {
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 		
-		// Render final template
 		const { isCrit, properties } = this;
-		this.content = await Renderer.renderCard(this.templates, { 
-			item, actor, isCrit, properties
-		});
-		
-		if (chargeCheck === "destroy") { await actor.deleteOwnedItem(item.id); }
+		if (chargeCheck === "destroy") {
+			await actor.deleteOwnedItem(item.id);
+		}
 
+		// Render final template
+		return await Renderer.renderCard(this.templates, { 
+			item, actor, isCrit, properties
+		});;
+	}
+
+	/**
+	 * Performs a roll and sets the content to the result
+	 */
+	async roll() {
+		if (this.rolled) {
+			console.log("Already rolled!", this);
+			return this.content;
+		}
+
+		this.content = await this._roll();
 		return this.content;
 	}
 
@@ -551,7 +590,8 @@ export class CustomItemRoll {
 	}
 	
 	/**
-	 * Creates and sends a chat message. If not already rolled, roll() is called first.
+	 * Creates and sends a chat message to all players (based on whisper settings).
+	 * If not already rolled and rendered, roll() is called first.
 	 */
 	async toMessage() {
 		if (!this.rolled) {
@@ -720,6 +760,7 @@ export class CustomItemRoll {
 	}
 
 	_rollHeader() {
+		const slotLevel = this.params.slotLevel;
 		let printedSlotLevel = null;
 		if (this.item && this.item.data.type === "spell" && slotLevel != this.item.data.data.level) {
 			printedSlotLevel = dnd5e.spellLevels[slotLevel];

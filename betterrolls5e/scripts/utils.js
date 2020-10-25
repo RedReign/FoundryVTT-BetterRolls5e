@@ -85,7 +85,7 @@ export class Utils {
 			total: roll.total,
 			ignored: roll.ignored ? true : undefined, 
 			critType, 
-			isCrit: high > 1,
+			isCrit: high > 0,
 		};
 	}
 
