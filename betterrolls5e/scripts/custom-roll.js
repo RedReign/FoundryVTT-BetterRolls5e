@@ -1214,6 +1214,8 @@ export class CustomItemRoll {
 		}
 		
 		const baseRoll = await new Roll(formula, rollData).roll();
+		this.dicePool.push(baseRoll);
+		
 		let critRoll = null;
 		const critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
 			
@@ -1221,8 +1223,6 @@ export class CustomItemRoll {
 			critRoll = ItemUtils.getCritRoll(this.item, baseRoll.formula, baseRoll.total, critBehavior);
 			this.dicePool.push(critRoll);
 		}
-
-		this.dicePool.push(baseRoll, critRoll);
 
 		return this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
 	}
