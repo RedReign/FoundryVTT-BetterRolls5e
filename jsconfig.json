@@ -1,0 +1,6 @@
+{
+    "include": ["betterrolls5e/scripts/**/*"],
+    "typeAcquisition": {
+        "include": ["jquery", ]
+    }
+}

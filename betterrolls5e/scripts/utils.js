@@ -1,4 +1,4 @@
-import { i18n } from "./betterrolls5e.js";
+import { i18n, isAttack } from "./betterrolls5e.js";
 import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
 
 /**
@@ -80,16 +80,43 @@ export class Utils {
 			critType = "failure";
 		}
 
-		return { 
+		return {
+			roll,
 			total: roll.total,
 			ignored: roll.ignored ? true : undefined, 
 			critType, 
 			isCrit: high > 1,
 		};
 	}
+
+	/**
+	 * Get Roll modifiers given a browser event
+	 * @param {*} ev 
+	 */
+	static getEventRollModifiers(eventToCheck) {
+		const result = {};
+		if (!eventToCheck) { return; }
+		if (eventToCheck.shiftKey) {
+			result.adv = 1;
+		}
+		if (keyboard.isCtrl(eventToCheck)) {
+			result.disadv = 1;
+		}
+
+		return result;
+	}
 }
 
 export class ActorUtils {
+	/**
+	 * Returns a special id for a token that can be used to retrieve it
+	 * from anywhere.
+	 * @param {*} token 
+	 */
+	static getTokenId(token) {
+		return [canvas.tokens.get(token.id).scene.id, token.id].join(".")
+	}
+
 	static getCharacterLevel(actor) {
 		// Determine character level
 		const level = actor.data.items.reduce((runningTotal, item) => {
@@ -160,6 +187,88 @@ export class ActorUtils {
 			case "token":
 				return tokenImage || actorImage;
 		}
+	}
+
+	/**
+	 * Returns a roll object that can be used to roll a skill check
+	 * @param {*} actor 
+	 * @param {*} skill
+	 * @returns {Roll} 
+	 */
+	static getSkillCheckRoll(actor, skill) {
+		const skillData = actor.data.data.skills[skill];
+
+		const parts = ["@mod"];
+		const data = {mod: skillData.total};
+		
+		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
+		if (skillBonus) {
+			parts.push("@skillBonus");
+			data["skillBonus"] = skillBonus;
+		}
+		
+		// Halfling Luck + Reliable Talent check
+		let d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
+		if (ActorUtils.hasReliableTalent(actor) && skillData.value >= 1) {
+			d20String = `{${d20String},10}kh`;
+		}
+
+		return new Roll([d20String, ...parts].join("+"), data);
+	}
+
+	static getAbilityCheckRoll(actor, abl) {
+		let parts = ["@mod"];
+		
+		const data = ActorUtils.getRollData(actor);
+		data.mod = data.abilities[abl].mod;
+	
+		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
+		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
+		
+		if (checkBonus && parseInt(checkBonus) !== 0) {
+			parts.push("@checkBonus");
+			data["checkBonus"] = checkBonus;
+		} else if (secondCheckBonus && parseInt(secondCheckBonus) !== 0) {
+			parts.push("@secondCheckBonus");
+			data["secondCheckBonus"] = secondCheckBonus;
+		}
+
+		if (actor.getFlag("dnd5e", "jackOfAllTrades")) {
+			parts.push(`floor(@attributes.prof / 2)`);
+		}
+
+		// Halfling Luck check
+		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
+		return new Roll([d20String, ...parts].join("+"), data);
+	}
+
+	static getAbilitySaveRoll(actor, abl) {
+		let actorData = actor.data.data;
+		let parts = [];
+		let data = {mod: []};
+
+		// Support modifiers and global save bonus
+		const saveBonus = getProperty(actorData, "bonuses.abilities.save") || null;
+		let ablData = actor.data.data.abilities[abl];
+		let ablParts = {};
+		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
+		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
+		let mods = [ablParts.mod, ablParts.prof, saveBonus];
+		for (let i=0; i<mods.length; i++) {
+			if (mods[i] && mods[i] !== "0") {
+				data.mod.push(mods[i]);
+			}
+		}
+		data.mod = data.mod.join("+");
+
+		// Halfling Luck check
+		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
+
+		if (data.mod !== "") {
+			parts.push("@mod");
+		}
+
+		return new Roll([d20String, ...parts].join("+"), data);
 	}
 }
 
@@ -278,6 +387,148 @@ export class ItemUtils {
 	 */
 	static hasMaestroSound(item) {
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
+	}
+
+	static getAbilityMod(itm) {
+		const itemData = itm.data.data;
+		const actorData = itm.actor.data.data;
+	
+		let abl = itemData.ability || "";
+	
+		if ((itm.data.type == "weapon") && itemData.properties.fin && ["","str","dex"].includes(abl)) {
+			// If the item is a finesse weapon, and abl is "", "str", or "dex"
+			if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) {
+				abl = "str";
+			} else {
+				abl = "dex";
+			}
+		} else if (!abl) {
+			if (itm.data.type == "spell") {
+				// Spells
+				abl = actorData.attributes.spellcasting;
+			} else if (["weapon", "feat"].includes(itm.data.type)) {
+				// Weapons / Feats, based on the "Action Type" field
+				switch (itemData.actionType) {
+					case "mwak":
+						abl = "str";
+						break;
+					case "rwak":
+						abl = "dex";
+						break;
+					case "msak":
+					case "rsak":
+						abl = actorData.attributes.spellcasting;
+						break;
+				}
+			}
+		}
+
+		return abl;
+	}
+
+	/**
+	 * Gets the item's roll data.
+	 * This is similar to item.getRollData(), but with a different
+	 * ability mod formula that handles feat weapon types.
+	 * If core ever swaps supports feat weapon types / levels, swap back.
+	 * @param {*} item 
+	 */
+	static getRollData(item, { abilityMod, slotLevel=undefined } = {}) {
+		const rollData = item.actor.getRollData();
+		rollData.item = duplicate(item.data.data);
+
+		const abl = abilityMod ?? this.getAbilityMod(item);
+		rollData.mod = rollData.abilities[abl]?.mod || 0;
+
+		if (slotLevel) {
+			rollData.item.level = slotLevel;
+		}
+
+		const prof = "proficient" in rollData.item ? (rollData.item.proficient || 0) : 1;
+		rollData["prof"] = Math.floor(prof * rollData.attributes.prof);
+
+		return rollData;
+	}
+
+	static getAttackRoll(itm, { abilityMod, ammoBonus=null, bonus=null }={}) {
+		const itemData = itm.data.data;
+		const actorData = itm.actor.data.data;
+		const parts = ["@mod"];
+		const rollData = ItemUtils.getRollData(itm, { abilityMod });
+		
+		// Add proficiency, expertise, or Jack of all Trades
+		if (itm.data.type == "spell" || itm.data.type == "feat" || itemData.proficient ) {
+			parts.push(`@prof`);
+			rollData.prof = Math.floor(actorData.attributes.prof);
+		}
+		
+		// Add item's bonus
+		if (itemData.attackBonus) {
+			parts.push(`@bonus`);
+			rollData.bonus = itemData.attackBonus;
+		}
+
+		if (ammoBonus) {
+			parts.push("@ammo");
+			rollData["ammo"] = ammoBonus;
+		}
+		
+		// Add custom situational bonus
+		if (bonus) {
+			parts.push(bonus);
+		}
+		
+		if (actorData.bonuses && isAttack(itm)) {
+			let actionType = `${itemData.actionType}`;
+			if (actorData?.bonuses[actionType]?.attack) {
+				parts.push("@" + actionType);
+				rollData[actionType] = actorData.bonuses[actionType].attack;
+			}
+		}
+
+		// Halfling Luck check and final result
+		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
+		return new Roll([d20String, ...parts].join("+"), rollData);
+	}
+
+	static getToolRoll(itm, bonus=null) {
+		const itemData = itm.data.data;
+		const actorData = itm.actor.data.data;
+
+		const parts = [];
+		const rollData = ItemUtils.getRollData(itm);
+
+		// Add ability modifier bonus
+		if (itemData.ability) {
+			const abl = itemData.ability;
+			const mod = abl ? actorData.abilities[abl].mod : 0;
+			if (mod !== 0) {
+				parts.push("@mod");
+				rollData.mod = mod;
+			}
+		}
+
+		// Add proficiency, expertise, or Jack of all Trades
+		if (itemData.proficient) {
+			parts.push("@prof");
+			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
+			//console.log("Adding Proficiency mod!");
+		}
+		
+		// Add item's bonus
+		if (itemData.bonus) {
+			parts.push("@bonus");
+			rollData.bonus = itemData.bonus.value;
+			//console.log("Adding Bonus mod!");
+		}
+		
+		if (bonus) {
+			parts.push(bonus);
+		}
+		
+		// Halfling Luck check and final result
+		const d20String = ActorUtils.isHalfling(itm, actor) ? "1d20r<2" : "1d20";
+		return new Roll([d20String, ...parts].join("+"), rollData);
 	}
 
 	/**
