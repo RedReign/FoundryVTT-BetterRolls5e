@@ -13,8 +13,8 @@ export async function addBetterRollsContent(app, protoHtml) {
 	if (item.actor && item.actor.permission < 3) { return; }
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 
-	// Initialize flags
-	await ItemUtils.ensureFlags(item);
+	// Initialize flags. Don't commit to avoid a nested re-render
+	const flags = await ItemUtils.ensureFlags(item, { commit: false });
 
 	let html = protoHtml;
 
@@ -28,7 +28,6 @@ export async function addBetterRollsContent(app, protoHtml) {
 	tabSelector.append($(betterRollsTabString));
 
 	const settingsContainer = html.find(".sheet-body");
-	const betterRollsTemplateString = "modules/betterrolls5e/templates/red-item-options.html";
 	const altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 
 	// For items with quantity (weapons, tools, consumables...)
@@ -43,7 +42,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	// For items that have at least one way to consume something
 	const canConsume = hasQuantity || hasUses || hasResource || hasCharge;
 
-	const betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
+	const betterRollsTemplate = await renderTemplate("modules/betterrolls5e/templates/red-item-options.html", {
 		DND5E: CONFIG.DND5E,
 		item,
 		canConsume,
@@ -53,7 +52,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 		hasCharge,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
-		flags: item.data.flags,
+		flags: { betterRolls5e: flags },
 		damageTypes: CONFIG.betterRolls5e.combinedDamageTypes,
 		altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget
@@ -75,13 +74,13 @@ export async function addBetterRollsContent(app, protoHtml) {
 		const placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
 
 		damageRolls.forEach((damageRoll, i) => {
-			const contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
+			const contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(flags.quickDamage?.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
 
 			damageRoll.after(contextField[0]);
 
 			// Add event listener to delete context when damage is deleted
 			$($($(damageRoll)[0].parentElement).find(`a.delete-damage`)).click(async _ => {
-				const contextFlags = Object.values(item.data.flags.betterRolls5e.quickDamage.context);
+				const contextFlags = Object.values(flags.quickDamage?.context);
 				contextFlags.splice(i, 1);
 				item.update({
 					[`flags.betterRolls5e.quickDamage.context`]: contextFlags,
