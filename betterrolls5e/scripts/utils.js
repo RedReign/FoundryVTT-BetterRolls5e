@@ -236,6 +236,43 @@ export class ItemUtils {
 		return i18n("Target: ") + dnd5e.targetTypes[target.type] + targetDistance;
 	}
 
+	/**
+	 * Ensures that better rolls flag data is set on the item if applicable.
+	 * Performs an item update if anything was set.
+	 * @param {*} item 
+	 */
+	static async ensureFlags(item) {
+		if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
+		
+		// Initialize flags
+		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
+		let flags = duplicate(item.data.flags.betterRolls5e ?? {});
+		flags = mergeObject(baseFlags, flags ?? {}, {recursive: true});
+		
+		// If quickDamage flags should exist, update them based on which damage formulae are available
+		if (CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")].quickDamage) {
+			let newQuickDamageValues = [];
+			let newQuickDamageAltValues = [];
+			
+			// Make quickDamage flags if they don't exist
+			if (!flags.quickDamage) {
+				flags.quickDamage = {type: "Array", value: [], altValue: []};
+			}
+			
+			for (let i = 0; i < item.data.data.damage.parts.length; i++) {
+				newQuickDamageValues[i] = flags.quickDamage.value[i] ?? true;
+				newQuickDamageAltValues[i] = flags.quickDamage.altValue[i] ?? true;
+			}
+	
+			flags.quickDamage.value = newQuickDamageValues;
+			flags.quickDamage.altValue = newQuickDamageAltValues;
+		}
+	
+		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
+		await item.update({"flags.betterRolls5e": flags}, { diff: true });
+		return item.data.flags.betterRolls5e;
+	}
+
 	/** 
 	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */

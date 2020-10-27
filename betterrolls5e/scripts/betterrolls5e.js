@@ -1,6 +1,7 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
+import { ItemUtils } from "./utils.js";
 
 export function i18n(key) {
 	return game.i18n.localize(key);
@@ -172,7 +173,7 @@ Hooks.on(`ready`, () => {
 
 // Create flags for item when it's first created
 Hooks.on(`createOwnedItem`, (actor, itemData) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? redUpdateFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
+	game.settings.get("betterrolls5e", "diceEnabled") ? ItemUtils.ensureFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
 });
 
 Hooks.on(`renderChatMessage`, (message, html, data) => {
@@ -350,42 +351,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			}
 		}
 	});
-}
-
-export async function redUpdateFlags(item) {
-	if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
-	if (item.data.flags.betterRolls5e === undefined) {
-		item.data.flags.betterRolls5e = {};
-	}
-	
-	let flags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
-	item.data.flags.betterRolls5e = mergeObject(flags, item.data.flags.betterRolls5e);
-	
-	// If quickDamage flags should exist, update them based on which damage formulae are available
-	if (CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")].quickDamage) {
-		let newQuickDamageValues = [];
-		let newQuickDamageAltValues = [];
-		
-		// Make quickDamage flags if they don't exist
-		if (!item.data.flags.betterRolls5e.quickDamage) {
-			item.data.flags.betterRolls5e.quickDamage = {type: "Array", value: [], altValue: []};
-		}
-		
-		for (let i = 0; i < item.data.data.damage.parts.length; i++) {
-			newQuickDamageValues[i] = true;
-			newQuickDamageAltValues[i] = true;
-			if (item.data.flags.betterRolls5e.quickDamage.value[i] != null) {
-				newQuickDamageValues[i] = item.data.flags.betterRolls5e.quickDamage.value[i];
-			}
-			if (item.data.flags.betterRolls5e.quickDamage.altValue[i] != null) {
-				newQuickDamageAltValues[i] = item.data.flags.betterRolls5e.quickDamage.altValue[i];
-			}
-		}
-		item.data.flags.betterRolls5e.quickDamage.value = newQuickDamageValues;
-		item.data.flags.betterRolls5e.quickDamage.altValue = newQuickDamageAltValues;
-	}
-	
-	return item.data.flags.betterRolls5e;
 }
 
 export function updateSaveButtons(html) {

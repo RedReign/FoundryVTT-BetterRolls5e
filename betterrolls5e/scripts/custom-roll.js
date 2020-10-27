@@ -1,4 +1,4 @@
-import { i18n, isAttack, isSave, getSave, isCheck, redUpdateFlags } from "./betterrolls5e.js";
+import { i18n, isAttack, isSave, getSave, isCheck } from "./betterrolls5e.js";
 import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
@@ -416,14 +416,11 @@ export class CustomItemRoll {
 	}
 	
 	async roll() {
-		let params = this.params,
-			item = this.item,
-			itemData = item.data.data,
-			actor = item.actor,
-			flags = item.data.flags,
-			save;
+		const { params, item } = this;
+		const itemData = item.data.data;
+		const actor = item.actor;
 		
-		await redUpdateFlags(item);
+		await ItemUtils.ensureFlags(item);
 		
 		Hooks.call("preRollItemBetterRolls", this);
 		

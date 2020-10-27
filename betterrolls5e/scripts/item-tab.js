@@ -1,4 +1,5 @@
-import { redUpdateFlags, i18n, isAttack, isSave } from "./betterrolls5e.js";
+import { i18n, isAttack, isSave } from "./betterrolls5e.js";
+import { ItemUtils } from "./utils.js";
 
 let activate = false;
 
@@ -12,7 +13,8 @@ export async function addBetterRollsContent(app, protoHtml) {
 	if (item.actor && item.actor.permission < 3) { return; }
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 
-	redUpdateFlags(item);
+	// Initialize flags
+	await ItemUtils.ensureFlags(item);
 
 	let html = protoHtml;
 
