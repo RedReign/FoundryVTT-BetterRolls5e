@@ -349,14 +349,15 @@ export class ItemUtils {
 	 * Ensures that better rolls flag data is set on the item if applicable.
 	 * Performs an item update if anything was set.
 	 * @param {*} item 
+	 * @param {boolean} commit whether to update at the end or not
 	 */
-	static async ensureFlags(item) {
+	static async ensureFlags(item, { commit=true } = {}) {
 		if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 		
 		// Initialize flags
 		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
 		let flags = duplicate(item.data.flags.betterRolls5e ?? {});
-		flags = mergeObject(baseFlags, flags ?? {}, {recursive: true});
+		flags = mergeObject(baseFlags, flags ?? {});
 		
 		// If quickDamage flags should exist, update them based on which damage formulae are available
 		if (CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")].quickDamage) {
@@ -378,7 +379,12 @@ export class ItemUtils {
 		}
 	
 		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
-		await item.update({"flags.betterRolls5e": flags}, { diff: true });
+		if (commit) {
+			await item.update({"flags.betterRolls5e": flags}, { diff: true });
+		} else {
+			item.data.flags.betterRolls5e = flags;
+		}
+
 		return item.data.flags.betterRolls5e;
 	}
 
