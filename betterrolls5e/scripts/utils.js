@@ -433,6 +433,20 @@ export class ItemUtils {
 	}
 
 	/**
+	 * Checks if the item applies savage attacks (bonus crit).
+	 * Returns false if the actor doesn't have savage attacks, if the item
+	 * is not a weapon, or if there is no item.
+	 * @param {item?} item 
+	 */
+	static appliesSavageAttacks(item) {
+		if (item?.actor && item?.data.type === "weapon") {
+			return ActorUtils.hasSavageAttacks(item.actor);
+		}
+
+		return false;
+	}
+
+	/**
 	 * Gets the item's roll data.
 	 * This is similar to item.getRollData(), but with a different
 	 * ability mod formula that handles feat weapon types.
@@ -538,22 +552,18 @@ export class ItemUtils {
 	}
 
 	/**
-	 * Derives the formula for what should be rolled when a crit occurs
+	 * Derives the formula for what should be rolled when a crit occurs.
+	 * Note: Item is not necessary to calculate it.
 	 * @param {string} rollFormula
 	 * @returns {string} the crit formula
 	 */
-	static getCritRoll(item, baseFormula, baseTotal, critBehavior) {
+	static getCritRoll(baseFormula, baseTotal, {critBehavior=null, savage=false}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRoll = new Roll(critFormula);
 		
 		// If the crit formula has no dice, return null
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
 			return null;
-		}
-
-		let savage;
-		if (item.actor && item.data.type === "weapon") {
-			savage = ActorUtils.hasSavageAttacks(item.actor);
 		}
 		
 		const add = savage ? 1 : 0;
@@ -572,7 +582,48 @@ export class ItemUtils {
 			critRoll = new Roll(newFormula).evaluate({maximize:true});
 		}
 
-		return critRoll
+		return critRoll;
+	}
+
+	static scaleDamage(item, spellLevel, damageIndex, versatile, rollData) {
+		let itemData = item.data.data;
+		let actorData = item.actor.data.data;
+		
+		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
+		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
+			let parts = itemData.damage.parts.map(d => d[0]);
+			let level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
+			let scale = itemData.scaling.formula;
+			let formula = parts[damageIndex];
+			const add = Math.floor((level + 1) / 6);
+			if ( add === 0 ) {}
+			else {
+				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				if (versatile) { 
+					formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData);
+				}
+			}
+			return formula;
+		}
+		
+		// Scaling for spell damage by spell slot used. Affects only the first damage roll of the spell.
+		if (item.data.type === "spell" && itemData.scaling.mode === "level" && spellLevel) {
+			let parts = itemData.damage.parts.map(d => d[0]);
+			let level = itemData.level;
+			let scale = itemData.scaling.formula;
+			let formula = parts[damageIndex];
+			const add = Math.floor(spellLevel - level);
+			if (add > 0) {
+				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				if (versatile) {
+					formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData);
+				}
+			}
+			
+			return formula;
+		}
+		
+		return null;
 	}
 }
 
@@ -610,7 +661,7 @@ export class DiceCollection {
 	 * @param  {...Roll} rolls 
 	 */
 	push(...rolls) {
-		for (const roll of rolls) {
+		for (const roll of rolls.filter(r => r)) {
 			this.pool._dice.push(...roll.dice);
 		}
 	}

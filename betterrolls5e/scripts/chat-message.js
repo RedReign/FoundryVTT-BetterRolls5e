@@ -90,7 +90,8 @@ class BetterRollsChatCard {
             const formula = $(row).find(".dice-formula").text();
             const total = Number($(row).find(".red-base-damage").data("value"));
             const critBehavior = game.settings.get("betterrolls5e", "critBehavior");
-            const critRoll = ItemUtils.getCritRoll(item, formula, total, critBehavior);
+            const savage = ItemUtils.appliesSavageAttacks(item);
+            const critRoll = ItemUtils.getCritRoll(formula, total, { critBehavior, savage });
 
             // Render crit roll damage
             const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {

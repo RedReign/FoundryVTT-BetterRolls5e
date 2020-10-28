@@ -1,4 +1,5 @@
-import { ActorUtils } from "./utils.js";
+import { i18n } from "./betterrolls5e.js";
+import { Utils, ActorUtils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
@@ -37,6 +38,12 @@ import { ActorUtils } from "./utils.js";
  * @typedef DamageDataProps
  * @type {object}
  * @property {"damage"} type
+ * @property {string} title
+ * @property {string} damageType
+ * @property {string} context
+ * @property {Roll} baseRoll
+ * @property {Roll?} critRoll
+ * @property {boolean?} isVersatile
  */
 
 /**
@@ -118,7 +125,87 @@ export class Renderer {
 	 * @param {DamageDataProps} properties 
 	 */
 	static async renderDamage(properties) {
-		return "";
+		const { damageType, baseRoll, critRoll, isVersatile, context } = properties;
+		if (baseRoll.terms.length === 0) return;
+		
+		const tooltips = [await baseRoll.getTooltip()];
+		if (critRoll) {
+			tooltips.push(await critRoll.getTooltip());
+		}
+
+		const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
+		const critString = getBRSetting("critString");
+		const titlePlacement = getBRSetting("damageTitlePlacement").toString();
+		const damagePlacement = getBRSetting("damageRollPlacement").toString();
+		const contextPlacement = getBRSetting("damageContextPlacement").toString();
+		const replaceTitle = getBRSetting("contextReplacesTitle");
+		const replaceDamage = getBRSetting("contextReplacesDamage");
+
+		const labels = {
+			"1": [],
+			"2": [],
+			"3": []
+		};
+
+		const dtype = CONFIG.betterRolls5e.combinedDamageTypes[damageType];
+
+		let titleString = properties.title ?? "";
+		if (!titleString && CONFIG.DND5E.healingTypes[damageType]) { 
+			// Show "Healing" prefix only if it's not inherently a heal action
+			titleString = ""; 
+		} else if (!titleString && CONFIG.DND5E.damageTypes[damageType]) {	
+			// Show "Damage" prefix if it's a damage roll
+			titleString += i18n("br5e.chat.damage");
+		}
+
+		// Title
+		let pushedTitle = false;
+		if (titlePlacement !== "0" && titleString && !(replaceTitle && context && titlePlacement == contextPlacement)) {
+			labels[titlePlacement].push(titleString);
+			pushedTitle = true;
+		}
+		
+		// Context
+		if (context) {
+			if (contextPlacement === titlePlacement && pushedTitle) {
+				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + context + ")";
+			} else {
+				labels[contextPlacement].push(context);
+			}
+		}
+		
+		// Damage type
+		const damageStringParts = [];
+		if (dtype) { 
+			damageStringParts.push(dtype);
+		}
+		if (isVersatile) {
+			damageStringParts.push("(" + CONFIG.DND5E.weaponProperties.ver + ")");
+		}
+
+		const damageString = damageStringParts.join(" ");
+		if (damagePlacement !== "0" && damageString.length > 0 && !(replaceDamage && context && damagePlacement == contextPlacement)) {
+			labels[damagePlacement].push(damageString);
+		}
+		
+		for (let p in labels) {
+			labels[p] = labels[p].join(" - ");
+		};
+		
+
+		return renderModuleTemplate("red-damageroll.html", {
+			tooltips,
+			base: Utils.processRoll(baseRoll),
+			crit: Utils.processRoll(critRoll),
+			crittext: critString,
+			damagetop: labels[1],
+			damagemid: labels[2],
+			damagebottom: labels[3],
+			formula: baseRoll.formula,
+			damageType,
+			maxRoll: new Roll(baseRoll.formula).evaluate({maximize:true}).total,
+			maxCrit: critRoll ? new Roll(critRoll.formula).evaluate({maximize:true}).total : null
+		});
 	}
 
 	/**
