@@ -1,6 +1,6 @@
 import { addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
 import { addBetterRollsContent } from "./item-tab.js";
-
+import { BetterRollsChatCard } from "./chat-message.js";
 
 export class BetterRollsHooks {
 	
@@ -65,13 +65,16 @@ export class BetterRollsHooks {
 BetterRollsHooks.registerActorSheet("ActorSheet5e");
 BetterRollsHooks.registerItemSheet("ItemSheet5e");
 
-
 Hooks.on("renderChatMessage", (message, html, data) => {
-	if (!html.find(".red-full").length) { return; }
+	if (html.find(".red-full").length) {
+		let actor = game.actors.get(message.data.speaker.actor);
+		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
+			html.find(".hideSave").text(i18n("br5e.hideDC.string"));
+		}
+	}	
 
-	let actor = game.actors.get(message.data.speaker.actor);
-	if ((!actor && !game.user.isGM) || actor?.permission != 3) {
-		html.find(".hideSave").text(i18n("br5e.hideDC.string"));
+	if (game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { 
+		BetterRollsChatCard.bind(message, html);
 	}
 });
 
