@@ -1,4 +1,6 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
+import { CustomRoll } from "./custom-roll.js";
+import { Renderer } from "./renderer.js";
 import { DiceCollection, ItemUtils, Utils } from "./utils.js";
 
 /**
@@ -113,6 +115,17 @@ export class BetterRollsChatCard {
 			}
 
 			this.dicePool.push(critRoll);
+		}
+
+		// Add crit extra if applicable
+		const flags = this.item.data.flags.betterRolls5e;
+		const critExtraIndex = parseInt(flags?.critDamage?.value, 10);
+		if (critExtraIndex >= 0) {
+			const entry = CustomRoll.constructItemDamageRoll(item, critExtraIndex);
+			const template = await Renderer.renderModel(entry);
+			this.html.find("div.dice-roll").last().after($(template));
+			
+			this.dicePool.push(entry.baseRoll);
 		}
 	}
 	
