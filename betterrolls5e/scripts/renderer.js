@@ -1,5 +1,5 @@
 import { i18n } from "./betterrolls5e.js";
-import { Utils, ActorUtils } from "./utils.js";
+import { Utils, ActorUtils, ItemUtils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
@@ -38,6 +38,8 @@ import { Utils, ActorUtils } from "./utils.js";
  * @typedef DamageDataProps
  * @type {object}
  * @property {"damage"} type
+ * @property {boolean?} hidden
+ * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
  * @property {string} damageType
  * @property {string} context
@@ -71,6 +73,10 @@ export class Renderer {
 	 * @param {RenderModel} model 
 	 */
 	static async renderModel(model) {
+		if (typeof model === "string") {
+			return model;
+		}
+
 		switch (model.type) {
 			case "header":
 				return Renderer.renderHeader(model);
@@ -210,12 +216,20 @@ export class Renderer {
 
 	/**
 	 * Renders a full card
-	 * @param {Array<string | Promise<string>>} templates
+	 * @param {Array<string | RenderModel | Promise<string | RenderModel>>} templates
 	 * @param {*} param1 
 	 */
-	static async renderCard(templates, {actor=null, item=null, slotLevel=0, isCrit=false, properties=[]}) {
+	static async renderCard(templates, {actor=null, item=null, isCrit=false, properties=null}) {
 		// Add token's ID to chat roll, if valid
 		let tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
+
+		templates = await Promise.all(templates);
+		templates = templates.map(Renderer.renderModel);
+
+		// Default properties to the item properties if item is given
+		if (properties == null && item) {
+			properties = ItemUtils.getPropertyList(item);
+		}
 
 		return renderModuleTemplate("red-fullroll.html", {
 			item,

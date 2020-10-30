@@ -625,6 +625,93 @@ export class ItemUtils {
 		
 		return null;
 	}
+
+	
+	/**
+	 * A function for returning the properties of an item, which can then be printed as the footer of a chat card.
+	 */
+	static getPropertyList(item) {
+		const data = item.data.data;
+		let properties = [];
+		
+		const range = ItemUtils.getRange(item);
+		const target = ItemUtils.getTarget(item);
+		const activation = ItemUtils.getActivationData(item)
+		const duration = ItemUtils.getDuration(item);
+
+		switch(item.data.type) {
+			case "weapon":
+				properties = [
+					dnd5e.weaponTypes[data.weaponType],
+					range,
+					target,
+					data.proficient ? "" : i18n("Not Proficient"),
+					data.weight ? data.weight + " " + i18n("lbs.") : null
+				];
+				for (const prop in data.properties) {
+					if (data.properties[prop] === true) {
+						properties.push(dnd5e.weaponProperties[prop]);
+					}
+				}
+				break;
+			case "spell":
+				// Spell attack labels
+				data.damageLabel = data.actionType === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
+				data.isAttack = data.actionType === "attack";
+
+				properties = [
+					dnd5e.spellSchools[data.school],
+					dnd5e.spellLevels[data.level],
+					data.components.ritual ? i18n("Ritual") : null,
+					activation,
+					duration,
+					data.components.concentration ? i18n("Concentration") : null,
+					ItemUtils.getSpellComponents(item),
+					range,
+					target
+				];
+				break;
+			case "feat":
+				properties = [
+					data.requirements,
+					activation,
+					duration,
+					range,
+					target,
+				];
+				break;
+			case "consumable":
+				properties = [
+					data.weight ? data.weight + " " + i18n("lbs.") : null,
+					activation,
+					duration,
+					range,
+					target,
+				];
+				break;
+			case "equipment":
+				properties = [
+					dnd5e.equipmentTypes[data.armor.type],
+					data.equipped ? i18n("Equipped") : null,
+					data.armor.value ? data.armor.value + " " + i18n("AC") : null,
+					data.stealth ? i18n("Stealth Disadv.") : null,
+					data.weight ? data.weight + " lbs." : null,
+				];
+				break;
+			case "tool":
+				properties = [
+					dnd5e.proficiencyLevels[data.proficient],
+					data.ability ? dnd5e.abilities[data.ability] : null,
+					data.weight ? data.weight + " lbs." : null,
+				];
+				break;
+			case "loot":
+				properties = [data.weight ? item.data.totalWeight + " lbs." : null]
+				break;
+		}
+		let output = properties.filter(p => (p) && (p.length !== 0) && (p !== " "));
+		return output;
+	}
 }
 
 /**

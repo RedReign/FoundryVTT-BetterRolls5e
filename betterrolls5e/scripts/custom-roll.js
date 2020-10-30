@@ -208,8 +208,8 @@ export class CustomRoll {
 	 * @param {object} options
 	 * @param {} options.critBehavior
 	 * @param {number?} options.slotLevel
-	 * @param {string?} options.context
-	 * @param {boolean?} options.isCrit
+	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
+	 * @param {boolean?} options.isCrit Whether to roll crit damage
 	 */
 	static constructItemDamageRoll(item, index, options={}) {
 		const { slotLevel, isCrit, critBehavior } = options;
@@ -265,6 +265,54 @@ export class CustomRoll {
 		return CustomRoll.constructDamageRoll(baseRoll, {
 			critBehavior, item, title, context, damageType, isVersatile, isCrit
 		});
+	}
+
+	/**
+	 * Creates multiple item damage rolls. This returns an array,
+	 * so when adding to a model list, add them separately or use the splat operator.
+	 * @param {*} item 
+	 * @param {number[] | "all"} damageIndices 
+	 * @param {*} options 
+	 */
+	static constructItemDamageRollRange(item, damageIndices, options={}) {
+		// If all, damage indices between a sequential list from 0 to length - 1
+		if (damageIndices === "all") {
+			const numEntries = item.data.data.damage.parts.length;
+			damageIndices = [...Array(numEntries).keys()];
+		}
+
+		// If versatile, replace any "first" entry (only those)
+		if (options.versatile) {
+			damageIndices = damageIndices.map(i => i === 0 ? "versatile" : i);
+		}
+
+		return damageIndices.map(i => CustomRoll.constructItemDamageRoll(item, i, options));
+	}
+
+	/**
+	 * Sends a chat message using the given models, that can be created using
+	 * the CustomRoll.constructX() methods.
+	 * @param {*} actor 
+	 * @param {*} models 
+	 * @param {object} param3
+	 * @param {Item?} param3.item Optional Item to put in the card props and to use for certain defaults.
+	 * @param {string[]?} param3.properties List of properties to show at the bottom. Uses item properties if null.
+	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties 
+	 */
+	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null }={}) {
+		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
+
+		// Render the models
+		const templates = await Promise.all(models.map(Renderer.renderModel));
+		const content = await Renderer.renderCard(templates, { actor, item, properties, isCrit });
+		
+		// Output the rolls to chat
+		const dicePool = new DiceCollection();
+		populateDicePool(models.filter(e => !e?.hidden), dicePool);
+		await dicePool.flush();
+
+		// Send the chat message
+		return ChatMessage.create(createChatData(actor, content, { hasMaestroSound }));
 	}
 	
 	/**
@@ -331,26 +379,14 @@ export class CustomRoll {
 	 */
 	static async fullRollActor(actor, label, formula, rollType, params) {		
 		// Entries to show for the render
-		const entries = [
+		return CustomRoll.sendChatMessage(actor, [
 			CustomRoll.constructHeaderData(actor, label),
 			CustomRoll.constructMultiRoll(formula, { 
 				rollState: CustomRoll.getRollState(params), 
 				critThreshold: params?.critThreshold,
 				rollType
 			})
-		];
-
-		// Render the models
-		const templates = entries.map(Renderer.renderModel);
-		const content = await Renderer.renderCard(templates, { actor });
-		
-		// Output the rolls to chat
-		const dicePool = new DiceCollection();
-		populateDicePool(entries, dicePool);
-		await dicePool.flush();
-
-		// Send the chat message
-		return ChatMessage.create(createChatData(actor, content));
+		]);
 	}
 	
 	/**
@@ -454,10 +490,9 @@ export class CustomItemRoll {
 		this.itemFlags = item.data.flags;
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
 		this.fields = fields;	// Where requested roll fields are stored, in the order they should be rendered.
-		this.templates = [];	// Where finished templates are stored, in the order they should be rendered.
-		
+
 		/** @type {Array<import("./renderer.js").RenderModel>} */
-		this.entries = [];		// Data results from fields, which get turned into templates
+		this.models = [];		// Data results from fields, which get turned into templates
 		
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
@@ -466,7 +501,6 @@ export class CustomItemRoll {
 
 		this._updateConfig();
 		this._setupRollState();
-		this.dicePool = new DiceCollection();
 	}
 	
 	/**
@@ -512,11 +546,14 @@ export class CustomItemRoll {
 	}
 	
 	/**
-	 * Internal function to perform the construction and rendering, returns what should be rendered.
-	 * DO NOT CALL THIS FUNCTION DIRECTLY. Internal use only and does not manage state.
-	 * @private
+	 * Internal function to process fields and populate the internal data.
+	 * Call toMessage() to create the final chat message and show the result
 	 */
-	async _roll() {
+	async roll() {
+		if (this.rolled) {
+			console.log("Already rolled!", this);
+		}
+
 		const { params, item } = this;
 		const itemData = item.data.data;
 		const actor = item.actor;
@@ -546,17 +583,17 @@ export class CustomItemRoll {
 		}
 
 		// Convert all requested fields into templates to be entered into the chat message.
-		this.templates = await this._renderTemplates();
+		this.models = await this._processFields();
 		
-		// Item Footer Properties
-		this.properties = (params.properties) ? this._listProperties() : null;
+		// Load Item Footer Properties if params.properties is true
+		this.properties = (params.properties) ? ItemUtils.getPropertyList(item) : [];
 		
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
 		let chargeCheck = await this.consumeCharge();
 		if (chargeCheck === "error") {
 			return "error";
 		}
-		
+
 		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
 			this.placeTemplate();
 		}
@@ -566,28 +603,9 @@ export class CustomItemRoll {
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 		
-		const { isCrit, properties } = this;
 		if (chargeCheck === "destroy") {
 			await actor.deleteOwnedItem(item.id);
 		}
-
-		// Render final template
-		return await Renderer.renderCard(this.templates, { 
-			item, actor, isCrit, properties
-		});;
-	}
-
-	/**
-	 * Performs a roll and sets the content to the result
-	 */
-	async roll() {
-		if (this.rolled) {
-			console.log("Already rolled!", this);
-			return this.content;
-		}
-
-		this.content = await this._roll();
-		return this.content;
 	}
 
 	/**
@@ -602,43 +620,16 @@ export class CustomItemRoll {
 		switch (fieldType) {
 			case 'attack':
 				// {adv, disadv, bonus, triggersCrit, critThreshold}
-				this.entries.push(this._rollAttack(fieldArgs[0]));
+				this.models.push(this._rollAttack(fieldArgs[0]));
 				break;
 			case 'toolcheck':
 			case 'tool':
 			case 'check':
-				this.entries.push(this._rollTool(fieldArgs[0]));
+				this.models.push(this._rollTool(fieldArgs[0]));
 				break;
 			case 'damage':
 				// {damageIndex: 0, forceVersatile: false, forceCrit: false}
-				let index, versatile, crit, context;
-				let damagesToPush = [];
-				if (typeof fieldArgs[0] === "object") {
-					index = fieldArgs[0].index;
-					versatile = fieldArgs[0].versatile;
-					crit = fieldArgs[0].crit;
-					context = fieldArgs[0].context;
-				}
-				let oldIndex = index;
-				if (index === "all") {
-					let newIndex = [];
-					for (let i=0;i<this.item.data.data.damage.parts.length;i++) {
-						newIndex.push(i);
-					}
-					index = newIndex;
-				} else if (Number.isInteger(index)) {
-					let newIndex = [index];
-					index = newIndex;
-				}
-				for (let i=0;i<index.length;i++) {
-					this.entries.push(this._rollDamage({
-						damageIndex: index[i] || 0,
-						// versatile damage will only replace the first damage formula in an "all" damage request
-						forceVersatile: (i == 0 || oldIndex !== "all") ? versatile : false,
-						forceCrit: crit,
-						customContext: context
-					}));
-				}
+				this.models.push(...this._rollDamageBlock(fieldArgs[0]));
 				if (this.ammo) {
 					this.item = this.ammo;
 					delete this.ammo;
@@ -653,15 +644,15 @@ export class CustomItemRoll {
 					abl = fieldArgs[0].abl;
 					dc = fieldArgs[0].dc;
 				}
-				this.entries.push({ type: "raw", content: await this.saveRollButton({customAbl:abl, customDC:dc})});
+				this.models.push({ type: "raw", content: await this.saveRollButton({customAbl:abl, customDC:dc})});
 				break;
 			case 'other':
 				if (item.data.data.formula) { 
-					this.entries.push(this._rollOther());
+					this.models.push(this._rollOther());
 				}
 				break;
 			case 'custom':
-				this.entries.push(this._rollCustom(fieldArgs[0]));
+				this.models.push(this._rollCustom(fieldArgs[0]));
 				break;
 			case 'description':
 			case 'desc':
@@ -673,14 +664,14 @@ export class CustomItemRoll {
 				fieldArgs[0] = {text: componentField + item.data.data.description.value};
 			case 'text':
 				if (fieldArgs[0].text) {
-					this.entries.push({
+					this.models.push({
 						type: "description",
 						content: fieldArgs[0].text
 					});
 				}
 				break;
 			case 'flavor':
-				this.entries.push({
+				this.models.push({
 					type: "description",
 					isFlavor: true,
 					content: fieldArgs[0]?.text ?? this.item.data.data.chatFlavor
@@ -689,15 +680,18 @@ export class CustomItemRoll {
 			case 'crit':
 				const extra = this._rollCritExtra();
 				if (extra) {
-					this.entries.push(extra);
+					this.models.push(extra);
 				}
 				break;
 		}
 		return true;
 	}
 
-	async _renderTemplates() {
-		this.entries.push(this._rollHeader());
+	/**
+	 * Processes all fields, building a collection of models and returning them
+	 */
+	async _processFields() {
+		this.models.push(this._rollHeader());
 		for (let i=0;i<this.fields.length;i++) {
 			await this.fieldToTemplate(this.fields[i]);
 		}
@@ -706,12 +700,7 @@ export class CustomItemRoll {
 			await this.fieldToTemplate(["crit"]);
 		}
 
-		// todo: consider resetting the template list?
-		for (const model of this.entries) {
-			this.templates.push(Renderer.renderModel(model));
-		}
-
-		return this.templates;
+		return this.models;
 	}
 	
 	/**
@@ -729,12 +718,9 @@ export class CustomItemRoll {
 		this.chatData = createChatData(this.actor, this.content, { hasMaestroSound });
 		await Hooks.callAll("messageBetterRolls", this, this.chatData);
 
-		// Populate dice pool and flush the contents
-		populateDicePool(this.entries, this.dicePool);
-		await this.dicePool.flush();
-
-		// Send the chat message
-		return await ChatMessage.create(this.chatData);
+		// Render and send the chat message
+		const { item, isCrit, properties } = this;
+		return await CustomRoll.sendChatMessage(item.actor, this.models, { item, isCrit, properties });
 	}
 	
 	/**
@@ -799,94 +785,6 @@ export class CustomItemRoll {
 		console.log(this.params);
 		
 		this.fields = fields.concat((this.fields || []).slice());
-	}
-	
-	/**
-	 * A function for returning the properties of an item, which can then be printed as the footer of a chat card.
-	 * @private
-	 */
-	_listProperties() {
-		const item = this.item;
-		const data = item.data.data;
-		let properties = [];
-		
-		const range = ItemUtils.getRange(item);
-		const target = ItemUtils.getTarget(item);
-		const activation = ItemUtils.getActivationData(item)
-		const duration = ItemUtils.getDuration(item);
-
-		switch(item.data.type) {
-			case "weapon":
-				properties = [
-					dnd5e.weaponTypes[data.weaponType],
-					range,
-					target,
-					data.proficient ? "" : i18n("Not Proficient"),
-					data.weight ? data.weight + " " + i18n("lbs.") : null
-				];
-				for (const prop in data.properties) {
-					if (data.properties[prop] === true) {
-						properties.push(dnd5e.weaponProperties[prop]);
-					}
-				}
-				break;
-			case "spell":
-				// Spell attack labels
-				data.damageLabel = data.actionType === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
-				data.isAttack = data.actionType === "attack";
-
-				properties = [
-					dnd5e.spellSchools[data.school],
-					dnd5e.spellLevels[data.level],
-					data.components.ritual ? i18n("Ritual") : null,
-					activation,
-					duration,
-					data.components.concentration ? i18n("Concentration") : null,
-					ItemUtils.getSpellComponents(item),
-					range,
-					target
-				];
-				break;
-			case "feat":
-				properties = [
-					data.requirements,
-					activation,
-					duration,
-					range,
-					target,
-				];
-				break;
-			case "consumable":
-				properties = [
-					data.weight ? data.weight + " " + i18n("lbs.") : null,
-					activation,
-					duration,
-					range,
-					target,
-				];
-				break;
-			case "equipment":
-				properties = [
-					dnd5e.equipmentTypes[data.armor.type],
-					data.equipped ? i18n("Equipped") : null,
-					data.armor.value ? data.armor.value + " " + i18n("AC") : null,
-					data.stealth ? i18n("Stealth Disadv.") : null,
-					data.weight ? data.weight + " lbs." : null,
-				];
-				break;
-			case "tool":
-				properties = [
-					dnd5e.proficiencyLevels[data.proficient],
-					data.ability ? dnd5e.abilities[data.ability] : null,
-					data.weight ? data.weight + " lbs." : null,
-				];
-				break;
-			case "loot":
-				properties = [data.weight ? item.data.totalWeight + " lbs." : null]
-				break;
-		}
-		let output = properties.filter(p => (p) && (p.length !== 0) && (p !== " "));
-		return output;
 	}
 
 	_rollHeader() {
@@ -998,7 +896,7 @@ export class CustomItemRoll {
 			title,
 			critThreshold: args.critThreshold,
 			elvenAccuracy: ActorUtils.testElvenAccuracy(itm.actor, abl)
-		}, this.dicePool);
+		});
 		
 		this.isCrit = args.triggersCrit || multiRollData.isCrit;
 
@@ -1026,11 +924,38 @@ export class CustomItemRoll {
 		const { rolls, formula, rollState } = args;
 		let rollData = ItemUtils.getRollData(this.item);
 		const resolvedFormula = new Roll(formula, rollData).formula;
-		this.entries.push(CustomRoll.constructMultiRoll(resolvedFormula || "1d20", {
+		this.models.push(CustomRoll.constructMultiRoll(resolvedFormula || "1d20", {
 			numRolls: rolls || 1,
 			rollState: rollStates[rollState],
 			rollType: "custom",
 		}));
+	}
+
+	_rollDamageBlock({index, versatile, crit, context} = {}) {
+		const wasAll = index === "all";
+
+		// If all, damage indices between a sequential list from 0 to length - 1
+		if (index === "all") {
+			const numEntries = this.item.data.data.damage.parts.length;
+			index = [...Array(numEntries).keys()]
+		}
+
+		if (Number.isInteger(index)) {
+			index = [index];
+		}
+
+		const results = [];
+		for (const idx of index) {
+			results.push(this._rollDamage({
+				damageIndex: idx,
+				// versatile damage will only replace the first damage formula in an "all" damage request
+				forceVersatile: (idx == 0 || !wasAll) ? versatile : false,
+				forceCrit: crit,
+				customContext: context
+			}))
+		}
+
+		return results;
 	}
 	
 	_rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0, customContext = null}) {
