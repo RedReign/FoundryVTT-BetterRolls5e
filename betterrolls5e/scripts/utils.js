@@ -7,7 +7,7 @@ export class Utils {
 				runningTotal += classLevels;
 			}
 			return runningTotal;
-		});
+		}, 0);
 		return level;
 	}
 
