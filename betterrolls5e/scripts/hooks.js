@@ -65,6 +65,7 @@ export class BetterRollsHooks {
 BetterRollsHooks.registerActorSheet("ActorSheet5e");
 BetterRollsHooks.registerItemSheet("ItemSheet5e");
 
+
 Hooks.on("renderChatMessage", (message, html, data) => {
 	if (html.find(".red-full").length) {
 		let actor = game.actors.get(message.data.speaker.actor);

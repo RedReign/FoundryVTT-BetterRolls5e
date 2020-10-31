@@ -74,13 +74,13 @@ export async function addBetterRollsContent(app, protoHtml) {
 		const placeholder = game.settings.get("betterrolls5e", "contextReplacesDamage") ? "br5e.settings.label" : "br5e.settings.context";
 
 		damageRolls.forEach((damageRoll, i) => {
-			const contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(flags.quickDamage?.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
+			const contextField = $(`<input type="text" name="flags.betterRolls5e.quickDamage.context.${i}" value="${(item.data.flags.betterRolls5e.quickDamage.context[i] || "")}" placeholder="${i18n(placeholder)}" data-dtype="String" style="margin-left:5px;">`);
 
 			damageRoll.after(contextField[0]);
 
 			// Add event listener to delete context when damage is deleted
 			$($($(damageRoll)[0].parentElement).find(`a.delete-damage`)).click(async _ => {
-				const contextFlags = Object.values(flags.quickDamage?.context);
+				const contextFlags = Object.values(item.data.flags.betterRolls5e.quickDamage.context);
 				contextFlags.splice(i, 1);
 				item.update({
 					[`flags.betterRolls5e.quickDamage.context`]: contextFlags,

@@ -632,10 +632,13 @@ export class CustomItemRoll {
 				// {damageIndex: 0, forceVersatile: false, forceCrit: false}
 				this.models.push(...this._rollDamageBlock(fieldArgs[0]));
 				if (this.ammo) {
-					this.item = this.ammo;
+					this.models.push(...this._rollDamageBlock({
+						item: this.ammo,
+						index: "all",
+						crit: fieldArgs[0].crit,
+						context: `[${this.ammo.name}]`
+					}));
 					delete this.ammo;
-					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit: this.isCrit, context: `[${this.item.name}]`}]);
-					this.item = item;
 				}
 				break;
 			case 'savedc':
@@ -932,7 +935,7 @@ export class CustomItemRoll {
 		}));
 	}
 
-	_rollDamageBlock({index, versatile, crit, context} = {}) {
+	_rollDamageBlock({item, index, versatile, crit, context} = {}) {
 		const wasAll = index === "all";
 
 		// If all, damage indices between a sequential list from 0 to length - 1
@@ -948,6 +951,7 @@ export class CustomItemRoll {
 		const results = [];
 		for (const idx of index) {
 			results.push(this._rollDamage({
+				item,
 				damageIndex: idx,
 				// versatile damage will only replace the first damage formula in an "all" damage request
 				forceVersatile: (idx == 0 || !wasAll) ? versatile : false,
@@ -959,8 +963,12 @@ export class CustomItemRoll {
 		return results;
 	}
 	
-	_rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0, customContext = null}) {
-		const item = this.item;
+	/**
+	 * Rolls damage and creates a damage model. Item is optional.
+	 * @param {*} param0 
+	 */
+	_rollDamage({item=null, damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0, customContext = null}) {
+		item = item ?? this.item;
 		const itemData = item.data.data;
 
 		// Makes the custom roll flagged as having a damage roll.
@@ -980,6 +988,10 @@ export class CustomItemRoll {
 		});
 	}
 
+	/**
+	 * Rolls crit extra damage for this item and returns the model data
+	 * @param {} index 
+	 */
 	_rollCritExtra(index) {
 		let damageIndex = (index ? toString(index) : null) || 
 			this.item.data.flags.betterRolls5e?.critDamage?.value || 
@@ -990,7 +1002,7 @@ export class CustomItemRoll {
 	}
 	
 	/**
-	 * Rolls the Other Formula field. Is subject to crits.
+	 * Rolls the Other Formula field and returns the model data. Is subject to crits.
 	 */
 	_rollOther() {
 		const isCrit = this.isCrit;
