@@ -7,18 +7,6 @@ export function i18n(key) {
 	return game.i18n.localize(key);
 }
 
-function hasProperty(object, key) {
-	if ( !key ) return false;
-	let target = object;
-
-	for ( let p of key.split('.') ) {
-		if ( target.hasOwnProperty(p) ) target = target[p];
-		else return false;
-	}
-
-	return true;
-}
-
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
 	const attacks = ["mwak", "rwak", "msak", "rsak"];
@@ -86,7 +74,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: false}, altValue: {quantity: false, use: false, resource: false} },
+			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
@@ -150,7 +138,7 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: false}, altValue: {quantity: false, use: false, resource: false} },
+			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
@@ -205,6 +193,21 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	}
 }
 
+/**
+ * Helper function for creating roll buttons.
+ * @param {Object} button
+ * @param {String} button.content - The text to display inside the button.
+ * @param {String} button.action - The value of the data-action attribute.
+ * @param {(String|Number|null)} [button.value=null] - The value of the data-value attribute.
+ */
+const createButton = ({ content, action, value = null }) => (
+	`<span class="tag">
+		<button data-action=${action} ${value ? `data-value="${value}"` : ""}>
+			${content}
+		</button>
+	</span>`
+)
+
 async function addButtonsToItemLi(li, actor, buttonContainer) {
 	
 	let item = actor.getOwnedItem(String(li.attr("data-item-id")));
@@ -221,91 +224,152 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	let buttons = $(`<div class="item-buttons"></div>`);
 	let buttonsWereAdded = false;
 	let contextEnabled = (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") ? true : false;
+
+	// TODO: Make the logic in this switch statement simpler.
 	switch (item.data.type) {
 		case 'weapon':
 		case 'feat':
 		case 'spell':
 		case 'consumable':
 			buttonsWereAdded = true;
-			if (diceEnabled) buttons.append(`<span class="tag"><button data-action="quickRoll">${i18n("br5e.buttons.roll")}</button></span>`);
-			if (diceEnabled) buttons.append(`<span class="tag"><button data-action="altRoll">${i18n("br5e.buttons.altRoll")}</button></span>`);
-			if (isAttack(item)) buttons.append(`<span class="tag"><button data-action="attackRoll">${i18n("br5e.buttons.attack")}</button></span>`);
-			if (isSave(item)) {
-				let saveData = getSave(item);
-				buttons.append(`<span class="tag"><button data-action="save">${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}</button></span>`);
+
+			if (diceEnabled) {
+				buttons.append(
+					createButton({ content: i18n("br5e.buttons.roll"), action: "quickRoll" }),
+					createButton({ content: i18n("br5e.buttons.altRoll"), action: "altRoll"})
+				)
+			};
+
+			if (isAttack(item)) {
+				buttons.append(
+					createButton({ content: i18n("br5e.buttons.attack"), action: "attackRoll"})
+				);
 			}
+
+			if (isSave(item)) {
+				const  saveData = getSave(item);
+
+				buttons.append(
+					createButton({
+						content: `${i18n("br5e.buttons.saveDC")} ${saveData.dc} ${dnd5e.abilities[saveData.ability]}`,
+						action: "save"
+					})
+				);
+			}
+
 			if (itemData.damage.parts.length > 0) {
-				buttons.append(`<span class="tag"><button data-action="damageRoll" data-value="all">${i18n("br5e.buttons.damage")}</button></span>`);
+				buttons.append(
+					createButton({ content: i18n("br5e.buttons.damage"), action: "damageRoll", value: "all" })
+				);
+
 				if (itemData.damage.versatile) {
-					buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value="all">${i18n("br5e.buttons.verDamage")}</button></span>`);
+					buttons.append(
+						createButton({ content: i18n("br5e.buttons.verDamage"), action: "verDamageRoll", value: "all" })
+					);
 				}
+
 				// Make a damage button for each damage type
 				if (itemData.damage.parts.length > 1) {
 					buttons.append(`<br>`);
-					for (let i = 0; i < itemData.damage.parts.length; i++) {
-						let damageString = (contextEnabled && flags.quickDamage.context[i]) || CONFIG.betterRolls5e.combinedDamageTypes[itemData.damage.parts[i][1]];
-						buttons.append(`<span class="tag"><button data-action="damageRoll" data-value=${i}>${i}: ${damageString}</button></span>`);
+
+					itemData.damage.parts.forEach(([_, damageType], i) => {
+						const damageString =
+							(contextEnabled && flags.quickDamage.context[i]) ||
+							CONFIG.betterRolls5e.combinedDamageTypes[damageType];
+
+						let content = `${i}: ${damageString}`;
+
 						if (i === 0 && itemData.damage.versatile) {
-							buttons.append(`<span class="tag"><button data-action="verDamageRoll" data-value=0>${0}: ${damageString} (${dnd5e.weaponProperties.ver})</button></span>`);
+							content += ` (${dnd5e.weaponProperties.ver})`;
 						}
-					}
+
+						buttons.append(
+							createButton({ content, action: "damageRoll", value: i })
+						);
+					});
 				}
 			}
+
 			if (itemData.formula.length > 0) {
-				let otherString = contextEnabled && flags.quickOther.context;
-				if (!otherString) { otherString = "br5e.settings.otherFormula"; }
-				buttons.append(`<span class="tag"><button data-action="otherFormulaRoll">${otherString}</button></span>`);
+				const otherString = contextEnabled && flags.quickOther.context || "br5e.settings.otherFormula";
+
+				buttons.append(
+					createButton({ content: otherString, action: "otherFormulaRoll" })
+				);
 			}
+
 			break;
+
 		case 'tool':
 			buttonsWereAdded = true;
-			buttons.append(`<span class="tag"><button data-action="toolCheck" data-ability="${itemData.ability.value}">${i18n("br5e.buttons.itemUse")} ${item.name}</button></span>`);
+
+			buttons.append(
+				createButton({
+					content: `${i18n("br5e.buttons.itemUse")} ${item.name}`,
+					action: "toolCheck",
+					value: itemData.ability.value
+				})
+			);
+
 			if (itemData.formula && itemData.formula.length > 0) {
-				let otherString = contextEnabled && flags.quickOther.context;
-				if (!otherString) { otherString = "br5e.settings.otherFormula"; }
-				buttons.append(`<span class="tag"><button data-action="otherFormulaRoll">${otherString}</button></span>`);
+				const otherString = (contextEnabled && flags.quickOther.context) || "br5e.settings.otherFormula";
+
+				buttons.append(
+					createButton({ content: otherString, action: "otherFormulaRoll" })
+				);
 			}
+
 			break;
 	}
 	
-	if (buttonsWereAdded) { buttons.append(`<br>`); }
+	if (buttonsWereAdded) {
+		buttons.append(`<br>`);
+	}
 	
 	// Add info button
-	if (diceEnabled) { buttons.append(`<span class="tag"><button data-action="infoRoll">${i18n("br5e.buttons.info")}</button></span>`); }
+	if (diceEnabled) {
+		buttons.append(
+			createButton({ content: i18n("br5e.buttons.info"), action: "infoRoll" })
+		);
+	}
 	
 	// Add default roll button
-	buttons.append(`<span class="tag"><button data-action="vanillaRoll">${i18n("br5e.buttons.defaultSheetRoll")}</button></span>`);
-	
-	//if (((item.data.data.damage !== undefined) && item.data.data.damage.value) || ((item.data.data.damage2 !== undefined) && item.data.data.damage2.value) || (chatData.isAttack) || (chatData.isSave) || (chatData.hasCharges)) {buttonsWereAdded = true;}
-	if (buttonsWereAdded) { buttons.append(`<br><header style="margin-top:6px"></header>`); }
-	
+	buttons.append(
+		createButton({ content: i18n("br5e.buttons.defaultSheetRoll"), action: "vanillaRoll" })
+	);
+
+	if (buttonsWereAdded) {
+		buttons.append(`<br><header style="margin-top:6px"></header>`);
+	}
+
 	// adding the buttons to the sheet
-	
-	let targetHTML = li; //$(event.target.parentNode.parentNode)
+	const targetHTML = li; //$(event.target.parentNode.parentNode)
 	targetHTML.find(buttonContainer).prepend(buttons);
-	
-	//html.find(buttonContainer).prepend(buttons);
-	
+
 	// adding click event for all buttons
 	buttons.find('button').click((ev) => {
 		ev.preventDefault();
 		ev.stopPropagation();
-		
+
 		// which function gets called depends on the type of button stored in the dataset attribute action
 		// If better rolls are on
 		if (diceEnabled) {
 			// The arguments compounded into an object and an array of fields, to be served to the roll() function as the params and fields arguments
-			let params = {forceCrit:ev.altKey, event:ev};
-			let fields = [];
-			if (params.forceCrit) { fields.push(["flavor", {text:`${game.settings.get("betterrolls5e", "critString")}`}]); }
+			const params = {forceCrit: ev.altKey, event: ev};
+			const fields = [];
+			if (params.forceCrit) {
+				fields.push([
+					"flavor",
+					{ text: `${game.settings.get("betterrolls5e", "critString")}` }
+				]);
+			}
 			
 			// Sets the damage roll in the argument to the value of the button
 			function setDamage(versatile = false) {
-				let damage = [];
 				if (ev.target.dataset.value === "all") {
-					fields.push(["damage", {index:"all", versatile:versatile}]);
+					fields.push(["damage", { index:"all", versatile:versatile} ]);
 				} else {
-					fields.push(["damage", {index:Number(ev.target.dataset.value)}]);
+					fields.push(["damage", { index:Number(ev.target.dataset.value) }]);
 				}
 			}
 			

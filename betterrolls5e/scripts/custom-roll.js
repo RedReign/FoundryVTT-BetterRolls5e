@@ -552,13 +552,14 @@ export class CustomItemRoll {
 	async roll() {
 		if (this.rolled) {
 			console.log("Already rolled!", this);
+			return;
 		}
 
 		const { params, item } = this;
-		const itemData = item.data.data;
-		const actor = item.actor;
-		
+
 		await ItemUtils.ensureFlags(item);
+		const actor = item.actor;
+		const itemData = item.data.data;
 		
 		Hooks.call("preRollItemBetterRolls", this);
 		
@@ -633,7 +634,7 @@ export class CustomItemRoll {
 				if (this.ammo) {
 					this.item = this.ammo;
 					delete this.ammo;
-					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit, context: `[${this.item.name}]`}]);
+					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit: this.isCrit, context: `[${this.item.name}]`}]);
 					this.item = item;
 				}
 				break;
@@ -820,7 +821,7 @@ export class CustomItemRoll {
 
 		let itm = this.item;
 		const itemData = itm.data.data;
-		const title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
+		let title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
 		
 		this.hasAttack = true;
 		
@@ -851,7 +852,7 @@ export class CustomItemRoll {
 		// Get ammo bonus and add to title if relevant
 		const ammoBonus = this.ammo?.data.data.attackBonus;
 		if (ammoBonus) {
-			title += ` [${ammo.name}]`;
+			title += ` [${this.ammo.name}]`;
 		}
 		
 		// Perform the final construction and begin rolling

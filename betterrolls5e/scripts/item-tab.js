@@ -14,7 +14,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 
 	// Initialize flags. Don't commit to avoid a nested re-render
-	const flags = await ItemUtils.ensureFlags(item, { commit: false });
+	await ItemUtils.ensureFlags(item, { commit: false });
 
 	let html = protoHtml;
 
@@ -52,7 +52,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 		hasCharge,
 		isAttack: isAttack(item),
 		isSave: isSave(item),
-		flags: { betterRolls5e: flags },
+		flags: item.data.flags,
 		damageTypes: CONFIG.betterRolls5e.combinedDamageTypes,
 		altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget

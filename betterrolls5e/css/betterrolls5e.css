@@ -63,6 +63,15 @@
 	justify-content: space-between;
 }
 
+.tidy5e .br5e-consume-box {
+	flex-direction: column;
+}
+
+.tidy5e .br5e-consume-container {
+	display: flex;
+	flex-direction: row;
+}
+
 .br5e-consume-title {
 	padding-left: 6px;
 	font-size: 13px;
