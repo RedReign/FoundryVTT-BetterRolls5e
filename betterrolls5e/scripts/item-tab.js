@@ -1,4 +1,5 @@
-import { redUpdateFlags, i18n, isAttack, isSave } from "./betterrolls5e.js";
+import { i18n, isAttack, isSave } from "./betterrolls5e.js";
+import { ItemUtils } from "./utils.js";
 
 let activate = false;
 
@@ -12,7 +13,8 @@ export async function addBetterRollsContent(app, protoHtml) {
 	if (item.actor && item.actor.permission < 3) { return; }
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 
-	redUpdateFlags(item);
+	// Initialize flags. Don't commit to avoid a nested re-render
+	await ItemUtils.ensureFlags(item, { commit: false });
 
 	let html = protoHtml;
 
@@ -26,7 +28,6 @@ export async function addBetterRollsContent(app, protoHtml) {
 	tabSelector.append($(betterRollsTabString));
 
 	const settingsContainer = html.find(".sheet-body");
-	const betterRollsTemplateString = "modules/betterrolls5e/templates/red-item-options.html";
 	const altSecondaryEnabled = game.settings.get("betterrolls5e", "altSecondaryEnabled");
 
 	// For items with quantity (weapons, tools, consumables...)
@@ -41,7 +42,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	// For items that have at least one way to consume something
 	const canConsume = hasQuantity || hasUses || hasResource || hasCharge;
 
-	const betterRollsTemplate = await renderTemplate(betterRollsTemplateString, {
+	const betterRollsTemplate = await renderTemplate("modules/betterrolls5e/templates/red-item-options.html", {
 		DND5E: CONFIG.DND5E,
 		item,
 		canConsume,
