@@ -17,6 +17,7 @@ import { Renderer } from "./renderer.js";
  */
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import { BRSettings } from "./settings.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -500,35 +501,9 @@ export class CustomItemRoll {
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
 		this.rollState = null;
 		this.params.event = this.params.event || event;
+		this.config = BRSettings.serialize();
 
-		this._updateConfig();
 		this._setupRollState();
-	}
-	
-	/**
-	 * Update config settings in the roll.
-	 * TODO: This needs to be moved to an actual settings ES module.
-	 * @private
-	 */
-	_updateConfig() {
-		const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
-
-		this.config = {
-			playRollSounds: getBRSetting("playRollSounds"),
-			hasMaestroSound: ItemUtils.hasMaestroSound(this.item),
-			damageRollPlacement: getBRSetting("damageRollPlacement"),
-			rollTitlePlacement: getBRSetting("rollTitlePlacement"),
-			damageTitlePlacement: getBRSetting("damageTitlePlacement"),
-			damageContextPlacement: getBRSetting("damageContextPlacement"),
-			contextReplacesTitle: getBRSetting("contextReplacesTitle"),
-			contextReplacesDamage: getBRSetting("contextReplacesDamage"),
-			critString: getBRSetting("critString"),
-			critBehavior: getBRSetting("critBehavior"),
-			quickDefaultDescriptionEnabled: getBRSetting("quickDefaultDescriptionEnabled"),
-			altSecondaryEnabled: getBRSetting("altSecondaryEnabled"),
-			d20Mode: getBRSetting("d20Mode"),
-			hideDC: getBRSetting("hideDC")
-		};
 	}
 	
 	/**
@@ -720,7 +695,7 @@ export class CustomItemRoll {
 
 		if (this.content === "error") return;
 
-		const hasMaestroSound = this.config.hasMaestroSound;
+		const hasMaestroSound = ItemUtils.hasMaestroSound(this.item);
 		this.chatData = createChatData(this.actor, this.content, { hasMaestroSound });
 		await Hooks.callAll("messageBetterRolls", this, this.chatData);
 

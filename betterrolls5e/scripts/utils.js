@@ -117,8 +117,11 @@ export class ActorUtils {
 		return [canvas.tokens.get(token.id).scene.id, token.id].join(".")
 	}
 
+	/**
+	 * Determine total character level
+	 * @param {Actor} actor 
+	 */
 	static getCharacterLevel(actor) {
-		// Determine character level
 		const level = actor.data.items.reduce((runningTotal, item) => {
 			if ( item.type === "class" ) {
 				const classLevels = parseInt(item.data.levels) || 1;
@@ -126,7 +129,7 @@ export class ActorUtils {
 			}
 
 			return runningTotal;
-		});
+		}, 0);
 
 		return level;
 	}
