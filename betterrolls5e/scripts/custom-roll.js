@@ -2,6 +2,7 @@ import { i18n, isAttack, isSave, getSave, isCheck } from "./betterrolls5e.js";
 import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
 
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import { BRSettings } from "./settings.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -367,30 +368,8 @@ export class CustomItemRoll {
 		
 		this.checkEvent();
 		this.setRollState();
-		this.updateConfig();
+		this.config = BRSettings;
 		this.dicePool = new DiceCollection();
-	}
-	
-	// Update config settings in the roll.
-	updateConfig() {
-		const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
-
-		this.config = {
-			playRollSounds: getBRSetting("playRollSounds"),
-			hasMaestroSound: ItemUtils.hasMaestroSound(this.item),
-			damageRollPlacement: getBRSetting("damageRollPlacement"),
-			rollTitlePlacement: getBRSetting("rollTitlePlacement"),
-			damageTitlePlacement: getBRSetting("damageTitlePlacement"),
-			damageContextPlacement: getBRSetting("damageContextPlacement"),
-			contextReplacesTitle: getBRSetting("contextReplacesTitle"),
-			contextReplacesDamage: getBRSetting("contextReplacesDamage"),
-			critString: getBRSetting("critString"),
-			critBehavior: getBRSetting("critBehavior"),
-			quickDefaultDescriptionEnabled: getBRSetting("quickDefaultDescriptionEnabled"),
-			altSecondaryEnabled: getBRSetting("altSecondaryEnabled"),
-			d20Mode: getBRSetting("d20Mode"),
-			hideDC: getBRSetting("hideDC")
-		};
 	}
 	
 	checkEvent(ev) {
@@ -656,7 +635,7 @@ export class CustomItemRoll {
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			roll: blankRoll,
 			...Utils.getWhisperData(),
-			sound: Utils.getDiceSound(this.config.hasMaestroSound)
+			sound: Utils.getDiceSound(ItemUtils.hasMaestroSound(this.item))
 		};
 		
 		await Hooks.callAll("messageBetterRolls", this, this.chatData);
