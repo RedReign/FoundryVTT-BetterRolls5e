@@ -82,6 +82,8 @@ function resolveActorOrItem(actorOrItem) {
 
 /**
  * General class for macro support, actor rolls, and most static rolls.
+ * It provides utility functions that can be used to create a new roll,
+ * as well as the most common Actor roll functions.
  */
 export class CustomRoll {
 	/**

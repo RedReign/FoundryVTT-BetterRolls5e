@@ -11,7 +11,9 @@
 		</div>
 		<div class="dice-row red-totals">
 			{{#each entries}}
-			<h4 class="dice-total dice-row-item red-base-die{{#if this.ignored}} ignored{{/if}} {{this.critType}}">{{this.total}}</h4>
+			<h4 class="dice-total dice-row-item red-base-die{{#if this.ignored}} ignored{{/if}} {{this.critType}}">
+				{{this.total}}{{#if this.d20Result}}<span class="die-icon {{this.critType}}">{{this.d20Result}}</span>{{/if}}
+			</h4>
 			{{/each}}
 		</div>
     </div>

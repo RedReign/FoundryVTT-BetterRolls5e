@@ -48,6 +48,32 @@
 	color: #11257f;
 }
 
+.red-dual .die-icon {
+	background-image: url(/icons/svg/d20-grey.svg);
+	width: 22px;
+	line-height: 22px;
+	background-size: 22px;
+	background-repeat: no-repeat;
+	float: left;
+	font-weight: bold;
+	font-size: 13px;
+	text-align: center;
+	opacity: 0.95;
+	
+	position: absolute;
+	top: 50%;
+	right: 5px;
+	transform: translate(0, -50%);
+}
+
+.red-dual .success .die-icon {
+	filter: sepia(0.5) hue-rotate(60deg);
+}
+
+.red-dual .failure .die-icon {
+	filter: sepia(0.5) hue-rotate(-60deg);
+}
+
 .br5e-roll-label {
 	text-align: center;
 	font-size: 12px;
@@ -149,4 +175,8 @@
 
 .better-npc-sheet .item.expanded .item-summary .item-buttons {
     line-height: 22px;
+}
+
+.br5e-hidden {
+	display: none;
 }
