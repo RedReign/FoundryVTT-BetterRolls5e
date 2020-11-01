@@ -368,7 +368,7 @@ export class CustomItemRoll {
 		
 		this.checkEvent();
 		this.setRollState();
-		this.config = BRSettings;
+		this.config = BRSettings.serialize();
 		this.dicePool = new DiceCollection();
 	}
 	

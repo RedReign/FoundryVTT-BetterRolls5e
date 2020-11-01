@@ -259,6 +259,26 @@ class Settings {
 	get hideDC() {
 		return getBRSetting("hideDC");
 	}
+
+	/**
+	 * Returns all config settings as an object with all data retrieved.
+	 * Internally this resolves all getters, returning their results.
+	 * @returns {BRSettings}
+	 */
+	serialize() {
+		const result = {};
+
+		const proto = Object.getPrototypeOf(this);
+		const descriptors = Object.getOwnPropertyDescriptors(proto);
+		for (const [name, descriptor] of Object.entries(descriptors)) {
+			const { get } = descriptor;
+			if (get) {
+				result[name] = get.call(this);
+			}
+		}
+
+		return result;
+	}
 }
 
 /**
