@@ -6,6 +6,8 @@
 
   "br5e.diceEnabled.name": "Habilitar Melhores Rolagens",
   "br5e.diceEnabled.hint": "Ativa as saídas aprimoradas de dados para o DnD5e. Afeta todas as verificações de habilidade, testes de resistência, itens, feitiços e recursos na ficha. Requer reabrir a ficha. ",
+  "br5e.queryAdvantageEnabled.name": "Consulta para (Dis)Vantagens",
+  "br5e.queryAdvantageEnabled.hint": "Adicionar uma consulta para rolagens do tipo Vantagem/Normal/Desvantagem. Ctrl + Shift pode ser usado.",
   "br5e.rollButtonsEnabled.name": "Adicionar Melhores Rolagens na Ficha",
   "br5e.rollButtonsEnabled.hint": "Adiciona botões aos itens, feitiços e recursos da ficha, exibidos quando o item é expandido. Pode ser incompatível com o mod de botões da folha de itens mod. Requer reabrir a folha.",
   "br5e.imageButtonEnabled.name": "Criar rolagem automática da imagem do item",
@@ -72,6 +74,7 @@
   "br5e.error.noActorWithName": "Nenhum ator conhecido com esse nome",
   "br5e.error.noItemWithId": "Nenhum item é conhecido com esse ID no ator",
   "br5e.error.noChargesLeft": "Este item ficou sem cobranças!",
+  "br5e.error.autoDestroy": "O {name} desaparecerá assim que a ultima carga for usada.",
 
   "br5e.settings.critThreshold": "Limite crítico",
   "br5e.settings.critDamage": "Dano Crítico Extra",
@@ -87,12 +90,17 @@
   "br5e.settings.altDamage": "Dano Alternativo",
   "br5e.settings.properties": "Propriedades",
   "br5e.settings.check": "Teste",
-  "br5e.settings.consumeCharge": "Consumir Carga",
+  "br5e.settings.consume": "Consumir",
+  "br5e.settings.consumeQuantity": "Quantidade",
+  "br5e.settings.consumeUses": "Usos",
+  "br5e.settings.consumeResource": "Recusro",
+  "br5e.settings.consumeRecharge": "Ação de Carga",
   "br5e.settings.useTemplate": "Posicionar Template",
   "br5e.settings.label": "Rótulo",
   "br5e.settings.context": "Contexto",
   "br5e.settings.otherFormula": "Outras Fórmulas",
   "br5e.settings.quickFlavor": "Extras",
+  "br5e.settings.prompt": "Prompt extendido",
 
   "br5e.buttons.roll": "Rolagem",
   "br5e.buttons.altRoll": "Rolagem Alt.",
@@ -122,6 +130,12 @@
   "br5e.chat.other": "Outros",
   "br5e.chat.advantage": "Vantagem",
   "br5e.chat.disadvantage": "Disvantagem",
+  "br5e.chat.normal": "Normal",
+  
+  "br5e.querying.title": "Qual o tipo de rolagem?",
+  "br5e.querying.disadvantage": "Disvantagem",
+  "br5e.querying.normal": "Normal",
+  "br5e.querying.advantage": "Vantagem",
 
   "br5e.chat.damageButtons.fullDamage.hint": "Clique para aplicar dano total aos tokens selecionados.",
   "br5e.chat.damageButtons.halfDamage.hint": "Clique para aplicar metade do dano aos tokens selecionados.",
