@@ -1,6 +1,7 @@
 import { i18n, getTargetActors } from "./betterrolls5e.js";
 import { CustomRoll } from "./custom-roll.js";
 import { Renderer } from "./renderer.js";
+import { BRSettings } from "./settings.js";
 import { DiceCollection, ItemUtils, Utils } from "./utils.js";
 
 /**
@@ -67,18 +68,20 @@ export class BetterRollsChatCard {
 	 * Rolls crit dice if its not already rolled for the current card.
 	 * This is used when *augmenting* a roll to a crit, and not the initial render.
 	 * The change is not sent to users until update() is called.
+	 * @returns if the crit roll went through
 	 */
 	async rollCrit() {
 		// Do nothing if crit is already rolled or if we don't have permission
 		if (this._critAlreadyRolled || !this.hasPermission) {
-			return;
+			return false;
 		}
 
 		// Get the item, and check if it exists
 		const item = this.item;
 		if (!item) {
 			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			return ui.notifications.warn(message);
+			await ui.notifications.warn(message);
+			return false;
 		}
 
 		// Add crit to UI 
@@ -90,31 +93,33 @@ export class BetterRollsChatCard {
 			const savage = ItemUtils.appliesSavageAttacks(item);
 			const critRoll = ItemUtils.getCritRoll(formula, total, { critBehavior, savage });
 
-			// Render crit roll damage
-			const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
-				crit: Utils.processRoll(critRoll),
-				crittext: game.settings.get("betterrolls5e", "critString")
-			});
-
-			// Add crit die roll
-			$(row).find(".red-base-damage").after(template);
-
-			// Check if the tooltip is showing on the row
-			// We will need to show the new one if it is
-			const showing = $(row).find(".dice-tooltip").is(":visible");
-
 			// Render crit roll tooltip
-			const tooltip = await critRoll.getTooltip();
-			$(row).find('.dice-row.tooltips').append(
-				$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
-			);
+			if (critRoll) {
+				// Render crit roll damage
+				const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
+					crit: Utils.processRoll(critRoll),
+					crittext: BRSettings.critString
+				});
 
-			// Show all newly rendered tooltips if showing
-			if (showing) {
-				$(row).find(".dice-tooltip").show();
+				// Add crit die roll
+				$(row).find(".red-base-damage").after(template);
+
+				// Check if the tooltip is showing on the row
+				// We will need to show the new one if it is
+				const showing = $(row).find(".dice-tooltip").is(":visible");
+
+				const tooltip = await critRoll.getTooltip();
+				$(row).find('.dice-row.tooltips').append(
+					$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
+				);
+
+				// Show all newly rendered tooltips if showing
+				if (showing) {
+					$(row).find(".dice-tooltip").show();
+				}
+
+				this.dicePool.push(critRoll);
 			}
-
-			this.dicePool.push(critRoll);
 		}
 
 		// Add crit extra if applicable
@@ -127,6 +132,10 @@ export class BetterRollsChatCard {
 			
 			this.dicePool.push(entry.baseRoll);
 		}
+
+		// Mark as critical
+		this.html.attr("data-critical", "true");
+		return true;
 	}
 	
 	/**
@@ -152,7 +161,7 @@ export class BetterRollsChatCard {
 	 * Returns true if crit damage has already been rolled.
 	 */
 	get _critAlreadyRolled() {
-		return this.html.find(".red-crit-damage").length > 0;
+		return this.html.attr("data-critical") === "true";
 	}
 
 	/**
@@ -211,8 +220,9 @@ export class BetterRollsChatCard {
 		html.find('.crit-button').on('click', async (ev) => {
 			ev.preventDefault();
 			ev.stopPropagation();
-			await this.rollCrit();
-			await this.update();
+			if (await this.rollCrit()) {
+				await this.update();
+			}
 		});
 	
 		// logic to only show the buttons when the mouse is within the chatcard

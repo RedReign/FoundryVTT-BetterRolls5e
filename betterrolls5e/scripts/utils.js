@@ -762,13 +762,16 @@ export class DiceCollection {
 	 * @returns {Promise<boolean>} if there were dice in the pool
 	 */
 	async flush() {
-		const hasDice = this.pool.dice.length > 0;
+		// Get and reset immediately (stacking flush calls shouldn't reroll more dice)
+		const pool = this.pool;
+		this.pool = new Roll("0").roll();
+
+		const hasDice = pool.dice.length > 0;
 		if (game.dice3d && hasDice) {
 			const wd = Utils.getWhisperData();
-			await game.dice3d.showForRoll(this.pool, game.user, true, wd.whisper, wd.blind || false);
+			await game.dice3d.showForRoll(pool, game.user, true, wd.whisper, wd.blind || false);
 		}
 
-		this.pool = new Roll("0").roll();
 		return hasDice;
 	}
 }

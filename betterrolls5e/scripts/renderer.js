@@ -1,4 +1,5 @@
 import { i18n } from "./betterrolls5e.js";
+import { BRSettings } from "./settings.js";
 import { Utils, ActorUtils, ItemUtils } from "./utils.js";
 
 /**
@@ -143,13 +144,12 @@ export class Renderer {
 			tooltips.push(await critRoll.getTooltip());
 		}
 
-		const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
-		const critString = getBRSetting("critString");
-		const titlePlacement = getBRSetting("damageTitlePlacement").toString();
-		const damagePlacement = getBRSetting("damageRollPlacement").toString();
-		const contextPlacement = getBRSetting("damageContextPlacement").toString();
-		const replaceTitle = getBRSetting("contextReplacesTitle");
-		const replaceDamage = getBRSetting("contextReplacesDamage");
+		const critString = BRSettings.critString;
+		const titlePlacement = BRSettings.damageTitlePlacement.toString();
+		const damagePlacement = BRSettings.damageRollPlacement.toString();
+		const contextPlacement = BRSettings.damageContextPlacement.toString();
+		const replaceTitle = BRSettings.contextReplacesTitle;
+		const replaceDamage = BRSettings.contextReplacesDamage;
 
 		const labels = {
 			"1": [],
