@@ -1,9 +1,9 @@
 import { i18n } from "./betterrolls5e.js";
 import { CustomRoll } from "./custom-roll.js";
+import { BRSettings } from "./settings.js";
 
 // todo: move this hook to init or hooks, then remove chat-message.js from modules.json
 Hooks.on('renderChatMessage', async (message, html, data) => {
-	if (!game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { return; }
 	BetterRollsChatCard.bind(message, html);
 });
 
@@ -48,6 +48,10 @@ class BetterRollsChatCard {
 	}
 
 	async _setupDamageButtons() {
+		if (!BRSettings.chatDamageButtonsEnabled) {
+			return;
+		}
+
 		const { html } = this;
 		const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
 		const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 

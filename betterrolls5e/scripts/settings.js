@@ -260,6 +260,10 @@ class Settings {
 		return getBRSetting("hideDC");
 	}
 
+	get chatDamageButtonsEnabled() {
+		return getBRSetting("chatDamageButtonsEnabled");
+	}
+
 	/**
 	 * Returns all config settings as an object with all data retrieved.
 	 * Internally this resolves all getters, returning their results.
