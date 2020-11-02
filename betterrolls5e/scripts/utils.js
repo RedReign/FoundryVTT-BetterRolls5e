@@ -1,5 +1,6 @@
-import { i18n, isAttack } from "./betterrolls5e.js";
+import { i18n, isAttack, isSave } from "./betterrolls5e.js";
 import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
+import { BRSettings } from "./settings.js";
 
 /**
  * Check if maestro is turned on.
@@ -558,7 +559,7 @@ export class ItemUtils {
 	 * Derives the formula for what should be rolled when a crit occurs.
 	 * Note: Item is not necessary to calculate it.
 	 * @param {string} rollFormula
-	 * @returns {string} the crit formula
+	 * @returns {string?} the crit formula
 	 */
 	static getCritRoll(baseFormula, baseTotal, {critBehavior=null, savage=false}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
@@ -572,6 +573,10 @@ export class ItemUtils {
 		const add = savage ? 1 : 0;
 		critRoll.alter(1, add);
 		critRoll.roll();
+
+		if (!critBehavior) {
+			critBehavior = BRSettings.critBehavior;
+		}
 
 		// If critBehavior = 2, maximize base dice
 		if (critBehavior === "2") {
@@ -713,6 +718,44 @@ export class ItemUtils {
 				break;
 		}
 		let output = properties.filter(p => (p) && (p.length !== 0) && (p !== " "));
+		return output;
+	}
+
+	/**
+	 * Returns an object with the save DC of the item.
+	 * If no save is written in, one is calculated.
+	 * @param {Item} item
+	 */
+	static getSave(item) {
+		if (!isSave(item)) {
+			return null;
+		}
+
+		let itemData = item.data.data,
+			output = {};
+		output.ability = getProperty(itemData, "save.ability");
+		
+		// If a DC is written in, use that by default
+		// Otherwise, calculate one
+		if (itemData.save.dc && itemData.save.dc != 0 && itemData.save.scaling !== "spell") {
+			output.dc = itemData.save.dc
+		} else {
+			// If spell DC is calculated with normal spellcasting DC, use that
+			// Otherwise, calculate one
+			if (item.data.type === "spell" && itemData.save.scaling == "spell") {
+				output.dc = getProperty(item.actor,"data.data.attributes.spelldc");
+			} else {
+				let mod = null,
+					abl = null,
+					prof = item.actor.data.data.attributes.prof;
+				
+				abl = itemData.ability;
+				if (abl) { mod = item.actor.data.data.abilities[abl].mod; }
+				else { mod = 0; }
+				output.dc = 8 + prof + mod;
+			}
+		}
+
 		return output;
 	}
 }

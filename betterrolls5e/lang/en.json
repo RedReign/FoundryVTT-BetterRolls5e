@@ -44,6 +44,8 @@
 	"br5e.hideDC.choices.0": "Never",
 	"br5e.hideDC.choices.1": "NPCs Only",
 	"br5e.hideDC.choices.2": "Always",
+	"br5e.damagePromptEnabled.name": "Damage Prompt In Chat Card",
+	"br5e.damagePromptEnabled.hint": "Do not autoroll damage, instead show a damage button if there is an attack roll or saving throw.",
 	
 	"br5e.d20Mode.name": "d20 Mode",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown.",

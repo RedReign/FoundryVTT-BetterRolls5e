@@ -72,7 +72,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
 			html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 		}
-	}	
+	}
 
 	if (game.settings.get("betterrolls5e", "chatDamageButtonsEnabled")) { 
 		BetterRollsChatCard.bind(message, html);

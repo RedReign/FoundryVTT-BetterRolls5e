@@ -22,36 +22,6 @@ export function isSave(item) {
 	return isTypeSave || hasSaveDC;
 }
 
-// Returns an array with the save DC of the item. If no save is written in, one is calculated.
-export function getSave(item) {
-	if (isSave(item)) {
-		let itemData = item.data.data,
-			output = {};
-		output.ability = getProperty(itemData, "save.ability");
-		// If a DC is written in, use that by default
-		if (itemData.save.dc && itemData.save.dc != 0 && itemData.save.scaling !== "spell") { output.dc = itemData.save.dc }
-		// Otherwise, calculate one
-		else {
-			// If spell DC is calculated with normal spellcasting DC, use that
-			if (item.data.type === "spell" && itemData.save.scaling == "spell") {
-				output.dc = getProperty(item.actor,"data.data.attributes.spelldc");
-			}
-			// Otherwise, calculate one
-			else {
-				let mod = null,
-					abl = null,
-					prof = item.actor.data.data.attributes.prof;
-				
-				abl = itemData.ability;
-				if (abl) { mod = item.actor.data.data.abilities[abl].mod; }
-				else { mod = 0; }
-				output.dc = 8 + prof + mod;
-			}
-		}
-		return output;
-	} else { return null; }
-}
-
 export function isCheck(item) {
 	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
 }
@@ -243,7 +213,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			}
 
 			if (isSave(item)) {
-				const  saveData = getSave(item);
+				const saveData = ItemUtils.getSave(item);
 
 				buttons.append(
 					createButton({

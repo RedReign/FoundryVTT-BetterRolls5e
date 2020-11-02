@@ -1,4 +1,4 @@
-import { i18n, isAttack, isSave, getSave, isCheck } from "./betterrolls5e.js";
+import { i18n, isAttack, isSave, isCheck } from "./betterrolls5e.js";
 import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
 import { Renderer } from "./renderer.js";
 
@@ -30,7 +30,7 @@ function debug() {
 	}
 }
 
-function createChatData(actor, content, { hasMaestroSound = false }={}) {
+function createChatData(actor, content, { hasMaestroSound = false, flags={} }={}) {
 	return {
 		user: game.user._id,
 		content: content,
@@ -39,6 +39,7 @@ function createChatData(actor, content, { hasMaestroSound = false }={}) {
 			token: actor.token,
 			alias: actor.token?.name || actor.name
 		},
+		flags: (flags) ? { betterrolls5e: flags } : {},
 		type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 		roll: blankRoll,
 		...Utils.getWhisperData(),
@@ -293,17 +294,87 @@ export class CustomRoll {
 	}
 
 	/**
+	 * Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
+	 * @returns {import("./renderer.js").ButtonSaveProps}
+	 */
+	static constructSaveButton(item, {customAbl = null, customDC = null}) {
+		const actor = item.actor;
+		const saveData = ItemUtils.getSave(item);
+		if (customAbl) { saveData.ability = saveArgs.customAbl; }
+		if (customDC) { saveData.dc = saveArgs.customDC; }
+
+		// Determine whether the DC should be hidden
+		const hideDCSetting = BRSettings.hideDC;
+		const hideDC = (hideDCSetting == "2" || (hideDCSetting == "1" && actor.data.type == "npc"));
+		
+		return {
+			type: "button-save",
+			hideDC,
+			...saveData,
+		};
+	}
+
+	/**
 	 * Sends a chat message using the given models, that can be created using
 	 * the CustomRoll.constructX() methods.
 	 * @param {*} actor 
-	 * @param {*} models 
+	 * @param {import("./renderer.js").RenderModel[]} models 
 	 * @param {object} param3
 	 * @param {Item?} param3.item Optional Item to put in the card props and to use for certain defaults.
 	 * @param {string[]?} param3.properties List of properties to show at the bottom. Uses item properties if null.
 	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties 
 	 */
-	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null }={}) {
+	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null }={}) {
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
+		const flags = {};
+
+		// If damage buttons need to show, we need to hide damage entries under certain conditions
+		if (damagePromptEnabled ?? BRSettings.damagePromptEnabled) {
+			let group = -1;
+			flags.damageDicePools = {};
+
+			// Assign groups
+			for (const model of models) {
+				if (["multiroll", "button-save"].includes(model.type)) {
+					group++;
+				} else if (model.type === "damage") {
+					// Damage entries are only prompted after attacks/saves
+					if (group < 0) continue;
+
+					model.hidden = true;
+					model.group = `br!${group}`;
+				}
+			}
+
+			// Insert damage buttons before all damage entries
+			const oldModels = models;
+			models = [];
+			const injectedGroups = new Set();
+			for (const model of oldModels) {
+				if (model.type === "damage" && model.hidden && !injectedGroups.has(model.group)) {
+					injectedGroups.add(model.group);
+					models.push({
+						type: "button-damage",
+						group: model.group
+					});
+				}
+				models.push(model);
+			}
+
+			// Create dicepools of all hidden dice entries
+			const dicePools = {};
+			for (const model of models.filter(m => m.type === "damage" && m.hidden)) {
+				if (!dicePools[model.group]) {
+					dicePools[model.group] = new DiceCollection();
+				}
+				dicePools[model.group].push(model.baseRoll, model.critRoll);
+			}
+			
+			// Push dicepools into flags
+			for (const [group, pool] of Object.entries(dicePools)) {
+				flags.damageDicePools[group] = pool.pool;
+			}
+		}
 
 		// Render the models
 		const templates = await Promise.all(models.map(Renderer.renderModel));
@@ -315,7 +386,8 @@ export class CustomRoll {
 		await dicePool.flush();
 
 		// Send the chat message
-		return ChatMessage.create(createChatData(actor, content, { hasMaestroSound }));
+		const chatData = createChatData(actor, content, { hasMaestroSound, flags });
+		return ChatMessage.create(chatData);
 	}
 	
 	/**
@@ -620,12 +692,8 @@ export class CustomItemRoll {
 				break;
 			case 'savedc':
 				// {customAbl: null, customDC: null}
-				let abl, dc;
-				if (fieldArgs[0]) {
-					abl = fieldArgs[0].abl;
-					dc = fieldArgs[0].dc;
-				}
-				this.models.push({ type: "raw", content: await this.saveRollButton({customAbl:abl, customDC:dc})});
+				const { abl, dc } = fieldArgs[0] ?? {};
+				this.models.push(CustomRoll.constructSaveButton(item, {customAbl:abl, customDC:dc}));
 				break;
 			case 'other':
 				if (item.data.data.formula) { 
@@ -642,7 +710,7 @@ export class CustomItemRoll {
 				if (game.modules.get("components5e") && game.modules.get("components5e").active) {
 					componentField = window.ComponentsModule.getComponentHtml(item, 20);
 				}
-				fieldArgs[0] = {text: componentField + item.data.data.description.value};
+				fieldArgs[0] = {text: `${componentField}${item.data.data.description.value ?? ''}`.trim()};
 			case 'text':
 				if (fieldArgs[0].text) {
 					this.models.push({
@@ -652,11 +720,14 @@ export class CustomItemRoll {
 				}
 				break;
 			case 'flavor':
-				this.models.push({
-					type: "description",
-					isFlavor: true,
-					content: fieldArgs[0]?.text ?? this.item.data.data.chatFlavor
-				});
+				const message = fieldArgs[0]?.text ?? this.item.data.data.chatFlavor;
+				if (message) {
+					this.models.push({
+						type: "description",
+						isFlavor: true,
+						content: message
+					});
+				}
 				break;
 			case 'crit':
 				const extra = this._rollCritExtra();
@@ -989,28 +1060,6 @@ export class CustomItemRoll {
 			isCrit,
 			slotLevel: this.params.slotLevel,
 		});
-	}
-	
-	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
-	*/
-	async saveRollButton({customAbl = null, customDC = null}) {
-		let item = this.item;
-		let actor = item.actor;
-		let saveData = getSave(item);
-		if (customAbl) { saveData.ability = saveArgs.customAbl; }
-		if (customDC) { saveData.dc = saveArgs.customDC; }
-		
-		let hideDC = (this.config.hideDC == "2" || (this.config.hideDC == "1" && actor.data.type == "npc")); // Determine whether the DC should be hidden
-
-		let divHTML = `<span ${hideDC ? 'class="hideSave"' : null} style="display:inline;line-height:inherit;">${saveData.dc}</span>`;
-		
-		let saveLabel = `${i18n("br5e.buttons.saveDC")} ` + divHTML + ` ${dnd5e.abilities[saveData.ability]}`;
-		let button = {
-			type: "saveDC",
-			html: await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel})
-		}
-		
-		return button;
 	}
 	
 	async configureSpell() {

@@ -206,6 +206,15 @@ class Settings {
 				"2": i18n("br5e.hideDC.choices.2"),
 			}
 		});
+
+		game.settings.register("betterrolls5e", "damagePromptEnabled", {
+			name: i18n("br5e.damagePromptEnabled.name"),
+			hint: i18n("br5e.damagePromptEnabled.hint"),
+			scope: "world",
+			config: true,
+			default: false,
+			type: Boolean
+		});
 	}
 
 	get playRollSounds() {
@@ -258,6 +267,13 @@ class Settings {
 
 	get hideDC() {
 		return getBRSetting("hideDC");
+	}
+
+	/**
+	 * True if damage buttons should be disabled, false is auto rolling.
+	 */
+	get damagePromptEnabled() {
+		return getBRSetting("damagePromptEnabled");
 	}
 
 	/**

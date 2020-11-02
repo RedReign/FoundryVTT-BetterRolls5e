@@ -50,8 +50,26 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  */
 
 /**
+ * Model data for save buttons
+ * @typedef ButtonSaveProps
+ * @property {"button-save"} type
+ * @property {string} ability
+ * @property {boolean} hideDC
+ * @property {number} dc
+ */
+
+ /**
+ * Model data for damage buttons
+ * @typedef ButtonDamageProps
+ * @property {"button-damage"} type
+ * @property {string} group
+ */
+
+/**
  * Union type of all possible render model types, separatable by the type property.
- * @typedef {HeaderDataProps | DescriptionDataProps | MultiRollDataProps | DamageDataProps} RenderModel
+ * @typedef { HeaderDataProps | DescriptionDataProps | 
+ * 		MultiRollDataProps | DamageDataProps | ButtonSaveProps | ButtonDamageProps
+ * } RenderModel
  */
 
 /**
@@ -87,6 +105,10 @@ export class Renderer {
 				return Renderer.renderMultiRoll(model);
 			case "damage":
 				return Renderer.renderDamage(model);
+			case "button-save":
+				return Renderer.renderSaveButton(model);
+			case "button-damage":
+				return Renderer.renderDamageButton(model);
 			case "raw":
 				// todo: print a warning, this means its unconverted
 				return model.content?.html ?? model.content;
@@ -213,9 +235,33 @@ export class Renderer {
 			damagebottom: labels[3],
 			formula: baseRoll.formula,
 			damageType,
+			hidden: properties.hidden,
+			group: properties.group,
 			maxRoll: new Roll(baseRoll.formula).evaluate({maximize:true}).total,
 			maxCrit: critRoll ? new Roll(critRoll.formula).evaluate({maximize:true}).total : null
 		});
+	}
+
+	/**
+	 * Renders an html save button
+	 * @param {ButtonSaveProps} properties 
+	 */
+	static async renderSaveButton(properties) {
+		const abilityLabel = CONFIG.DND5E.abilities[properties.ability];
+		return renderModuleTemplate("red-save-button.html", {
+			abilityLabel,
+			...properties
+		});
+	}
+
+	/**
+	 * Renders an html damage button
+	 * @param {ButtonDamageProps} properties 
+	 */
+	static async renderDamageButton(properties) {
+		return renderModuleTemplate("red-damage-button.html", {
+			group: encodeURIComponent(properties.group)
+		})
 	}
 
 	/**

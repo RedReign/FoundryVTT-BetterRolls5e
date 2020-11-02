@@ -22,15 +22,16 @@ function getTargetActors() {
  * with BetterRollsChatCard.bind().
  */
 export class BetterRollsChatCard {
-	constructor(id, html) {
-		this.id = id;
+	constructor(message, html) {
+		this.id = message.id;
 		this.html = html;
+		this.flags = message.data.flags?.betterrolls5e ?? {};
 		this.actorId = this.html.attr("data-actor-id");
 		this.itemId = this.html.attr("data-item-id");
 		this.tokenId = this.html.attr("data-token-id");
 		this.dicePool = new DiceCollection();
 		this._setupDamageButtons();
-		this._setupSaveButtons();
+		this._setupCardButtons();
 	}
 
 	/**
@@ -45,9 +46,13 @@ export class BetterRollsChatCard {
 			return null;
 		}
 
-		return new BetterRollsChatCard(message.id, chatCard);
+		return new BetterRollsChatCard(message, chatCard);
 	}
 
+	/**
+	 * Returns Actor5e object associated with this card,
+	 * preferring the token actor.
+	 */
 	get actor() {
 		if (this.tokenId) {
 			const [sceneId, tokenId] = this.tokenId.split(".");
@@ -65,6 +70,9 @@ export class BetterRollsChatCard {
 		return game.actors.get(this.actorId);
 	}
 
+	/**
+	 * Returns the item instance associated with this card.
+	 */
 	get item() {
 		return this.actor?.getOwnedItem(this.itemId);
 	}
@@ -100,39 +108,7 @@ export class BetterRollsChatCard {
 		// Add crit to UI 
 		const damageRows = this.html.find('.red-base-damage').parents(".dice-roll");
 		for (const row of damageRows) {
-			const formula = $(row).find(".dice-formula").text();
-			const total = Number($(row).find(".red-base-damage").data("value"));
-			const critBehavior = game.settings.get("betterrolls5e", "critBehavior");
-			const savage = ItemUtils.appliesSavageAttacks(item);
-			const critRoll = ItemUtils.getCritRoll(formula, total, { critBehavior, savage });
-
-			// Render crit roll tooltip
-			if (critRoll) {
-				// Render crit roll damage
-				const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
-					crit: Utils.processRoll(critRoll),
-					crittext: BRSettings.critString
-				});
-
-				// Add crit die roll
-				$(row).find(".red-base-damage").after(template);
-
-				// Check if the tooltip is showing on the row
-				// We will need to show the new one if it is
-				const showing = $(row).find(".dice-tooltip").is(":visible");
-
-				const tooltip = await critRoll.getTooltip();
-				$(row).find('.dice-row.tooltips').append(
-					$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
-				);
-
-				// Show all newly rendered tooltips if showing
-				if (showing) {
-					$(row).find(".dice-tooltip").show();
-				}
-
-				this.dicePool.push(critRoll);
-			}
+			await this._rollCritForDamageRow(item, row);
 		}
 
 		// Add crit extra if applicable
@@ -149,6 +125,43 @@ export class BetterRollsChatCard {
 		// Mark as critical
 		this.html.attr("data-critical", "true");
 		return true;
+	}
+
+	async rollDamage(group) {
+		if (!this.hasPermission) {
+			return;
+		}
+
+		// Get the item, and check if it exists
+		const item = this.item;
+		if (!item) {
+			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			await ui.notifications.warn(message);
+			return false;
+		}
+
+		group = encodeURIComponent(group);
+
+		// Show associated damage rows. If already set to critical, roll critical
+		const isCritical = this.html.attr("data-critical") === "true";
+		const damageRows = this.html.find('.red-base-damage').parents(`.dice-roll[data-group="${group}"]`);
+		for (const row of damageRows) {
+			$(row).show();
+			if (isCritical) {
+				await this._rollCritForDamageRow(item, row);
+			}
+		}
+
+		// Hide the damage buttons. No longer relevant
+		this.html.find(`button[data-action="damage"][data-group="${group}"]`)
+			.parents(".card-buttons")
+			.hide();
+
+		// Add the associated dice to the dice pool
+		const rollData = this.flags?.damageDicePools[group];
+		if (rollData) {
+			this.dicePool.push(Roll.fromData(rollData));
+		}
 	}
 	
 	/**
@@ -175,6 +188,48 @@ export class BetterRollsChatCard {
 	 */
 	get _critAlreadyRolled() {
 		return this.html.attr("data-critical") === "true";
+	}
+
+	async _rollCritForDamageRow(item, row) {
+		row = $(row);
+
+		// Skip if crit already rolled for this row
+		if (row.find(".red-crit-damage").length > 0) {
+			return;
+		}
+
+		const formula = row.find(".dice-formula").text();
+		const total = Number(row.find(".red-base-damage").data("value"));
+		const savage = ItemUtils.appliesSavageAttacks(item);
+		const critRoll = ItemUtils.getCritRoll(formula, total, { savage });
+
+		// Render crit roll tooltip
+		if (critRoll) {
+			// Render crit roll damage
+			const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
+				crit: Utils.processRoll(critRoll),
+				crittext: BRSettings.critString
+			});
+
+			// Add crit die roll
+			$(row).find(".red-base-damage").after(template);
+
+			// Check if the tooltip is showing on the row
+			// We will need to show the new one if it is
+			const showing = $(row).find(".dice-tooltip").is(":visible");
+
+			const tooltip = await critRoll.getTooltip();
+			$(row).find('.dice-row.tooltips').append(
+				$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
+			);
+
+			// Show all newly rendered tooltips if showing
+			if (showing) {
+				$(row).find(".dice-tooltip").show();
+			}
+
+			this.dicePool.push(critRoll);
+		}
 	}
 
 	/**
@@ -285,14 +340,15 @@ export class BetterRollsChatCard {
 	}
 	
 	/**
-	 * Bind save button events
+	 * Bind card button events
 	 * @private
 	 */
-	_setupSaveButtons() {
+	_setupCardButtons() {
 		this.html.find(".card-buttons").off()
 		this.html.find(".card-buttons button").off().click(async event => {
 			const button = event.currentTarget;
-			if (button.dataset.action === "save") {
+			const action = button.dataset.action;
+			if (action === "save") {
 				event.preventDefault();
 				let actors = getTargetActors();
 				let ability = button.dataset.ability;
@@ -302,6 +358,11 @@ export class BetterRollsChatCard {
 						CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
 					}
 				}
+				setTimeout(() => {button.disabled = false;}, 1);
+			} else if (action === "damage") {
+				event.preventDefault();
+				await this.rollDamage(button.dataset.group);
+				await this.update();
 				setTimeout(() => {button.disabled = false;}, 1);
 			}
 		});
