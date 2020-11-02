@@ -958,7 +958,7 @@ export class CustomItemRoll {
 			if ((high > 0) && (low == 0)) $($html.find(selector)[i]).addClass("success");
 			else if ((high == 0) && (low > 0)) $($html.find(selector)[i]).addClass("failure");
 			else if ((high > 0) && (low > 0)) $($html.find(selector)[i]).addClass("mixed");
-			if ((high > 0) || (args.isCrit == true)) isCrit = true;
+			if (!rolls[i].ignored && ((high > 0) || (args.isCrit == true))) isCrit = true;
 		}
 		return {
 			html: $html[0].outerHTML,
