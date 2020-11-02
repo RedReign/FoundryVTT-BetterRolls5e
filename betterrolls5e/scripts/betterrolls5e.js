@@ -26,7 +26,7 @@ export function isCheck(item) {
 	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
 }
 
-let dnd5e = DND5E;
+const dnd5e = DND5E;
 
 function getQuickDescriptionDefault() {
 	return game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled");
@@ -116,23 +116,6 @@ CONFIG.betterRolls5e = {
 		}
 	}
 };
-
-Hooks.on(`ready`, () => {
-	// Make a combined damage type array that includes healing
-	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
-	
-	// Updates crit text from the dropdown.
-	let critText = game.settings.get("betterrolls5e", "critString")
-	if (critText.includes("br5e.critString")) {
-		critText = i18n(critText);
-		game.settings.set("betterrolls5e", "critString", critText);
-	}
-});
-
-// Create flags for item when it's first created
-Hooks.on(`createOwnedItem`, (actor, itemData) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? ItemUtils.ensureFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
-});
 
 /**
  * Adds buttons and assign their functionality to the sheet
@@ -525,7 +508,7 @@ export function changeRollsToDual (actor, html, data, params) {
 	}
 }
 
-// Frontend for macros
+/** Frontend for macros */
 export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
@@ -634,8 +617,3 @@ export function BetterRolls() {
 		rollItem:CustomRoll.newItemRoll,
 	};
 }
-
-Hooks.on(`ready`, () => {
-	window.BetterRolls = BetterRolls();
-	Hooks.call("readyBetterRolls");
-});
