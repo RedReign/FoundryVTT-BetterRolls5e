@@ -164,10 +164,6 @@ Hooks.on(`createOwnedItem`, (actor, itemData) => {
 	game.settings.get("betterrolls5e", "diceEnabled") ? ItemUtils.ensureFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
 });
 
-Hooks.on(`renderChatMessage`, (message, html, data) => {
-	updateSaveButtons(html);
-});
-
 /**
  * Adds buttons and assign their functionality to the sheet
  * @param {String} triggeringElement - this is the html selector string that opens the description - mostly optional for different sheetclasses
@@ -415,37 +411,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			}
 		}
 	});
-}
-
-export function updateSaveButtons(html) {
-	html.find(".card-buttons").off()
-	html.find(".card-buttons button").off().click(async event => {
-		const button = event.currentTarget;
-		if (button.dataset.action === "save") {
-			event.preventDefault();
-			let actors = getTargetActors();
-			let ability = button.dataset.ability;
-			let params = await CustomRoll.eventToAdvantage(event);
-			for (let i = 0; i < actors.length; i++) {
-				if (actors[i]) {
-					CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
-				}
-			}
-			setTimeout(() => {button.disabled = false;}, 1);
-		}
-	});
-}
-
-export function getTargetActors() {
-	const character = game.user.character;
-	const controlled = canvas.tokens.controlled;
-
-	if ( controlled.length === 0 ) return [character] || null;
-	if ( controlled.length > 0 ) {
-		const actors = controlled.map(character => character.actor);
-		return actors;
-	}
-	else throw new Error(`You must designate a specific Token as the roll target`);
 }
 
 // Gets the total of all damage rolls from a given Better Roll HTML
