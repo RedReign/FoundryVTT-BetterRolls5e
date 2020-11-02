@@ -269,6 +269,10 @@ class Settings {
 		return getBRSetting("hideDC");
 	}
 
+	get chatDamageButtonsEnabled() {
+		return getBRSetting("chatDamageButtonsEnabled");
+	}
+
 	/**
 	 * True if damage buttons should be disabled, false is auto rolling.
 	 */

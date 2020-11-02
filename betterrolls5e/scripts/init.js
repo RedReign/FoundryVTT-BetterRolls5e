@@ -1,4 +1,5 @@
 import { BRSettings } from "./settings.js";
+import { BetterRollsChatCard } from "./chat-message.js";
 
 Hooks.once("init", () => {
 	BRSettings.init();
@@ -25,4 +26,9 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 			option.condition = li => canvas.tokens.controlled.length && li.find(".dice-roll").length && !li.find(".red-full").length;
 		}
 	}
+});
+
+// Bind to any newly rendered chat cards at runtime
+Hooks.on("renderChatMessage", (message, html, data) => {
+	BetterRollsChatCard.bind(message, html);
 });

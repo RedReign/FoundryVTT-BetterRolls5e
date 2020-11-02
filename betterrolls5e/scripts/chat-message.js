@@ -32,6 +32,12 @@ export class BetterRollsChatCard {
 		this.dicePool = new DiceCollection();
 		this._setupDamageButtons();
 		this._setupCardButtons();
+
+		// Hide Save DCs
+		const actor = game.actors.get(message.data.speaker.actor);
+		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
+			this.html.find(".hideSave").text(i18n("br5e.hideDC.string"));
+		}
 	}
 
 	/**
@@ -237,6 +243,10 @@ export class BetterRollsChatCard {
 	 * entries, like crit rolls and damage application.
 	 */
 	async _setupDamageButtons() {
+		if (!BRSettings.chatDamageButtonsEnabled) {
+			return;
+		}
+
 		const { html } = this;
 		const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
 		const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
