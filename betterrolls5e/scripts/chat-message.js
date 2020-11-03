@@ -24,17 +24,23 @@ function getTargetActors() {
 export class BetterRollsChatCard {
 	constructor(message, html) {
 		this.id = message.id;
-		this.html = html;
 		this.flags = message.data.flags?.betterrolls5e ?? {};
+		this.speaker = game.actors.get(message.data.speaker.actor);
+		this.dicePool = new DiceCollection();
+		this.bindHtml(html);
+	}
+
+	bindHtml(html) {
+		this.html = html;
+		this._renderHtml = null;
 		this.actorId = this.html.attr("data-actor-id");
 		this.itemId = this.html.attr("data-item-id");
 		this.tokenId = this.html.attr("data-token-id");
-		this.dicePool = new DiceCollection();
 		this._setupDamageButtons();
 		this._setupCardButtons();
 
 		// Hide Save DCs
-		const actor = game.actors.get(message.data.speaker.actor);
+		const actor = this.speaker;
 		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
 			this.html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 		}
@@ -52,7 +58,26 @@ export class BetterRollsChatCard {
 			return null;
 		}
 
-		return new BetterRollsChatCard(message, chatCard);
+		// Check if the card already exists
+		const existing = message.BetterRollsCardBinding;
+		if (existing) {
+			console.log("BetterRolls5e | Retrieved existing card");
+			existing.bindHtml(chatCard);
+
+			// Scroll to bottom if the last card had updated
+			const last = ChatMessage.collection.entries[ChatMessage.collection.entries.length - 1];
+			if (last?.id === existing.id) {
+				window.setTimeout(() => {
+					ui.chat.scrollBottom();
+				}, 0);
+			}
+
+			return existing;
+		} else {
+			const newCard = new BetterRollsChatCard(message, chatCard);
+			message.BetterRollsCardBinding = newCard;
+			return newCard;
+		}
 	}
 
 	/**
@@ -84,6 +109,19 @@ export class BetterRollsChatCard {
 	}
 
 	/**
+	 * Returns a duplicate of the internal html which can be updated with affecting visibility.
+	 * When update is called, it will use this as its value.
+	 */
+	get renderHtml() {
+		if (!this._renderHtml) {
+			this._renderHtml = this.html.clone();
+			this._renderHtml.find('.temporary').remove();
+		}
+
+		return this._renderHtml;
+	}
+
+	/**
 	 * Getter to retrieve if the current user has advanced permissions over the chat card.
 	 */
 	get hasPermission() {
@@ -111,8 +149,10 @@ export class BetterRollsChatCard {
 			return false;
 		}
 
+		const html = this.renderHtml;
+
 		// Add crit to UI 
-		const damageRows = this.html.find('.red-base-damage').parents(".dice-roll");
+		const damageRows = html.find('.red-base-damage').parents(".dice-roll");
 		for (const row of damageRows) {
 			await this._rollCritForDamageRow(item, row);
 		}
@@ -123,13 +163,13 @@ export class BetterRollsChatCard {
 		if (critExtraIndex >= 0) {
 			const entry = CustomRoll.constructItemDamageRoll(item, critExtraIndex);
 			const template = await Renderer.renderModel(entry);
-			this.html.find("div.dice-roll").last().after($(template));
+			html.find("div.dice-roll").last().after($(template));
 			
 			this.dicePool.push(entry.baseRoll);
 		}
 
 		// Mark as critical
-		this.html.attr("data-critical", "true");
+		html.attr("data-critical", "true");
 		return true;
 	}
 
@@ -146,20 +186,21 @@ export class BetterRollsChatCard {
 			return false;
 		}
 
+		const html = this.renderHtml;
 		group = encodeURIComponent(group);
 
 		// Show associated damage rows. If already set to critical, roll critical
-		const isCritical = this.html.attr("data-critical") === "true";
-		const damageRows = this.html.find('.red-base-damage').parents(`.dice-roll[data-group="${group}"]`);
+		const isCritical = html.attr("data-critical") === "true";
+		const damageRows = html.find('.red-base-damage').parents(`.dice-roll[data-group="${group}"]`);
 		for (const row of damageRows) {
-			$(row).show();
+			$(row).removeClass("br5e-hidden");
 			if (isCritical) {
 				await this._rollCritForDamageRow(item, row);
 			}
 		}
 
 		// Hide the damage buttons. No longer relevant
-		this.html.find(`button[data-action="damage"][data-group="${group}"]`)
+		html.find(`button[data-action="damage"][data-group="${group}"]`)
 			.parents(".card-buttons")
 			.hide();
 
@@ -176,9 +217,7 @@ export class BetterRollsChatCard {
 	 * @param message 
 	 */
 	async update() {
-		const newRender = this.html.clone();
-		newRender.find('.temporary').remove();
-
+		const newRender = this.renderHtml;
 		const chatMessage = ChatMessage.collection.get(this.id);
 
 		if (chatMessage) {
@@ -305,7 +344,7 @@ export class BetterRollsChatCard {
 	
 		// logic to only show the buttons when the mouse is within the chatcard
 		html.find('.dmgBtn-container-br').hide();
-		$(html).hover(evIn => {
+		html.hover(evIn => {
 			if (!this._critAlreadyRolled && this.hasPermission) {
 				html.find('.dmgBtn-container-br.left').show();
 			}

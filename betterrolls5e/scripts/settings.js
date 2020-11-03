@@ -217,6 +217,10 @@ class Settings {
 		});
 	}
 
+	get diceEnabled() {
+		return getBRSetting("diceEnabled");
+	}
+
 	get playRollSounds() {
 		return getBRSetting("playRollSounds");
 	}
