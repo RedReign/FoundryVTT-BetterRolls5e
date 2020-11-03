@@ -1,6 +1,10 @@
 {
     "include": ["betterrolls5e/scripts/**/*"],
+    "compilerOptions": {
+        "module": "es6",
+        "target": "es2019"
+    },
     "typeAcquisition": {
-        "include": ["jquery", ]
+        "include": ["jquery"]
     }
 }
