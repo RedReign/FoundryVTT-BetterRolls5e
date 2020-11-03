@@ -223,7 +223,7 @@ export class ActorUtils {
 	static getAbilityCheckRoll(actor, abl) {
 		let parts = ["@mod"];
 		
-		const data = ActorUtils.getRollData(actor);
+		const data = actor.getRollData();
 		data.mod = data.abilities[abl].mod;
 	
 		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
