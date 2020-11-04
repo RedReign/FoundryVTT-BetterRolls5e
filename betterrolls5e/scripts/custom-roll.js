@@ -165,6 +165,48 @@ export class CustomRoll {
 	}
 
 	/**
+	 * 
+	 * @param {Item} item 
+	 * @param {object} options
+	 * @param {number?} options.critThreshold override
+	 * @param {string?} options.abilityMod override for the default item abilty mod
+	 * @param {Item?} options.ammo
+	 * @param {RollState} options.rollState
+	 * @param {number} options.bonus Extra bonus value
+	 */
+	static constructItemAttackRoll(item, options={}) {
+		const { ammo, bonus, rollState } = options;
+		const actor = item.actor;
+
+		// Get critical threshold
+		const critThreshold = options.critThreshold ??
+			ItemUtils.getCritThreshold(item) ??
+			ActorUtils.getCritThreshold(actor);
+
+		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
+		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
+
+		// Get ammo bonus and add to title if relevant
+		let title = (BRSettings.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
+		const ammoBonus = ammo?.data.data.attackBonus;
+		if (ammoBonus) {
+			title += ` [${ammo.name}]`;
+		}
+
+		// Get Formula
+		const roll = ItemUtils.getAttackRoll(item, { abilityMod, ammoBonus, bonus });
+
+		// Construct the multiroll
+		return CustomRoll.constructMultiRoll(roll.formula, {
+			rollState,
+			title,
+			critThreshold,
+			elvenAccuracy,
+			rollType: "attack"
+		});
+	}
+
+	/**
 	 * Constructs and rolls damage data to be used in rendering
 	 * @param {string | roll} formulaOrRoll A formula or roll object to be used
 	 * @param {object} options
@@ -870,55 +912,16 @@ export class CustomItemRoll {
 			critThreshold: null
 		}, props || {});
 
-		let itm = this.item;
-		const itemData = itm.data.data;
-		let title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
-		
+		const item = this.item;
 		this.hasAttack = true;
-		
-		// Add critical threshold
-		let critThreshold = 20;
-		let characterCrit = 20;
-		try { 
-			characterCrit = Number(getProperty(itm, "actor.data.flags.dnd5e.weaponCriticalThreshold")) || 20;
-		} catch(error) { 
-			characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20;
-		}
-		
-		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
-		//	console.log(critThreshold, characterCrit, itemCrit);
-		
-		if (args.critThreshold) {
-			// If a specific critThreshold is set, use that
-			critThreshold = args.critThreshold;
-		} else {
-			// Otherwise, determine it from character & item data
-			if (['mwak', 'rwak'].includes(itemData.actionType)) {
-				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
-			} else {
-				critThreshold = Math.min(critThreshold, itemCrit);
-			}
-		}
 
-		// Get ammo bonus and add to title if relevant
-		const ammoBonus = this.ammo?.data.data.attackBonus;
-		if (ammoBonus) {
-			title += ` [${this.ammo.name}]`;
-		}
-		
 		// Perform the final construction and begin rolling
-		const abilityMod = ItemUtils.getAbilityMod(itm);
 		const rollState = CustomRoll.getRollState(args);
-		const formula = ItemUtils.getAttackRoll(itm, {
-			abilityMod,
-			ammoBonus,
-			bonus: args.bonus
-		}).formula;
-		const multiRollData = CustomRoll.constructMultiRoll(formula, {
+		const multiRollData = CustomRoll.constructItemAttackRoll(item, {
 			rollState,
-			title,
-			critThreshold,
-			elvenAccuracy: ActorUtils.testElvenAccuracy(itm.actor, abilityMod)
+			critThreshold: args.critThreshold,
+			bonus: args.bonus,
+			ammo: this.ammo
 		});
 		
 		// If this can trigger a crit and it also crit, flag it as a crit.

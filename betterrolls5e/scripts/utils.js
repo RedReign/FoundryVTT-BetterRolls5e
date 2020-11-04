@@ -178,6 +178,18 @@ export class ActorUtils {
 	}
 
 	/**
+	 * Returns the crit threshold of an actor
+	 * @param {*} actor 
+	 */
+	static getCritThreshold(actor) {
+		try { 
+			return Number(getProperty(actor, "data.flags.dnd5e.weaponCriticalThreshold")) || 20;
+		} catch(error) { 
+			return actor.data.flags.dnd5e.weaponCriticalThreshold || 20;
+		}
+	}
+
+	/**
 	 * Returns the image to represent the actor. The result depends on BR settings.
 	 * @param {Actor} actor
 	 */
@@ -286,6 +298,24 @@ export class ItemUtils {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Creates the lower of the item crit threshold, the actor crit threshold, or 20.
+	 * Returns null if null is given.I mea
+	 * @param {*} item 
+	 */
+	static getCritThreshold(item) {
+		if (!item) return null;
+
+		const itemData = item.data.data;
+		const itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
+		if (['mwak', 'rwak'].includes(itemData.actionType)) {
+			let characterCrit = ActorUtils.getCritThreshold(this.actor);
+			return Math.min(20, characterCrit, itemCrit);
+		} else {
+			return Math.min(20, itemCrit);
+		}
 	}
 
 	static getDuration(item) {
