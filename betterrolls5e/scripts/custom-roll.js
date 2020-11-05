@@ -364,9 +364,10 @@ export class CustomRoll {
 	 * @param {object} param3
 	 * @param {Item?} param3.item Optional Item to put in the card props and to use for certain defaults.
 	 * @param {string[]?} param3.properties List of properties to show at the bottom. Uses item properties if null.
-	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties 
+	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties
+	 * @param {object} param3.builder The class used to build the chat message (CustomItemRoll usually)
 	 */
-	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null }={}) {
+	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null, builder=null }={}) {
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 		const flags = {};
 
@@ -427,8 +428,13 @@ export class CustomRoll {
 		populateDicePool(models.filter(e => !e?.hidden), dicePool);
 		await dicePool.flush();
 
-		// Send the chat message
+		// Create the chat message
 		const chatData = createChatData(actor, content, { hasMaestroSound, flags });
+		if (builder) {
+			await Hooks.callAll("messageBetterRolls", builder, chatData);
+		}
+
+		// Send the chat message
 		return ChatMessage.create(chatData);
 	}
 	
@@ -668,8 +674,9 @@ export class CustomItemRoll {
 		if (!params.slotLevel) {
 			if (item.data.type === "spell") {
 				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") { 
-					return "error"; 
+				if (params.slotLevel === "error") {
+					this.error = true;
+					return;
 				}
 			}
 		}
@@ -683,7 +690,8 @@ export class CustomItemRoll {
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
 		let chargeCheck = await this.consumeCharge();
 		if (chargeCheck === "error") {
-			return "error";
+			this.error = true;
+			return;
 		}
 
 		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
@@ -806,15 +814,16 @@ export class CustomItemRoll {
 			await this.roll();
 		}
 
-		if (this.content === "error") return;
-
-		const hasMaestroSound = ItemUtils.hasMaestroSound(this.item);
-		this.chatData = createChatData(this.actor, this.content, { hasMaestroSound });
-		await Hooks.callAll("messageBetterRolls", this, this.chatData);
+		if (this.error) return;
 
 		// Render and send the chat message
 		const { item, isCrit, properties } = this;
-		return await CustomRoll.sendChatMessage(item.actor, this.models, { item, isCrit, properties });
+		return await CustomRoll.sendChatMessage(item.actor, this.models, { 
+			item,
+			isCrit,
+			properties,
+			builder: this
+		});
 	}
 	
 	/**
