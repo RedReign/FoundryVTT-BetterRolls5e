@@ -32,7 +32,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	// For items with quantity (weapons, tools, consumables...)
 	const hasQuantity = ("quantity" in itemData);
 	// For items with "Limited Uses" configured
-	const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per);
+	const hasUses = !!(itemData.uses?.value || itemData.uses?.max || itemData.uses?.per);
 	// For items with "Resource Consumption" configured
 	const hasResource = !!(itemData.consume?.target);
 	// For abilities with "Action Recharge" configured
