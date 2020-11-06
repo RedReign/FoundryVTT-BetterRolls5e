@@ -1502,7 +1502,7 @@ export class CustomItemRoll {
 		
 		// Halfling Luck check
 		let d20String = "1d20";
-		if (Utils.isHalfling(itm,actor)) {
+		if (Utils.isHalfling(itm.actor)) {
 			d20String = "1d20r<2";
 		}
 		
@@ -1600,7 +1600,7 @@ export class CustomItemRoll {
 		let item = this.item,
 			itemData = item.data.data;
 		
-		const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const hasUses = !!(itemData.uses?.value || itemData.uses?.max || itemData.uses?.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
