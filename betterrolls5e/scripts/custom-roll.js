@@ -378,6 +378,8 @@ export class CustomRoll {
 
 			// Assign groups
 			for (const model of models) {
+				if (!model) continue;
+
 				if (["multiroll", "button-save"].includes(model.type)) {
 					group++;
 				} else if (model.type === "damage") {
@@ -1000,7 +1002,7 @@ export class CustomItemRoll {
 
 		// If all, damage indices between a sequential list from 0 to length - 1
 		if (index === "all") {
-			const numEntries = this.item.data.data.damage.parts.length;
+			const numEntries = item.data.data.damage.parts.length;
 			index = [...Array(numEntries).keys()]
 		}
 
@@ -1010,14 +1012,18 @@ export class CustomItemRoll {
 
 		const results = [];
 		for (const idx of index) {
-			results.push(this._rollDamage({
+			const damage = this._rollDamage({
 				item,
 				damageIndex: idx,
 				// versatile damage will only replace the first damage formula in an "all" damage request
 				forceVersatile: (idx == 0 || !wasAll) ? versatile : false,
 				forceCrit: crit,
 				customContext: context
-			}))
+			});
+
+			if (damage) {
+				results.push(damage)
+			}
 		}
 
 		return results;
