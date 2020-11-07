@@ -165,6 +165,48 @@ export class CustomRoll {
 	}
 
 	/**
+	 * 
+	 * @param {Item} item 
+	 * @param {object} options
+	 * @param {number?} options.critThreshold override
+	 * @param {string?} options.abilityMod override for the default item abilty mod
+	 * @param {Item?} options.ammo
+	 * @param {RollState} options.rollState
+	 * @param {number} options.bonus Extra bonus value
+	 */
+	static constructItemAttackRoll(item, options={}) {
+		const { ammo, bonus, rollState } = options;
+		const actor = item.actor;
+
+		// Get critical threshold
+		const critThreshold = options.critThreshold ??
+			ItemUtils.getCritThreshold(item) ??
+			ActorUtils.getCritThreshold(actor);
+
+		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
+		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
+
+		// Get ammo bonus and add to title if relevant
+		let title = (BRSettings.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
+		const ammoBonus = ammo?.data.data.attackBonus;
+		if (ammoBonus) {
+			title += ` [${ammo.name}]`;
+		}
+
+		// Get Formula
+		const roll = ItemUtils.getAttackRoll(item, { abilityMod, ammoBonus, bonus });
+
+		// Construct the multiroll
+		return CustomRoll.constructMultiRoll(roll.formula, {
+			rollState,
+			title,
+			critThreshold,
+			elvenAccuracy,
+			rollType: "attack"
+		});
+	}
+
+	/**
 	 * Constructs and rolls damage data to be used in rendering
 	 * @param {string | roll} formulaOrRoll A formula or roll object to be used
 	 * @param {object} options
@@ -322,9 +364,10 @@ export class CustomRoll {
 	 * @param {object} param3
 	 * @param {Item?} param3.item Optional Item to put in the card props and to use for certain defaults.
 	 * @param {string[]?} param3.properties List of properties to show at the bottom. Uses item properties if null.
-	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties 
+	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties
+	 * @param {object} param3.builder The class used to build the chat message (CustomItemRoll usually)
 	 */
-	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null }={}) {
+	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null, builder=null }={}) {
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 		const flags = {};
 
@@ -335,6 +378,8 @@ export class CustomRoll {
 
 			// Assign groups
 			for (const model of models) {
+				if (!model) continue;
+
 				if (["multiroll", "button-save"].includes(model.type)) {
 					group++;
 				} else if (model.type === "damage") {
@@ -385,8 +430,13 @@ export class CustomRoll {
 		populateDicePool(models.filter(e => !e?.hidden), dicePool);
 		await dicePool.flush();
 
-		// Send the chat message
+		// Create the chat message
 		const chatData = createChatData(actor, content, { hasMaestroSound, flags });
+		if (builder) {
+			await Hooks.callAll("messageBetterRolls", builder, chatData);
+		}
+
+		// Send the chat message
 		return ChatMessage.create(chatData);
 	}
 	
@@ -626,8 +676,9 @@ export class CustomItemRoll {
 		if (!params.slotLevel) {
 			if (item.data.type === "spell") {
 				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") { 
-					return "error"; 
+				if (params.slotLevel === "error") {
+					this.error = true;
+					return;
 				}
 			}
 		}
@@ -641,7 +692,8 @@ export class CustomItemRoll {
 		// Check to consume charges. Prevents the roll if charges are required and none are left.
 		let chargeCheck = await this.consumeCharge();
 		if (chargeCheck === "error") {
-			return "error";
+			this.error = true;
+			return;
 		}
 
 		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
@@ -764,15 +816,16 @@ export class CustomItemRoll {
 			await this.roll();
 		}
 
-		if (this.content === "error") return;
-
-		const hasMaestroSound = ItemUtils.hasMaestroSound(this.item);
-		this.chatData = createChatData(this.actor, this.content, { hasMaestroSound });
-		await Hooks.callAll("messageBetterRolls", this, this.chatData);
+		if (this.error) return;
 
 		// Render and send the chat message
 		const { item, isCrit, properties } = this;
-		return await CustomRoll.sendChatMessage(item.actor, this.models, { item, isCrit, properties });
+		return await CustomRoll.sendChatMessage(item.actor, this.models, { 
+			item,
+			isCrit,
+			properties,
+			builder: this
+		});
 	}
 	
 	/**
@@ -870,55 +923,16 @@ export class CustomItemRoll {
 			critThreshold: null
 		}, props || {});
 
-		let itm = this.item;
-		const itemData = itm.data.data;
-		let title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null;
-		
+		const item = this.item;
 		this.hasAttack = true;
-		
-		// Add critical threshold
-		let critThreshold = 20;
-		let characterCrit = 20;
-		try { 
-			characterCrit = Number(getProperty(itm, "actor.data.flags.dnd5e.weaponCriticalThreshold")) || 20;
-		} catch(error) { 
-			characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20;
-		}
-		
-		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
-		//	console.log(critThreshold, characterCrit, itemCrit);
-		
-		if (args.critThreshold) {
-			// If a specific critThreshold is set, use that
-			critThreshold = args.critThreshold;
-		} else {
-			// Otherwise, determine it from character & item data
-			if (['mwak', 'rwak'].includes(itemData.actionType)) {
-				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
-			} else {
-				critThreshold = Math.min(critThreshold, itemCrit);
-			}
-		}
 
-		// Get ammo bonus and add to title if relevant
-		const ammoBonus = this.ammo?.data.data.attackBonus;
-		if (ammoBonus) {
-			title += ` [${this.ammo.name}]`;
-		}
-		
 		// Perform the final construction and begin rolling
-		const abilityMod = ItemUtils.getAbilityMod(itm);
 		const rollState = CustomRoll.getRollState(args);
-		const formula = ItemUtils.getAttackRoll(itm, {
-			abilityMod,
-			ammoBonus,
-			bonus: args.bonus
-		}).formula;
-		const multiRollData = CustomRoll.constructMultiRoll(formula, {
+		const multiRollData = CustomRoll.constructItemAttackRoll(item, {
 			rollState,
-			title,
-			critThreshold,
-			elvenAccuracy: ActorUtils.testElvenAccuracy(itm.actor, abilityMod)
+			critThreshold: args.critThreshold,
+			bonus: args.bonus,
+			ammo: this.ammo
 		});
 		
 		// If this can trigger a crit and it also crit, flag it as a crit.
@@ -988,7 +1002,7 @@ export class CustomItemRoll {
 
 		// If all, damage indices between a sequential list from 0 to length - 1
 		if (index === "all") {
-			const numEntries = this.item.data.data.damage.parts.length;
+			const numEntries = item.data.data.damage.parts.length;
 			index = [...Array(numEntries).keys()]
 		}
 
@@ -998,14 +1012,18 @@ export class CustomItemRoll {
 
 		const results = [];
 		for (const idx of index) {
-			results.push(this._rollDamage({
+			const damage = this._rollDamage({
 				item,
 				damageIndex: idx,
 				// versatile damage will only replace the first damage formula in an "all" damage request
 				forceVersatile: (idx == 0 || !wasAll) ? versatile : false,
 				forceCrit: crit,
 				customContext: context
-			}))
+			});
+
+			if (damage) {
+				results.push(damage)
+			}
 		}
 
 		return results;
