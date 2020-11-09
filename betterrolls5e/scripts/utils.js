@@ -121,9 +121,9 @@ export class ActorUtils {
 export class ItemUtils {
 	static getActivationData(item) {
 		const { activation } = item.data.data;
-		const activationCost = activation.cost ? activation.cost : ""
+		const activationCost = activation?.cost ?? "";
 
-		if (activation?.type !== "" && activation?.type !== "none") {
+		if (activation?.type && activation?.type !== "none") {
 			return `${activationCost} ${dnd5e.abilityActivationTypes[activation.type]}`.trim();
 		}
 
