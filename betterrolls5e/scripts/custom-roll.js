@@ -371,6 +371,9 @@ export class CustomRoll {
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 		const flags = {};
 
+		// If any models are promises, await on them
+		models = await Promise.all(models);
+
 		// If damage buttons need to show, we need to hide damage entries under certain conditions
 		if (damagePromptEnabled ?? BRSettings.damagePromptEnabled) {
 			let group = -1;
@@ -949,7 +952,7 @@ export class CustomItemRoll {
 	 * @param {*} preArgs 
 	 * @private
 	 */
-	async _rollTool(preArgs) {
+	_rollTool(preArgs) {
 		let args = mergeObject({adv: 0, disadv: 0, bonus: null, triggersCrit: true, critThreshold: null, rollState: this.rollState}, preArgs || {});
 		let itm = this.item;
 		const title = args.title || ((this.config.rollTitlePlacement != "0") ? i18n("br5e.chat.check") : null);
@@ -960,8 +963,7 @@ export class CustomItemRoll {
 		const multiRollData = CustomRoll.constructMultiRoll(formula, {
 			rollState,
 			title,
-			critThreshold: args.critThreshold,
-			elvenAccuracy: ActorUtils.testElvenAccuracy(itm.actor, abl)
+			critThreshold: args.critThreshold
 		});
 		
 		this.isCrit = args.triggersCrit || multiRollData.isCrit;
@@ -1151,7 +1153,7 @@ export class CustomItemRoll {
 		let item = this.item,
 			itemData = item.data.data;
 		
-		const hasUses = !!(itemData.uses.value || itemData.uses.max || itemData.uses.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const hasUses = !!(itemData.uses?.value || itemData.uses?.max || itemData.uses?.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge

@@ -92,7 +92,7 @@ export class Renderer {
 	 * @param {RenderModel} model 
 	 */
 	static async renderModel(model) {
-		if (typeof model === "string") {
+		if (typeof model === "string" || !model) {
 			return model;
 		}
 
