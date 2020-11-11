@@ -178,10 +178,12 @@ export class ActorUtils {
 	}
 
 	/**
-	 * Returns the crit threshold of an actor
+	 * Returns the crit threshold of an actor. Returns null if no actor is given.
 	 * @param {*} actor 
 	 */
 	static getCritThreshold(actor) {
+		if (!actor) null;
+
 		try { 
 			return Number(getProperty(actor, "data.flags.dnd5e.weaponCriticalThreshold")) || 20;
 		} catch(error) { 
@@ -302,7 +304,7 @@ export class ItemUtils {
 
 	/**
 	 * Creates the lower of the item crit threshold, the actor crit threshold, or 20.
-	 * Returns null if null is given.I mea
+	 * Returns null if null is given.
 	 * @param {*} item 
 	 */
 	static getCritThreshold(item) {
@@ -311,7 +313,7 @@ export class ItemUtils {
 		const itemData = item.data.data;
 		const itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
 		if (['mwak', 'rwak'].includes(itemData.actionType)) {
-			let characterCrit = ActorUtils.getCritThreshold(this.actor);
+			let characterCrit = ActorUtils.getCritThreshold(item?.actor);
 			return Math.min(20, characterCrit, itemCrit);
 		} else {
 			return Math.min(20, itemCrit);
@@ -429,7 +431,14 @@ export class ItemUtils {
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 	}
 
+	/**
+	 * Returns the ability mod the item uses for the attack.
+	 * If no item is given, returns null
+	 * @param {*} itm 
+	 */
 	static getAbilityMod(itm) {
+		if (!itm) return null;
+
 		const itemData = itm.data.data;
 		const actorData = itm.actor.data.data;
 	
@@ -545,6 +554,12 @@ export class ItemUtils {
 		return new Roll([d20String, ...parts].join("+"), rollData);
 	}
 
+	/**
+	 * Gets the tool roll for a specific item.
+	 * This is a general item mod + proficiency d20 check.
+	 * @param {Item} itm 
+	 * @param {number?} bonus 
+	 */
 	static getToolRoll(itm, bonus=null) {
 		const itemData = itm.data.data;
 		const actorData = itm.actor.data.data;
@@ -566,14 +581,12 @@ export class ItemUtils {
 		if (itemData.proficient) {
 			parts.push("@prof");
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
 		}
 		
 		// Add item's bonus
 		if (itemData.bonus) {
 			parts.push("@bonus");
 			rollData.bonus = itemData.bonus.value;
-			//console.log("Adding Bonus mod!");
 		}
 		
 		if (bonus) {
@@ -757,7 +770,7 @@ export class ItemUtils {
 	 * @param {Item} item
 	 */
 	static getSave(item) {
-		if (!isSave(item)) {
+		if (!item || !isSave(item)) {
 			return null;
 		}
 

@@ -142,9 +142,12 @@ export class Renderer {
 	 * @param {MultiRollDataProps} properties 
 	 */
 	static async renderMultiRoll(properties) {
+		const title = BRSettings.rollTitlePlacement !== "0" ? properties.title : null;
 		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
+		
 		return renderModuleTemplate("red-multiroll.html", {
 			...properties,
+			title,
 			entries: properties.entries.map(e => ({
 				...e,
 				d20Result: e.roll?.terms.find(t => t.faces === 20)?.total
