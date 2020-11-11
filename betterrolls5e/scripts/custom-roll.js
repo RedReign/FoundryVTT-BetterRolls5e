@@ -4,7 +4,7 @@ import { Renderer } from "./renderer.js";
 
 /**
  * Roll type for advantage/disadvantage/etc
- * @typedef {"highest" | "lowest" | null} RollState
+ * @typedef {"highest" | "lowest" | "first" | null} RollState
  */
 
 /**
@@ -35,9 +35,9 @@ function createChatData(actor, content, { hasMaestroSound = false, flags={} }={}
 		user: game.user._id,
 		content: content,
 		speaker: {
-			actor: actor._id,
-			token: actor.token,
-			alias: actor.token?.name || actor.name
+			actor: actor?._id,
+			token: actor?.token,
+			alias: actor?.token?.name || actor?.name
 		},
 		flags: (flags) ? { betterrolls5e: flags } : {},
 		type: CONST.CHAT_MESSAGE_TYPES.ROLL,
@@ -90,12 +90,26 @@ function resolveActorOrItem(actorOrItem) {
 export class CustomRoll {
 	/**
 	 * Returns header data to be used for rendering
+	 * @param {object} options
+	 * @param {string?} options.img image to show, falls back to item image
+	 * @param {string} options.label label, falls back to item name
+	 * @param {Item?} options.item
+	 * @param {Actor?} options.actor
+	 * @param {number?} options.slotLevel
 	 * @returns {import("./renderer.js").HeaderDataProps}
 	 */
-	static constructHeaderData(actorOrItem, label, { slotLevel=null }={}) {
-		const { item, actor } = resolveActorOrItem(actorOrItem);
-		const img = item ? item.img : ActorUtils.getImage(actor);
-		return { type: "header", img, label, slotLevel };
+	static constructHeaderData(options={}) {
+		const { item, slotLevel } = options;
+		const actor = options?.actor ?? item?.actor;
+		const img = options.img ?? item?.img ?? ActorUtils.getImage(actor);
+		const label = options.label ?? item?.name ?? actor?.name;
+
+		let printedSlotLevel = options.slotLevel;
+		if (item && item.data.type === "spell" && slotLevel != this.item.data.data.level) {
+			printedSlotLevel = dnd5e.spellLevels[slotLevel];
+		}
+
+		return { type: "header", img, label, slotLevel: printedSlotLevel };
 	}
 	
 	/**
@@ -105,7 +119,7 @@ export class CustomRoll {
 	 * @param {number?} options.critThreshold minimum roll on the dice to cause a critical roll.
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title title to display above the roll
-	 * @param {RollState?} options.rollState highest or lowest
+	 * @param {RollState?} options.rollState highest or lowest or first or none
 	 * @param {string?} options.rollType metadata param for attack vs damage.
 	 * @param {boolean?} options.elvenAccuracy whether the actor should apply elven accuracy 
 	 * @returns {import("./renderer.js").MultiRollDataProps}
@@ -118,13 +132,17 @@ export class CustomRoll {
 		}
 
 		let numRolls = options.numRolls || game.settings.get("betterrolls5e", "d20Mode");
-		if (rollState && numRolls == 1) {
-			numRolls = 2;
-		}
-
-		// Apply elven accuracy
-		if (numRolls == 2 && elvenAccuracy && rollState !== "lowest") {
-			numRolls = 3;
+		if (!options.numRolls) {
+			if (rollState === "first" && !options.numRolls) {
+				numRolls = 1;
+			} else if (rollState && numRolls == 1) {
+				numRolls = 2;
+			}
+	
+			// Apply elven accuracy
+			if (numRolls == 2 && elvenAccuracy && rollState !== "lowest") {
+				numRolls = 3;
+			}
 		}
 
 		const entries = [];
@@ -165,6 +183,8 @@ export class CustomRoll {
 	 * @param {object} options
 	 * @param {string?} options.formula optional formula to use instead of the attack formula
 	 * @param {Item?} options.item Item to derive attack formula or roll data from
+	 * @param {number?} options.numRolls number of rolls to perform
+	 * @param {string?} options.title Alternative title to use
 	 * @param {number?} options.critThreshold override
 	 * @param {string?} options.abilityMod override for the default item abilty mod
 	 * @param {Item?} options.ammo
@@ -174,7 +194,7 @@ export class CustomRoll {
 	 */
 	static constructAttackRoll(options={}) {
 		const { formula, item, ammo, bonus, rollState, slotLevel } = options;
-		const actor = options.actor ?? item.actor;
+		const actor = options.actor ?? item?.actor;
 
 		// Get critical threshold
 		const critThreshold = options.critThreshold ??
@@ -184,12 +204,16 @@ export class CustomRoll {
 
 		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
 		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
-
-		// Get ammo bonus and add to title if relevant
-		let title = i18n("br5e.chat.attack");
 		const ammoBonus = ammo?.data.data.attackBonus;
-		if (ammoBonus) {
-			title += ` [${ammo.name}]`;
+
+		// Get ammo bonus and add to title if title not given
+		// Note that "null" is a valid title, so we can't override that
+		let title = options.title;
+		if (typeof title === 'undefined') {
+			let title = i18n("br5e.chat.attack");
+			if (ammoBonus) {
+				title += ` [${ammo.name}]`;
+			}
 		}
 
 		// Get Formula
@@ -207,6 +231,7 @@ export class CustomRoll {
 
 		// Construct the multiroll
 		return CustomRoll.constructMultiRoll({
+			...options,
 			formula: roll.formula,
 			rollState,
 			title,
@@ -230,11 +255,12 @@ export class CustomRoll {
 	 * @param {string?} options.title title to display. If not given defaults to damage type
 	 * @param {boolean?} options.isCrit Whether to roll crit damage
 	 * @param {boolean?} options.savage If true/false, sets the savage property. Falls back to using the item if not given, or false otherwise.
+	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never
 	 * @param {} options.critBehavior
 	 * @returns {import("./renderer.js").DamageDataProps}
 	 */
 	static constructDamageRoll(options={}) {
-		const { item, damageIndex, slotLevel, isCrit } = options;
+		const { item, damageIndex, slotLevel, isCrit, hidden } = options;
 		const actor = options?.actor ?? item?.actor;
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || damageIndex === "versatile";
@@ -309,6 +335,7 @@ export class CustomRoll {
 			context,
 			baseRoll,
 			critRoll,
+			hidden,
 			isVersatile: isVersatile ?? false
 		};
 	}
@@ -333,7 +360,7 @@ export class CustomRoll {
 				damageIndex = "versatile";
 			}
 
-			if (damageIndex == null) {
+			if (!formula && damageIndex == null) {
 				console.error("BetterRolls | Missing damage index on item range roll...invalid data");
 				return [];
 			}
@@ -409,8 +436,10 @@ export class CustomRoll {
 					// Damage entries are only prompted after attacks/saves
 					if (group < 0) continue;
 
-					model.hidden = true;
-					model.group = `br!${group}`;
+					model.hidden = model.hidden ?? true;
+					if (model.hidden) {
+						model.group = `br!${group}`;
+					}
 				}
 			}
 
@@ -633,12 +662,14 @@ let defaultParams = {
 
 // A custom roll with data corresponding to an item on a character's sheet.
 export class CustomItemRoll {
-	constructor(item, params, fields) {
+	constructor(actorOrItem, params, fields) {
+		const { item, actor } = resolveActorOrItem(actorOrItem);
 		this.item = item;
-		this.actor = item.actor;
-		this.itemFlags = item.data.flags;
+		this.actor = actor;
+		this.itemFlags = item?.data.flags;
+
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
-		this.fields = fields;	// Where requested roll fields are stored, in the order they should be rendered.
+		this.fields = fields ?? [];	// Where requested roll fields are stored, in the order they should be rendered.
 
 		/** @type {Array<import("./renderer.js").RenderModel>} */
 		this.models = [];		// Data results from fields, which get turned into templates
@@ -689,8 +720,8 @@ export class CustomItemRoll {
 		const { params, item } = this;
 
 		await ItemUtils.ensureFlags(item);
-		const actor = item.actor;
-		const itemData = item.data.data;
+		const actor = this.actor ?? item?.actor;
+		const itemData = item?.data.data;
 		
 		Hooks.call("preRollItemBetterRolls", this);
 		
@@ -698,19 +729,21 @@ export class CustomItemRoll {
 			this.updateForPreset();
 		}
 
-		if (this.params.useCharge.resource) {
-			const consume = itemData.consume;
-			if ( consume?.type === "ammo" ) {
-				this.ammo = this.actor.items.get(consume.target);
+		if (item) {
+			if (this.params.useCharge.resource) {
+				const consume = itemData.consume;
+				if ( consume?.type === "ammo" ) {
+					this.ammo = this.actor.items.get(consume.target);
+				}
 			}
-		}
-		
-		if (!params.slotLevel) {
-			if (item.data.type === "spell") {
-				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") {
-					this.error = true;
-					return;
+			
+			if (!params.slotLevel) {
+				if (item.data.type === "spell") {
+					params.slotLevel = await this.configureSpell();
+					if (params.slotLevel === "error") {
+						this.error = true;
+						return;
+					}
 				}
 			}
 		}
@@ -728,7 +761,7 @@ export class CustomItemRoll {
 			return;
 		}
 
-		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
+		if (item && params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
 			this.placeTemplate();
 		}
 		
@@ -761,12 +794,15 @@ export class CustomItemRoll {
 			actor: this.actor,
 			rollState: this.getRollState(data),
 			ammo: this.ammo,
-			slotLevel: this.params.slotLevel
+			slotLevel: this.params.slotLevel,
+			isCrit: this.isCrit
 		}, data ?? {});
 
 		const item = data?.item;
 
 		switch (fieldType) {
+			case 'header':
+				return this._handleHeaderField(data);
 			case 'attack':
 				return this._handleAttackField(data);
 			case 'toolcheck':
@@ -820,13 +856,12 @@ export class CustomItemRoll {
 	 * Processes all fields, building a collection of models and returning them
 	 */
 	async _processFields() {
-		this.models.push(this._rollHeader());
 		for (let i=0;i<this.fields.length;i++) {
 			await this.addField(this.fields[i]);
 		}
 
 		const hasDamage = this.models.some(m => m.type === "damage");
-		if (this.isCrit && hasDamage && this.item.data.flags.betterRolls5e?.critDamage?.value) {
+		if (this.isCrit && hasDamage && this.item?.data.flags.betterRolls5e?.critDamage?.value) {
 			await this.addField(["crit"]);
 		}
 
@@ -846,7 +881,8 @@ export class CustomItemRoll {
 
 		// Render and send the chat message
 		const { item, isCrit, properties } = this;
-		return await CustomRoll.sendChatMessage(item.actor, this.models, { 
+		const actor = this?.actor ?? item;
+		return await CustomRoll.sendChatMessage(actor, this.models, { 
 			item,
 			isCrit,
 			properties,
@@ -859,6 +895,7 @@ export class CustomItemRoll {
 	 */
 	updateForPreset() {
 		let item = this.item,
+			actor = this.actor,
 			itemData = item.data.data,
 			flags = item.data.flags,
 			brFlags = flags.betterRolls5e,
@@ -868,7 +905,8 @@ export class CustomItemRoll {
 			useTemplate = false,
 			fields = [],
 			val = (preset === 1) ? "altValue" : "value";
-			
+		
+		fields.push(["header", { item, actor }]);
 		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls
@@ -922,16 +960,8 @@ export class CustomItemRoll {
 		this.fields = fields.concat((this.fields || []).slice());
 	}
 
-	_rollHeader() {
-		const slotLevel = this.params.slotLevel;
-		let printedSlotLevel = null;
-		if (this.item && this.item.data.type === "spell" && slotLevel != this.item.data.data.level) {
-			printedSlotLevel = dnd5e.spellLevels[slotLevel];
-		}
-
-		return CustomRoll.constructHeaderData(this.item, this.item.name, { 
-			slotLevel: printedSlotLevel
-		});
+	_handleHeaderField(field) {
+		this.models.push(CustomRoll.constructHeaderData(field));
 	}
 
 	/**
@@ -977,7 +1007,6 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	_handleDamageField(data) {
-		// {damageIndex: 0, forceVersatile: false, forceCrit: false}
 		const damage = CustomRoll.constructItemDamageRange(data);
 		this.models.push(...damage);
 	}
@@ -993,7 +1022,7 @@ export class CustomItemRoll {
 		this._handleDamageField({
 			item: data.ammo,
 			index: "all",
-			crit: data.crit,
+			isCrit: data.crit,
 			context: `[${data.ammo.name}]`
 		});
 	}
@@ -1095,6 +1124,8 @@ export class CustomItemRoll {
 	
 	// Places a template if the item has an area of effect
 	placeTemplate() {
+		if (!this.item) return;
+
 		let item = this.item;
 		if (item.hasAreaTarget) {
 			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
@@ -1108,6 +1139,8 @@ export class CustomItemRoll {
 	
 	// Consumes charges & resources assigned on an item.
 	async consumeCharge() {
+		if (!this.item) return;
+
 		let item = this.item,
 			itemData = item.data.data;
 		

@@ -196,6 +196,8 @@ export class ActorUtils {
 	 * @param {Actor} actor
 	 */
 	static getImage(actor) {
+		if (!actor) return "icons/svg/mystery-man.svg";
+
 		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
 		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
 
@@ -388,7 +390,7 @@ export class ItemUtils {
 	 * @param {boolean} commit whether to update at the end or not
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
-		if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
+		if (!item?.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 		
 		// Initialize flags
 		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
@@ -682,6 +684,8 @@ export class ItemUtils {
 	 * A function for returning the properties of an item, which can then be printed as the footer of a chat card.
 	 */
 	static getPropertyList(item) {
+		if (!item) return [];
+
 		const data = item.data.data;
 		let properties = [];
 		

@@ -159,8 +159,12 @@ const createButton = ({ content, action, value = null }) => (
 )
 
 async function addButtonsToItemLi(li, actor, buttonContainer) {
-	
-	let item = actor.getOwnedItem(String(li.attr("data-item-id")));
+	const itemId = String(li.attr("data-item-id") ?? "");
+	if (!itemId) {
+		return;
+	}
+
+	let item = actor.getOwnedItem(itemId);
 	let itemData = item.data.data;
 	let flags = item.data.flags.betterRolls5e;
 
