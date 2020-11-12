@@ -92,7 +92,7 @@ export class CustomRoll {
 	 * Returns header data to be used for rendering
 	 * @param {object} options
 	 * @param {string?} options.img image to show, falls back to item image
-	 * @param {string} options.label label, falls back to item name
+	 * @param {string} options.title label, falls back to item name
 	 * @param {Item?} options.item
 	 * @param {Actor?} options.actor
 	 * @param {number?} options.slotLevel
@@ -102,14 +102,14 @@ export class CustomRoll {
 		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
 		const img = options.img ?? item?.img ?? ActorUtils.getImage(actor);
-		const label = options.label ?? item?.name ?? actor?.name;
+		const title = options.title ?? item?.name ?? actor?.name;
 
 		let printedSlotLevel = options.slotLevel;
-		if (item && item.data.type === "spell" && slotLevel != this.item.data.data.level) {
+		if (item && item.data.type === "spell" && slotLevel != item.data.data.level) {
 			printedSlotLevel = dnd5e.spellLevels[slotLevel];
 		}
 
-		return { type: "header", img, label, slotLevel: printedSlotLevel };
+		return { type: "header", img, title, slotLevel: printedSlotLevel };
 	}
 	
 	/**
@@ -210,7 +210,7 @@ export class CustomRoll {
 		// Note that "null" is a valid title, so we can't override that
 		let title = options.title;
 		if (typeof title === 'undefined') {
-			let title = i18n("br5e.chat.attack");
+			title = i18n("br5e.chat.attack");
 			if (ammoBonus) {
 				title += ` [${ammo.name}]`;
 			}
@@ -548,16 +548,16 @@ export class CustomRoll {
 	/**
 	 * Internal method to perform a basic actor full roll of "something".
 	 * It creates and display a chat message on completion.
-	 * @param {*} actor 
-	 * @param {string} label 
-	 * @param {string} formula 
+	 * @param {Actor} actor The actor being rolled for 
+	 * @param {string} title The title to show on the header card
+	 * @param {string} formula The formula to multiroll
 	 * @param {string} rollType 
 	 * @param {FullRollActorParams} params 
 	 */
-	static async fullRollActor(actor, label, formula, rollType, params) {		
+	static async fullRollActor(actor, title, formula, rollType, params) {		
 		// Entries to show for the render
 		return CustomRoll.sendChatMessage(actor, [
-			CustomRoll.constructHeaderData(actor, label),
+			CustomRoll.constructHeaderData({ actor, title }),
 			CustomRoll.constructMultiRoll({
 				formula,
 				rollState: CustomRoll.getRollState(params), 
@@ -749,7 +749,7 @@ export class CustomItemRoll {
 		}
 
 		// Convert all requested fields into templates to be entered into the chat message.
-		this.models = await this._processFields();
+		this.models = this._processFields();
 		
 		// Load Item Footer Properties if params.properties is true
 		this.properties = (params.properties) ? ItemUtils.getPropertyList(item) : [];
@@ -784,10 +784,22 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * Function that immediately processes and renders a given field
-	 * @param {[string, Object]} field 
+	 * Adds to the list of fields, and if already rolled, processes it immediately
+	 * @param {[string, Object]} field
 	 */
-	async addField(field) {
+	addField(field) {
+		this.fields.push(field);
+		if (this.rolled) {
+			return this._processField(field);
+		}
+	}
+
+	/**
+	 * Function that immediately processes and renders a given field
+	 * @param {[string, Object]} field
+	 * @private
+	 */
+	_processField(field) {
 		let [fieldType, data] = field;
 		data = mergeObject({
 			item: this.item,
@@ -796,7 +808,7 @@ export class CustomItemRoll {
 			ammo: this.ammo,
 			slotLevel: this.params.slotLevel,
 			isCrit: this.isCrit
-		}, data ?? {});
+		}, data ?? {}, { recursive: false});
 
 		const item = data?.item;
 
@@ -855,14 +867,14 @@ export class CustomItemRoll {
 	/**
 	 * Processes all fields, building a collection of models and returning them
 	 */
-	async _processFields() {
-		for (let i=0;i<this.fields.length;i++) {
-			await this.addField(this.fields[i]);
+	_processFields() {
+		for (const field of this.fields) {
+			this._processField(field);
 		}
 
 		const hasDamage = this.models.some(m => m.type === "damage");
 		if (this.isCrit && hasDamage && this.item?.data.flags.betterRolls5e?.critDamage?.value) {
-			await this.addField(["crit"]);
+			this._processField(["crit"]);
 		}
 
 		return this.models;
@@ -895,7 +907,6 @@ export class CustomItemRoll {
 	 */
 	updateForPreset() {
 		let item = this.item,
-			actor = this.actor,
 			itemData = item.data.data,
 			flags = item.data.flags,
 			brFlags = flags.betterRolls5e,
@@ -906,7 +917,7 @@ export class CustomItemRoll {
 			fields = [],
 			val = (preset === 1) ? "altValue" : "value";
 		
-		fields.push(["header", { item, actor }]);
+		fields.push(["header"]);
 		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls

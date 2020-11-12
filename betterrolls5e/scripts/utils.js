@@ -196,7 +196,7 @@ export class ActorUtils {
 	 * @param {Actor} actor
 	 */
 	static getImage(actor) {
-		if (!actor) return "icons/svg/mystery-man.svg";
+		if (!actor) return null;
 
 		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
 		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;

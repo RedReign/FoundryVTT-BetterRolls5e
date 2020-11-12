@@ -7,8 +7,8 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @typedef HeaderDataProps
  * @type {object}
  * @property {"header"} type
- * @property {string} img image path
- * @property {string} label visible label
+ * @property {string} img image path to show in the box
+ * @property {string} title header title text
  * @property {number?} slotLevel Optional displayed slot level 
  */
 
@@ -118,19 +118,19 @@ export class Renderer {
 	}
 
 	/**
-	 * 
+	 * Renders the header template
 	 * @param {HeaderDataProps} properties 
 	 */
 	static renderHeader(properties) {
-		const { img, label, slotLevel } = properties;
+		const { img, title, slotLevel } = properties;
 		return renderModuleTemplate("red-header.html", {
-			item: { img, name: label },
+			item: { img: img ?? "icons/svg/mystery-man.svg", name: title },
 			slotLevel
 		});
 	}
 
 	/**
-	 * 
+	 * Renders the description template
 	 * @param {DescriptionDataProps} properties 
 	 */
 	static renderDescription(properties) {
