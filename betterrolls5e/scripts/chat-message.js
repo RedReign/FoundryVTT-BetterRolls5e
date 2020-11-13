@@ -251,20 +251,21 @@ export class BetterRollsChatCard {
 			});
 
 			// Add crit die roll
-			$(row).find(".red-base-damage").after(template);
+			row.find(".red-base-damage").after(template);
 
 			// Check if the tooltip is showing on the row
 			// We will need to show the new one if it is
-			const showing = $(row).find(".dice-tooltip").is(":visible");
+			const showing = $(row).find(".dice-tooltip").css('display') !== 'none';
 
 			const tooltip = await critRoll.getTooltip();
-			$(row).find('.dice-row.tooltips').append(
+			row.find('.dice-row.tooltips').append(
 				$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
 			);
 
 			// Show all newly rendered tooltips if showing
+			// Since this is on the rendered html, we can't use show()
 			if (showing) {
-				$(row).find(".dice-tooltip").show();
+				row.find(".dice-tooltip").css('display', 'block');
 			}
 
 			this.dicePool.push(critRoll);
