@@ -105,7 +105,14 @@ export class BetterRollsChatCard {
 	 * Returns the item instance associated with this card.
 	 */
 	get item() {
-		return this.actor?.getOwnedItem(this.itemId);
+		const item = this.itemId ? this.actor?.getOwnedItem(this.itemId) : null;
+		if (this.itemId && !item) {
+			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			ui.notifications.warn(message);
+			throw new Error(message);
+		}
+
+		return item;
 	}
 
 	/**
@@ -141,14 +148,7 @@ export class BetterRollsChatCard {
 			return false;
 		}
 
-		// Get the item, and check if it exists
 		const item = this.item;
-		if (!item) {
-			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			await ui.notifications.warn(message);
-			return false;
-		}
-
 		const html = this.renderHtml;
 
 		// Add crit to UI 
@@ -158,10 +158,10 @@ export class BetterRollsChatCard {
 		}
 
 		// Add crit extra if applicable
-		const flags = this.item.data.flags.betterRolls5e;
+		const flags = item?.data.flags.betterRolls5e;
 		const critExtraIndex = parseInt(flags?.critDamage?.value, 10);
 		if (critExtraIndex >= 0) {
-			const entry = CustomRoll.constructItemDamageRoll(item, critExtraIndex);
+			const entry = CustomRoll.constructDamageRoll({ item, damageIndex: critExtraIndex });
 			const template = await Renderer.renderModel(entry);
 			html.find("div.dice-roll").last().after($(template));
 			
@@ -180,12 +180,6 @@ export class BetterRollsChatCard {
 
 		// Get the item, and check if it exists
 		const item = this.item;
-		if (!item) {
-			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			await ui.notifications.warn(message);
-			return false;
-		}
-
 		const html = this.renderHtml;
 		group = encodeURIComponent(group);
 
@@ -257,20 +251,21 @@ export class BetterRollsChatCard {
 			});
 
 			// Add crit die roll
-			$(row).find(".red-base-damage").after(template);
+			row.find(".red-base-damage").after(template);
 
 			// Check if the tooltip is showing on the row
 			// We will need to show the new one if it is
-			const showing = $(row).find(".dice-tooltip").is(":visible");
+			const showing = $(row).find(".dice-tooltip").css('display') !== 'none';
 
 			const tooltip = await critRoll.getTooltip();
-			$(row).find('.dice-row.tooltips').append(
+			row.find('.dice-row.tooltips').append(
 				$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
 			);
 
 			// Show all newly rendered tooltips if showing
+			// Since this is on the rendered html, we can't use show()
 			if (showing) {
-				$(row).find(".dice-tooltip").show();
+				row.find(".dice-tooltip").css('display', 'block');
 			}
 
 			this.dicePool.push(critRoll);

@@ -7,8 +7,8 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @typedef HeaderDataProps
  * @type {object}
  * @property {"header"} type
- * @property {string} img image path
- * @property {string} label visible label
+ * @property {string} img image path to show in the box
+ * @property {string} title header title text
  * @property {number?} slotLevel Optional displayed slot level 
  */
 
@@ -92,7 +92,7 @@ export class Renderer {
 	 * @param {RenderModel} model 
 	 */
 	static async renderModel(model) {
-		if (typeof model === "string") {
+		if (typeof model === "string" || !model) {
 			return model;
 		}
 
@@ -118,19 +118,19 @@ export class Renderer {
 	}
 
 	/**
-	 * 
+	 * Renders the header template
 	 * @param {HeaderDataProps} properties 
 	 */
 	static renderHeader(properties) {
-		const { img, label, slotLevel } = properties;
+		const { img, title, slotLevel } = properties;
 		return renderModuleTemplate("red-header.html", {
-			item: { img, name: label },
+			item: { img: img ?? "icons/svg/mystery-man.svg", name: title },
 			slotLevel
 		});
 	}
 
 	/**
-	 * 
+	 * Renders the description template
 	 * @param {DescriptionDataProps} properties 
 	 */
 	static renderDescription(properties) {
@@ -142,9 +142,12 @@ export class Renderer {
 	 * @param {MultiRollDataProps} properties 
 	 */
 	static async renderMultiRoll(properties) {
+		const title = BRSettings.rollTitlePlacement !== "0" ? properties.title : null;
 		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
+		
 		return renderModuleTemplate("red-multiroll.html", {
 			...properties,
+			title,
 			entries: properties.entries.map(e => ({
 				...e,
 				d20Result: e.roll?.terms.find(t => t.faces === 20)?.total

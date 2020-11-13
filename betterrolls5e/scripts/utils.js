@@ -178,10 +178,12 @@ export class ActorUtils {
 	}
 
 	/**
-	 * Returns the crit threshold of an actor
+	 * Returns the crit threshold of an actor. Returns null if no actor is given.
 	 * @param {*} actor 
 	 */
 	static getCritThreshold(actor) {
+		if (!actor) null;
+
 		try { 
 			return Number(getProperty(actor, "data.flags.dnd5e.weaponCriticalThreshold")) || 20;
 		} catch(error) { 
@@ -194,6 +196,8 @@ export class ActorUtils {
 	 * @param {Actor} actor
 	 */
 	static getImage(actor) {
+		if (!actor) return null;
+
 		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
 		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
 
@@ -291,9 +295,9 @@ export class ActorUtils {
 export class ItemUtils {
 	static getActivationData(item) {
 		const { activation } = item.data.data;
-		const activationCost = activation.cost ? activation.cost : ""
+		const activationCost = activation?.cost ?? "";
 
-		if (activation?.type !== "" && activation?.type !== "none") {
+		if (activation?.type && activation?.type !== "none") {
 			return `${activationCost} ${dnd5e.abilityActivationTypes[activation.type]}`.trim();
 		}
 
@@ -302,7 +306,7 @@ export class ItemUtils {
 
 	/**
 	 * Creates the lower of the item crit threshold, the actor crit threshold, or 20.
-	 * Returns null if null is given.I mea
+	 * Returns null if null is given.
 	 * @param {*} item 
 	 */
 	static getCritThreshold(item) {
@@ -311,7 +315,7 @@ export class ItemUtils {
 		const itemData = item.data.data;
 		const itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
 		if (['mwak', 'rwak'].includes(itemData.actionType)) {
-			let characterCrit = ActorUtils.getCritThreshold(this.actor);
+			let characterCrit = ActorUtils.getCritThreshold(item?.actor);
 			return Math.min(20, characterCrit, itemCrit);
 		} else {
 			return Math.min(20, itemCrit);
@@ -386,7 +390,7 @@ export class ItemUtils {
 	 * @param {boolean} commit whether to update at the end or not
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
-		if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
+		if (!item?.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 		
 		// Initialize flags
 		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
@@ -429,7 +433,14 @@ export class ItemUtils {
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 	}
 
+	/**
+	 * Returns the ability mod the item uses for the attack.
+	 * If no item is given, returns null
+	 * @param {*} itm 
+	 */
 	static getAbilityMod(itm) {
+		if (!itm) return null;
+
 		const itemData = itm.data.data;
 		const actorData = itm.actor.data.data;
 	
@@ -545,6 +556,12 @@ export class ItemUtils {
 		return new Roll([d20String, ...parts].join("+"), rollData);
 	}
 
+	/**
+	 * Gets the tool roll for a specific item.
+	 * This is a general item mod + proficiency d20 check.
+	 * @param {Item} itm 
+	 * @param {number?} bonus 
+	 */
 	static getToolRoll(itm, bonus=null) {
 		const itemData = itm.data.data;
 		const actorData = itm.actor.data.data;
@@ -566,14 +583,12 @@ export class ItemUtils {
 		if (itemData.proficient) {
 			parts.push("@prof");
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
 		}
 		
 		// Add item's bonus
 		if (itemData.bonus) {
 			parts.push("@bonus");
 			rollData.bonus = itemData.bonus.value;
-			//console.log("Adding Bonus mod!");
 		}
 		
 		if (bonus) {
@@ -581,7 +596,7 @@ export class ItemUtils {
 		}
 		
 		// Halfling Luck check and final result
-		const d20String = ActorUtils.isHalfling(itm, actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
 		return new Roll([d20String, ...parts].join("+"), rollData);
 	}
 
@@ -669,6 +684,8 @@ export class ItemUtils {
 	 * A function for returning the properties of an item, which can then be printed as the footer of a chat card.
 	 */
 	static getPropertyList(item) {
+		if (!item) return [];
+
 		const data = item.data.data;
 		let properties = [];
 		
@@ -757,7 +774,7 @@ export class ItemUtils {
 	 * @param {Item} item
 	 */
 	static getSave(item) {
-		if (!isSave(item)) {
+		if (!item || !isSave(item)) {
 			return null;
 		}
 
