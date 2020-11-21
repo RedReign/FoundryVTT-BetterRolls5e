@@ -51,20 +51,12 @@ export class Utils {
 
 export class ActorUtils {
 	/**
-	 * Determine total character level
-	 * @param {Actor} actor 
+	 * Retrieve total character level
+	 * @param {Actor} actor
+	 * @returns {number}
 	 */
 	static getCharacterLevel(actor) {
-		const level = actor.data.items.reduce((runningTotal, item) => {
-			if ( item.type === "class" ) {
-				const classLevels = parseInt(item.data.levels) || 1;
-				runningTotal += classLevels;
-			}
-
-			return runningTotal;
-		}, 0);
-
-		return level;
+		return actor?.data.data.details.level;
 	}
 
 	/**
