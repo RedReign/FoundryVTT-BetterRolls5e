@@ -34,6 +34,18 @@ class Settings {
 		});
 
 		/**
+		 * Used to enable showing the natural die roll for a d20 roll.
+		 */
+		game.settings.register("betterrolls5e", "d20RollIconsEnabled", {
+			name: i18n("br5e.d20RollIconsEnabled.name"),
+			hint: i18n("br5e.d20RollIconsEnabled.hint"),
+			scope: "world",
+			config: true,
+			default: true,
+			type: Boolean
+		});
+
+		/**
 		* Query roll type in Roll20 style
 		*/
 		game.settings.register("betterrolls5e", "queryAdvantageEnabled", {
@@ -282,6 +294,13 @@ class Settings {
 	 */
 	get damagePromptEnabled() {
 		return getBRSetting("damagePromptEnabled");
+	}
+
+	/**
+	 * Whether the die icon should be shown for d20 multi rolls
+	 */
+	get d20RollIconsEnabled() {
+		return getBRSetting("d20RollIconsEnabled");
 	}
 
 	/**

@@ -145,14 +145,17 @@ export class Renderer {
 		const title = BRSettings.rollTitlePlacement !== "0" ? properties.title : null;
 		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
 		
-		return renderModuleTemplate("red-multiroll.html", {
-			...properties,
-			title,
-			entries: properties.entries.map(e => ({
+		// Show D20 die icons if enabled
+		let entries = properties.entries;
+		if (BRSettings.d20RollIconsEnabled) {
+			entries = entries.map(e => ({
 				...e,
 				d20Result: e.roll?.terms.find(t => t.faces === 20)?.total
-			})),
-			tooltips
+			}));
+		}
+
+		return renderModuleTemplate("red-multiroll.html", {
+			...properties, title, entries, tooltips
 		});
 	}
 
