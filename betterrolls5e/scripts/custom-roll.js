@@ -102,14 +102,12 @@ export class CustomRoll {
 		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
 		const img = options.img ?? item?.img ?? ActorUtils.getImage(actor);
-		const title = options.title ?? item?.name ?? actor?.name;
-
-		let printedSlotLevel = options.slotLevel;
+		let title = options.title ?? item?.name ?? actor?.name ?? '';
 		if (item && item.data.type === "spell" && slotLevel != item.data.data.level) {
-			printedSlotLevel = dnd5e.spellLevels[slotLevel];
+			title += ` (${dnd5e.spellLevels[slotLevel]})`;
 		}
 
-		return { type: "header", img, title, slotLevel: printedSlotLevel };
+		return { type: "header", img, title };
 	}
 	
 	/**

@@ -9,7 +9,6 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @property {"header"} type
  * @property {string} img image path to show in the box
  * @property {string} title header title text
- * @property {number?} slotLevel Optional displayed slot level 
  */
 
 /**
