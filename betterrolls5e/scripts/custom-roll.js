@@ -103,7 +103,7 @@ export class CustomRoll {
 		const actor = options?.actor ?? item?.actor;
 		const img = options.img ?? item?.img ?? ActorUtils.getImage(actor);
 		let title = options.title ?? item?.name ?? actor?.name ?? '';
-		if (item && item.data.type === "spell" && slotLevel != item.data.data.level) {
+		if (item?.data.type === "spell" && slotLevel && slotLevel != item.data.data.level) {
 			title += ` (${dnd5e.spellLevels[slotLevel]})`;
 		}
 
