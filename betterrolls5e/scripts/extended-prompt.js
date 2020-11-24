@@ -5,14 +5,14 @@ import { i18n } from "./betterrolls5e.js";
  * @type {Dialog}
  */
 export default class ExtendedPrompt extends Dialog {
-  constructor(item, dialogData={}, options={}) {
-    super(dialogData, options);
-    this.options.classes = ["dnd5e", "dialog"];
+	constructor(item, dialogData={}, options={}) {
+		super(dialogData, options);
+		this.options.classes = ["dnd5e", "dialog"];
 
-    /**
-     * Store a reference to the Item entity being used
-     * @type {Item5e}
-     */
-    this.item = item;
-  }
+		/**
+		 * Store a reference to the Item entity being used
+		 * @type {Item5e}
+		 */
+		this.item = item;
+	}
 }
