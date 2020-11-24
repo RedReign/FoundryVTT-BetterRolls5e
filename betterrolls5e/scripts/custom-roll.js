@@ -102,14 +102,12 @@ export class CustomRoll {
 		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
 		const img = options.img ?? item?.img ?? ActorUtils.getImage(actor);
-		const title = options.title ?? item?.name ?? actor?.name;
-
-		let printedSlotLevel = options.slotLevel;
-		if (item && item.data.type === "spell" && slotLevel != item.data.data.level) {
-			printedSlotLevel = dnd5e.spellLevels[slotLevel];
+		let title = options.title ?? item?.name ?? actor?.name ?? '';
+		if (item?.data.type === "spell" && slotLevel && slotLevel != item.data.data.level) {
+			title += ` (${dnd5e.spellLevels[slotLevel]})`;
 		}
 
-		return { type: "header", img, title, slotLevel: printedSlotLevel };
+		return { type: "header", img, title };
 	}
 	
 	/**
@@ -1155,7 +1153,7 @@ export class CustomItemRoll {
 		let item = this.item,
 			itemData = item.data.data;
 		
-		const hasUses = !!(itemData.uses?.value || itemData.uses?.max || itemData.uses?.per); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
