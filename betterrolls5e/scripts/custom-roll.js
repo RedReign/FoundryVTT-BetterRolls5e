@@ -1502,7 +1502,7 @@ export class CustomItemRoll {
 		
 		// Halfling Luck check
 		let d20String = "1d20";
-		if (Utils.isHalfling(itm,actor)) {
+		if (Utils.isHalfling(itm.actor)) {
 			d20String = "1d20r<2";
 		}
 		
