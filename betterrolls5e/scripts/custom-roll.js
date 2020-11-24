@@ -701,8 +701,6 @@ export class CustomItemRoll {
 			useCharge,
 			useTemplate,
 		});
-
-		console.log(this.params);
 		
 		this.fields = fields.concat((this.fields || []).slice());
 	}
@@ -1395,7 +1393,6 @@ export class CustomItemRoll {
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {
-				console.log("level > 0")
 				window.PH = {};
 				window.PH.actor = actor;
 				window.PH.item = item;
