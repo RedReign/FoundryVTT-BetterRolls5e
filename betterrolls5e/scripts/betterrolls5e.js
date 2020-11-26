@@ -199,7 +199,7 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
  */
 const createButton = ({ content, action, value = null }) => (
 	`<span class="tag">
-		<button data-action=${action} ${value ? `data-value="${value}"` : ""}>
+		<button data-action=${action} ${value == null ? "" : `data-value="${value}"`}>
 			${content}
 		</button>
 	</span>`
