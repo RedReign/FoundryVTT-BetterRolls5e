@@ -206,10 +206,14 @@ const createButton = ({ content, action, value = null }) => (
 )
 
 async function addButtonsToItemLi(li, actor, buttonContainer) {
-	
-	let item = actor.getOwnedItem(String(li.attr("data-item-id")));
-	let itemData = item.data.data;
-	let flags = item.data.flags.betterRolls5e;
+	const itemId = String(li.attr("data-item-id") ?? "");
+	if (!itemId) {
+		return;
+	}
+
+	const item = actor.getOwnedItem(itemId);
+	const itemData = item.data.data;
+	const flags = item.data.flags.betterRolls5e;
 
 	// Check settings
 	let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled");
