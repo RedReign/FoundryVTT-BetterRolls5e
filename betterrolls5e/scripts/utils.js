@@ -268,7 +268,7 @@ export class DiceCollection {
 	 * @param  {...Roll} rolls 
 	 */
 	push(...rolls) {
-		for (const roll of rolls) {
+		for (const roll of rolls.filter(r => r)) {
 			this.pool._dice.push(...roll.dice);
 		}
 	}
