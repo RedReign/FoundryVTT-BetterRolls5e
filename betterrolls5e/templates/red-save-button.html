@@ -1,3 +1,7 @@
-<div class="card-buttons red-card-buttons"><button data-action="save" data-ability="{{data.ability}}" disabled>
-    {{{saveLabel}}}
-</button></div>
+<div class="card-buttons red-card-buttons">
+    <button data-action="save" data-ability="{{ability}}" disabled>
+        {{ localize "br5e.buttons.saveDC" }}
+        <span {{#if hideDC}}class="hideSave"{{/if}} style="display:inline;line-height:inherit;">{{dc}}</span>
+        {{ abilityLabel }}
+    </button>
+</div>

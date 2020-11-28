@@ -1,6 +1,5 @@
-import { addItemSheetButtons, changeRollsToDual, i18n } from "./betterrolls5e.js";
+import { addItemSheetButtons, changeRollsToDual } from "./betterrolls5e.js";
 import { addBetterRollsContent } from "./item-tab.js";
-
 
 export class BetterRollsHooks {
 	
@@ -64,16 +63,6 @@ export class BetterRollsHooks {
 
 BetterRollsHooks.registerActorSheet("ActorSheet5e");
 BetterRollsHooks.registerItemSheet("ItemSheet5e");
-
-
-Hooks.on("renderChatMessage", (message, html, data) => {
-	if (!html.find(".red-full").length) { return; }
-
-	let actor = game.actors.get(message.data.speaker.actor);
-	if ((!actor && !game.user.isGM) || actor?.permission != 3) {
-		html.find(".hideSave").text(i18n("br5e.hideDC.string"));
-	}
-});
 
 /*
 Hooks.on("renderedMagicItems", (actor, html, data) => {
