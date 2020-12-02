@@ -1242,12 +1242,9 @@ export class CustomItemRoll {
 	/*
 	Rolls the Other Formula field. Is subject to crits.
 	*/
-	async rollOther(preArgs) {
-		let args = mergeObject({}, preArgs || {});
+	async rollOther() {
 		let item = this.item;
-		let isCrit = this.isCrit;
-		let itemData = item.data.data,
-			formula = item.data.data.formula,
+		let formula = item.data.data.formula,
 			rollData = duplicate(item.actor.data.data),
 			flags = item.data.flags.betterRolls5e;
 		
@@ -1282,16 +1279,8 @@ export class CustomItemRoll {
 		}
 		
 		const baseRoll = await new Roll(formula, rollData).roll();
-		let critRoll = null;
-		const critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-			
-		if (isCrit && critBehavior !== "0") {
-			critRoll = await this.critRoll(formula, rollData, baseRoll);
-		}
-
-		this.dicePool.push(baseRoll, critRoll);
-
-		return this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels});
+		this.dicePool.push(baseRoll);
+		return this.damageTemplate({baseRoll, labels});
 	}
 	
 	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
