@@ -201,7 +201,7 @@ export class BetterRollsChatCard {
 		// Do nothing if crit is already rolled or if we don't have permission
 		const settings = this.settings;
 		const critBehavior = settings.critBehavior;
-		if (this._critAlreadyRolled || critBehavior === "0" || !this.hasPermission) {
+		if (critBehavior === "0" || !this.hasPermission) {
 			return false;
 		}
 
@@ -209,7 +209,7 @@ export class BetterRollsChatCard {
 		let updated = false;
 
 		for (const damage of this.models) {
-			if (damage.type === "damage" && !damage.critRoll && damage.damageIndex !== "other") {
+			if (damage.type === "damage" && damage.critRoll == null && damage.damageIndex !== "other") {
 				if (group && damage.group !== group) {
 					continue;
 				}
@@ -273,13 +273,6 @@ export class BetterRollsChatCard {
 	}
 
 	/**
-	 * Returns true if crit damage has already been rolled.
-	 */
-	get _critAlreadyRolled() {
-		return this.html.attr("data-critical") === "true";
-	}
-
-	/**
 	 * Internal method to setup the temporary buttons that that affect damage
 	 * entries, like crit rolls and damage application.
 	 */
@@ -300,7 +293,7 @@ export class BetterRollsChatCard {
 			// Remove crit button if already rolled
 			const id = element.parents('.dice-roll').attr('data-id');
 			const model = this.models.find(m => m.id === id);
-			if (model.critRoll || model.damageIndex === "other") {
+			if (model.critRoll != null || model.damageIndex === "other") {
 				element.find('.crit-button').remove();
 			}
 		});
@@ -356,7 +349,7 @@ export class BetterRollsChatCard {
 		// logic to only show the buttons when the mouse is within the chatcard
 		html.find('.dmgBtn-container-br').hide();
 		html.hover(evIn => {
-			if (!this._critAlreadyRolled && this.hasPermission) {
+			if (this.hasPermission) {
 				html.find('.dmgBtn-container-br.left').show();
 			}
 			if (canvas?.tokens.controlled.length > 0) {

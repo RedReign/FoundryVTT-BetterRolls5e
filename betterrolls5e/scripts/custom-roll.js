@@ -1033,9 +1033,9 @@ export class CustomItemRoll {
 		if (!data.ammo) return;
 
 		this._handleDamageField({
+			...data,
 			item: data.ammo,
 			index: "all",
-			isCrit: data.crit,
 			context: `[${data.ammo.name}]`
 		});
 	}

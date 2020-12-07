@@ -653,15 +653,15 @@ export class ItemUtils {
 	 * Derives the formula for what should be rolled when a crit occurs.
 	 * Note: Item is not necessary to calculate it.
 	 * @param {string} rollFormula
-	 * @returns {string?} the crit formula
+	 * @returns {Roll | boolean} the crit result, or false if there is no dice
 	 */
 	static getCritRoll(baseFormula, baseTotal, {settings=null, savage=false}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRoll = new Roll(critFormula);
 		
-		// If the crit formula has no dice, return null
+		// If the crit formula has no dice, return false
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
-			return null;
+			return false;
 		}
 		
 		const add = savage ? 1 : 0;
