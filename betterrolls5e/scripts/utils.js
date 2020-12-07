@@ -1,6 +1,6 @@
 import { i18n, isAttack, isSave } from "./betterrolls5e.js";
 import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
-import { BRSettings } from "./settings.js";
+import { getSettings } from "./settings.js";
 
 /**
  * Check if maestro is turned on.
@@ -105,6 +105,48 @@ export class Utils {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Returns an item and its actor if given an item, or just the actor otherwise.
+	 * @param {Item | Actor} actorOrItem
+	 */
+	static resolveActorOrItem(actorOrItem) {
+		if (!actorOrItem) {
+			return {};
+		}
+
+		if (actorOrItem instanceof Item) {
+			return { item: actorOrItem, actor: actorOrItem?.actor };
+		} else {
+			return { actor: actorOrItem };
+		}
+	}
+
+	/**
+	 * Returns roll data for an arbitrary item or actor.
+	 * Returns the item's roll data first, and then falls back to actor
+	 * @returns {object}
+	 */
+	static getRollData({item = null, actor = null, abilityMod, slotLevel=undefined}) {
+		return item ?
+			ItemUtils.getRollData(item, { abilityMod, slotLevel }) :
+			actor?.getRollData() ?? {};
+	}
+
+	/**
+	 * Returns all selected actors
+	 */
+	static getTargetActors() {
+		const character = game.user.character;
+		const controlled = canvas.tokens.controlled;
+	
+		if ( controlled.length === 0 ) return [character] || null;
+		if ( controlled.length > 0 ) {
+			const actors = controlled.map(character => character.actor);
+			return actors;
+		}
+		else throw new Error(`You must designate a specific Token as the roll target`);
 	}
 }
 
@@ -613,7 +655,7 @@ export class ItemUtils {
 	 * @param {string} rollFormula
 	 * @returns {string?} the crit formula
 	 */
-	static getCritRoll(baseFormula, baseTotal, {critBehavior=null, savage=false}={}) {
+	static getCritRoll(baseFormula, baseTotal, {settings=null, savage=false}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRoll = new Roll(critFormula);
 		
@@ -626,9 +668,7 @@ export class ItemUtils {
 		critRoll.alter(1, add);
 		critRoll.roll();
 
-		if (!critBehavior) {
-			critBehavior = BRSettings.critBehavior;
-		}
+		const { critBehavior } = getSettings(settings);
 
 		// If critBehavior = 2, maximize base dice
 		if (critBehavior === "2") {

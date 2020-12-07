@@ -1,6 +1,9 @@
 import { i18n, isAttack, isSave, isCheck } from "./betterrolls5e.js";
 import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
 import { Renderer } from "./renderer.js";
+import { BRSettings, getSettings } from "./settings.js";
+
+import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
 /**
  * Roll type for advantage/disadvantage/etc
@@ -15,9 +18,6 @@ import { Renderer } from "./renderer.js";
  * @property {number?} disadv 
  * @property {number?} critThreshold
  */
-
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { BRSettings } from "./settings.js";
 
 let dnd5e = DND5E;
 let DEBUG = false;
@@ -67,22 +67,6 @@ function populateDicePool(models, dicePool) {
 }
 
 /**
- * Returns an item and its actor if given an item, or just the actor otherwise.
- * @param {Item | Actor} actorOrItem
- */
-function resolveActorOrItem(actorOrItem) {
-	if (!actorOrItem) {
-		return {};
-	}
-
-	if (actorOrItem instanceof Item) {
-		return { item: actorOrItem, actor: actorOrItem?.actor };
-	} else {
-		return { actor: actorOrItem };
-	}
-}
-
-/**
  * General class for macro support, actor rolls, and most static rolls.
  * It provides utility functions that can be used to create a new roll,
  * as well as the most common Actor roll functions.
@@ -114,12 +98,13 @@ export class CustomRoll {
 	 * Constructs multiroll data to be used for rendering
 	 * @param {Object} options Roll options used to construct the multiroll.
 	 * @param {string?} options.formula formula to use when constructing the multiroll
-	 * @param {number?} options.critThreshold minimum roll on the dice to cause a critical roll.
+	 * @param {number?} options.critThreshold optional minimum roll on the dice to cause a critical roll.
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title title to display above the roll
 	 * @param {RollState?} options.rollState highest or lowest or first or none
 	 * @param {string?} options.rollType metadata param for attack vs damage.
-	 * @param {boolean?} options.elvenAccuracy whether the actor should apply elven accuracy 
+	 * @param {boolean?} options.elvenAccuracy whether the actor should apply elven accuracy
+	 * @param {BRSettings} options.settings additional settings to override
 	 * @returns {import("./renderer.js").MultiRollDataProps}
 	 */
 	static constructMultiRoll(options={}) {
@@ -129,7 +114,7 @@ export class CustomRoll {
 			return;
 		}
 
-		let numRolls = options.numRolls || game.settings.get("betterrolls5e", "d20Mode");
+		let numRolls = options.numRolls || getSettings(options.settings).d20Mode;
 		if (!options.numRolls) {
 			if (rollState === "first" && !options.numRolls) {
 				numRolls = 1;
@@ -180,6 +165,7 @@ export class CustomRoll {
 	 * 
 	 * @param {object} options
 	 * @param {string?} options.formula optional formula to use instead of the attack formula
+	 * @param {Actor?} options.actor Actor to derive roll data from if item is not given
 	 * @param {Item?} options.item Item to derive attack formula or roll data from
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title Alternative title to use
@@ -217,10 +203,8 @@ export class CustomRoll {
 		// Get Formula
 		let roll = null;
 		if (formula) {
-			const rollData = item ?
-				ItemUtils.getRollData(item, { abilityMod, slotLevel }) :
-				actor?.getRollData();
-			roll = new Roll(formula, rollData ?? {});
+			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
+			roll = new Roll(formula, rollData);
 		} else if (item) {
 			roll = ItemUtils.getAttackRoll(item, { abilityMod, ammoBonus, bonus });
 		} else {
@@ -246,7 +230,7 @@ export class CustomRoll {
 	 * @param {string} options.formula optional formula to use, higher priority over the item formula
 	 * @param {Actor} options.actor
 	 * @param {Item} options.item 
-	 * @param {number | "versatile" | "other" } options.damageIndex 
+	 * @param {number | "versatile" | "other"} options.damageIndex 
 	 * @param {number?} options.slotLevel
 	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
 	 * @param {string?} options.damageType
@@ -254,7 +238,7 @@ export class CustomRoll {
 	 * @param {boolean?} options.isCrit Whether to roll crit damage
 	 * @param {boolean?} options.savage If true/false, sets the savage property. Falls back to using the item if not given, or false otherwise.
 	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never
-	 * @param {} options.critBehavior
+	 * @param {BRSettings} options.settings Override config to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps}
 	 */
 	static constructDamageRoll(options={}) {
@@ -263,7 +247,9 @@ export class CustomRoll {
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || damageIndex === "versatile";
 		const savage = options.savage ?? ItemUtils.appliesSavageAttacks(item);
-		const critBehavior = options.critBehavior || BRSettings.critBehavior;
+		
+		const settings = getSettings(options.settings);
+		const { critBehavior } = settings;
 
 		const rollData =  item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
@@ -324,12 +310,13 @@ export class CustomRoll {
 		let critRoll = null;
 		if (damageIndex !== "other") {
 			if (isCrit && critBehavior !== "0") {
-				critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { critBehavior, savage });
+				critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, savage });
 			}
 		}
 
 		return {
 			type: "damage",
+			damageIndex,
 			title: options.title ?? title,
 			damageType,
 			context,
@@ -347,6 +334,7 @@ export class CustomRoll {
 	 * @param {*} options.item 
 	 * @param {number[] | "all" | number} options.index one more or damage indices to roll for.
 	 * @param {boolean?} options.versatile should the first damage entry be replaced with versatile
+	 * @param {BRSettings} options.settings Override settings to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps[]}
 	 */
 	static constructItemDamageRange(options={}) {
@@ -390,14 +378,14 @@ export class CustomRoll {
 	 * Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
 	 * @returns {import("./renderer.js").ButtonSaveProps}
 	 */
-	static constructSaveButton({ item, abl = null, dc = null}) {
+	static constructSaveButton({ item, abl = null, dc = null, settings }) {
 		const actor = item?.actor;
 		const saveData = ItemUtils.getSave(item);
 		if (abl) { saveData.ability = abl; }
 		if (dc) { saveData.dc = dc; }
 
 		// Determine whether the DC should be hidden
-		const hideDCSetting = BRSettings.hideDC;
+		const hideDCSetting = getSettings(settings).hideDC;
 		const hideDC = (hideDCSetting == "2" || (hideDCSetting == "1" && actor.data.type == "npc"));
 		
 		return { type: "button-save", hideDC, ...saveData };
@@ -413,36 +401,36 @@ export class CustomRoll {
 	 * @param {string[]?} param3.properties List of properties to show at the bottom. Uses item properties if null.
 	 * @param {boolean} param3.isCrit If the card should be labeled as a crit in the properties
 	 * @param {object} param3.builder The class used to build the chat message (CustomItemRoll usually)
+	 * @param {BRSettings} param3.settings Override config to use for the chat message.
 	 */
-	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, damagePromptEnabled=null, builder=null }={}) {
+	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, builder=null, settings=null }={}) {
+		const { damagePromptEnabled } = getSettings(settings);
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 		const flags = {};
 
 		// If any models are promises, await on them
 		models = await Promise.all(models);
 
-		// If damage buttons need to show, we need to hide damage entries under certain conditions
-		if (damagePromptEnabled ?? BRSettings.damagePromptEnabled) {
-			let group = -1;
-			flags.damageDicePools = {};
+		let group = -1;
+		flags.damageDicePools = {};
 
-			// Assign groups
-			for (const model of models) {
-				if (!model) continue;
+		// Assign groups, and hide damage entries if damage prompt is enabled
+		for (const model of models) {
+			if (!model) continue;
 
-				if (["multiroll", "button-save"].includes(model.type)) {
-					group++;
-				} else if (model.type === "damage") {
-					// Damage entries are only prompted after attacks/saves
-					if (group < 0) continue;
+			if (["multiroll", "button-save"].includes(model.type)) {
+				group++;
+			} else if (model.type === "damage") {
+				// Damage entries are only prompted after attacks/saves
+				if (group < 0) continue;
 
-					model.hidden = model.hidden ?? true;
-					if (model.hidden) {
-						model.group = `br!${group}`;
-					}
-				}
+				model.group = `br!${group}`;
+				model.hidden = model.hidden ?? damagePromptEnabled;
 			}
+		}
 
+		// If damage buttons need to show, we need to hide damage entries under certain conditions
+		if (damagePromptEnabled) {
 			// Insert damage buttons before all damage entries
 			const oldModels = models;
 			models = [];
@@ -474,9 +462,11 @@ export class CustomRoll {
 		}
 
 		// Render the models
-		const templates = await Promise.all(models.map(Renderer.renderModel));
+		const templates = await Renderer.renderModelList(models, settings);
 		const content = await Renderer.renderCard(templates, { actor, item, properties, isCrit });
-		
+		flags.models = models;
+		flags.properties = properties;
+
 		// Output the rolls to chat
 		const dicePool = new DiceCollection();
 		populateDicePool(models.filter(e => !e?.hidden), dicePool);
@@ -516,7 +506,7 @@ export class CustomRoll {
 			return {adv:1, disadv:0};
 		} else if ((keyboard.isCtrl(ev))) {
 			return {adv:0, disadv:1};
-		} else if (game.settings.get("betterrolls5e", "queryAdvantageEnabled")) {
+		} else if (getSettings().queryAdvantageEnabled) {
 			// Don't show dialog for items that aren't tool or weapon.
 			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
 				return {adv:0, disadv:0};
@@ -663,7 +653,7 @@ let defaultParams = {
 // A custom roll with data corresponding to an item on a character's sheet.
 export class CustomItemRoll {
 	constructor(actorOrItem, params, fields) {
-		const { item, actor } = resolveActorOrItem(actorOrItem);
+		const { item, actor } = Utils.resolveActorOrItem(actorOrItem);
 		this.item = item;
 		this.actor = actor;
 		this.itemFlags = item?.data.flags;
@@ -677,7 +667,7 @@ export class CustomItemRoll {
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
 		this.params.event = this.params.event || event;
-		this.config = BRSettings.serialize();
+		this.settings = BRSettings.serialize();
 
 		// Add adv/disadv flags to the params
 		const modifiers = Utils.getEventRollModifiers(this.params.event);
@@ -686,7 +676,7 @@ export class CustomItemRoll {
 	
 	/**
 	 * Returns configured roll state for this roll, allowing object params
-	 * to override it. Prioritizes rollState override, then adv/disadv override, then the native settings.
+	 * to override it. Prioritizes rollState override, then adv/disadv override, then the native config.
 	 * @param {object} extraParams
 	 * @param {RollState} extraParams.rollState highest priority override
 	 * @param {number} extraParams.adv override to set advantage
@@ -780,6 +770,7 @@ export class CustomItemRoll {
 	}
 
 	/**
+	 * Equivalent to addField()
 	 * @param {*} field
 	 * @deprecated
 	 */
@@ -831,8 +822,8 @@ export class CustomItemRoll {
 				return this._handleAmmoField(data);
 			case 'savedc':
 				// {customAbl: null, customDC: null}
-				this.models.push(CustomRoll.constructSaveButton(data));
-				break;
+				this.models.push(CustomRoll.constructSaveButton({ settings: this.settings, ...data }));
+				return;
 			case 'other':
 				return this._handleDamageField({ ...data, damageIndex: "other" })
 			case 'custom':
@@ -885,7 +876,7 @@ export class CustomItemRoll {
 	}
 	
 	/**
-	 * Creates and sends a chat message to all players (based on whisper settings).
+	 * Creates and sends a chat message to all players (based on whisper config).
 	 * If not already rolled and rendered, roll() is called first.
 	 */
 	async toMessage() {
@@ -896,18 +887,20 @@ export class CustomItemRoll {
 		if (this.error) return;
 
 		// Render and send the chat message
-		const { item, isCrit, properties } = this;
+		const { item, isCrit, properties, settings } = this;
 		const actor = this?.actor ?? item;
 		return await CustomRoll.sendChatMessage(actor, this.models, { 
 			item,
 			isCrit,
 			properties,
-			builder: this
+			builder: this,
+			settings
 		});
 	}
 	
 	/**
 	 * Updates the rollRequests based on the br5e flags.
+	 * This creates the default set of fields to process.
 	 */
 	updateForPreset() {
 		let item = this.item,
@@ -975,6 +968,10 @@ export class CustomItemRoll {
 		this.fields = fields.concat((this.fields || []).slice());
 	}
 
+	/**
+	 * Adds a header model based on the given field data
+	 * @private
+	 */
 	_handleHeaderField(field) {
 		this.models.push(CustomRoll.constructHeaderData(field));
 	}
@@ -1022,7 +1019,8 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	_handleDamageField(data) {
-		const damage = CustomRoll.constructItemDamageRange(data);
+		const settings = this.settings;
+		const damage = CustomRoll.constructItemDamageRange({ settings, ...data });
 		this.models.push(...damage);
 	}
 
@@ -1056,37 +1054,31 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * TODO: Consider removing this? What's it for?
-	 * @param {*} args
+	 * This seems to be a custom multiroll
+	 * @param {object} args
+	 * @param {string} args.title title of the roll
+	 * @param {string} args.formula roll formula
+	 * @param {number} args.rolls number of rolls
+	 * @param {RollState} args.rollState type of roll
 	 * @private 
 	 */
 	_handleCustom(args) {
-		/* args:
-				title			title of the roll
-				formula			the roll formula
-				rolls			number of rolls
-				rollState		"adv" or "disadv" converts to "highest" or "lowest"
-		*/
-		let rollStates = {
-			null: null,
-			"adv": "highest",
-			"disadv": "lowest"
-		};
-		
-		const { rolls, formula, rollState } = args;
-		let rollData = ItemUtils.getRollData(this.item);
+		const { item, actor, title, rolls, formula, rollState } = args;
+		const rollData = Utils.getRollData({ item, actor });
 		const resolvedFormula = new Roll(formula, rollData).formula;
 		this.models.push(CustomRoll.constructMultiRoll({
+			title, rollState,
 			formula: resolvedFormula || "1d20",
 			numRolls: rolls || 1,
-			rollState: rollStates[rollState],
-			rollType: "custom",
+			rollType: "custom"
 		}));
 	}
 	
+	/**
+	 * Determine the spell level and spell slot consumption if this is an item
+	 */
 	async configureSpell() {
-		let item = this.item;
-		let actor = item.actor;
+		let { item, actor } = this;
 		let lvl = null;
 		let consume = false;
 		let placeTemplate = false;
@@ -1140,6 +1132,7 @@ export class CustomItemRoll {
 	 * This was tweaked to support 1.2, but we are waiting and seeing before moving everything over.
 	 * We might no longer need specialized use/consume code.
 	 * That function also handles spell slot updates, so we will need slot consumption from configureSpell()
+	 * @private
 	 */
 	async consumeCharge() {
 		const { item, actor } = this;

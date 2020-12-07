@@ -1,19 +1,65 @@
 import { i18n } from "./betterrolls5e.js";
 import { CustomRoll } from "./custom-roll.js";
 import { Renderer } from "./renderer.js";
-import { BRSettings } from "./settings.js";
+import { BRSettings, getSettings } from "./settings.js";
 import { DiceCollection, ItemUtils, Utils } from "./utils.js";
 
-function getTargetActors() {
-	const character = game.user.character;
-	const controlled = canvas.tokens.controlled;
+/**
+ * Creates objects (proxies) which can be used to deserialize flags efficiently.
+ * Currently this is used so that Roll objects unwrap properly.
+ */
+const FoundryProxy = {
+	// A set of all created proxies. Weaksets do not prevent garbage collection,
+	// allowing us to safely test if something is a proxy by adding it in here
+	proxySet: new WeakSet(),
 
-	if ( controlled.length === 0 ) return [character] || null;
-	if ( controlled.length > 0 ) {
-		const actors = controlled.map(character => character.actor);
-		return actors;
+	/**
+	 * Creates a new proxy that turns serialized objects (like rolls) into objects.
+	 * Use the result as if it was the original object.
+	 * @param {*} data 
+	 */
+	create(data) {
+		const proxy = new Proxy(data, FoundryProxy);
+		FoundryProxy.proxySet.add(proxy);
+		return proxy;
+	},
+
+	/**
+	 * @private 
+	 */
+	get(target, key) {
+		const value = target[key];
+
+		// Prevent creating the same proxy again
+		if (FoundryProxy.proxySet.has(value)) {
+			return value;
+		}
+
+		if (value !== null && typeof value === 'object') {
+			if (value.class === "Roll") {
+				// This is a serialized roll, convert to roll object
+				return Roll.fromData(value);
+			} else if (!{}.hasOwnProperty.call(target, key)) {
+				// this is a getter or setter function, so no proxy-ing
+				return value;
+			} else {
+				// Create a nested proxy, and save the reference
+				const proxy = FoundryProxy.create(value);
+				target[key] = proxy;
+				return proxy;
+			}
+		} else {
+			return value;
+		}
+	},
+
+	/**
+	 * @private 
+	 */
+	set(target, key, value) {
+		target[key] = value;
+		return true;
 	}
-	else throw new Error(`You must designate a specific Token as the roll target`);
 }
 
 /**
@@ -23,16 +69,35 @@ function getTargetActors() {
  */
 export class BetterRollsChatCard {
 	constructor(message, html) {
-		this.id = message.id;
-		this.flags = message.data.flags?.betterrolls5e ?? {};
-		this.speaker = game.actors.get(message.data.speaker.actor);
 		this.dicePool = new DiceCollection();
-		this.bindHtml(html);
+		this.updateBinding(message, html);
 	}
 
-	bindHtml(html) {
+	/**
+	 * @returns {import("./renderer.js").RenderModel[]}
+	 */
+	get models() {
+		return this.flags.models;
+	}
+
+	set models(value) {
+		this.flags.models = value;
+	}
+
+	/**
+	 * Initializes data. Used in the constructor or 
+	 * by BetterRollsChatCard.bind()
+	 * @param {*} message 
+	 * @param {*} html
+	 * @private
+	 */
+	updateBinding(message, html) {
+		this.message = message;
+		this.id = message.id;
+		this.flags = FoundryProxy.create(message.data.flags?.betterrolls5e ?? {});
+		this.speaker = game.actors.get(message.data.speaker.actor);
+		
 		this.html = html;
-		this._renderHtml = null;
 		this.actorId = this.html.attr("data-actor-id");
 		this.itemId = this.html.attr("data-item-id");
 		this.tokenId = this.html.attr("data-token-id");
@@ -62,14 +127,12 @@ export class BetterRollsChatCard {
 		const existing = message.BetterRollsCardBinding;
 		if (existing) {
 			console.log("BetterRolls5e | Retrieved existing card");
-			existing.bindHtml(chatCard);
+			existing.updateBinding(message, chatCard);
 
 			// Scroll to bottom if the last card had updated
 			const last = ChatMessage.collection.entries[ChatMessage.collection.entries.length - 1];
 			if (last?.id === existing.id) {
-				window.setTimeout(() => {
-					ui.chat.scrollBottom();
-				}, 0);
+				window.setTimeout(() => { ui.chat.scrollBottom(); }, 0);
 			}
 
 			return existing;
@@ -78,6 +141,10 @@ export class BetterRollsChatCard {
 			message.BetterRollsCardBinding = newCard;
 			return newCard;
 		}
+	}
+
+	get settings() {
+		return getSettings();
 	}
 
 	/**
@@ -116,19 +183,6 @@ export class BetterRollsChatCard {
 	}
 
 	/**
-	 * Returns a duplicate of the internal html which can be updated with affecting visibility.
-	 * When update is called, it will use this as its value.
-	 */
-	get renderHtml() {
-		if (!this._renderHtml) {
-			this._renderHtml = this.html.clone();
-			this._renderHtml.find('.temporary').remove();
-		}
-
-		return this._renderHtml;
-	}
-
-	/**
 	 * Getter to retrieve if the current user has advanced permissions over the chat card.
 	 */
 	get hasPermission() {
@@ -140,37 +194,35 @@ export class BetterRollsChatCard {
 	 * Rolls crit dice if its not already rolled for the current card.
 	 * This is used when *augmenting* a roll to a crit, and not the initial render.
 	 * The change is not sent to users until update() is called.
+	 * @param {string?} optional group parameter to limit the crit roll
 	 * @returns if the crit roll went through
 	 */
-	async rollCrit() {
+	async rollCrit(group) {
 		// Do nothing if crit is already rolled or if we don't have permission
-		if (this._critAlreadyRolled || !this.hasPermission) {
+		const settings = this.settings;
+		const critBehavior = settings.critBehavior;
+		if (this._critAlreadyRolled || critBehavior === "0" || !this.hasPermission) {
 			return false;
 		}
 
 		const item = this.item;
-		const html = this.renderHtml;
+		let updated = false;
 
-		// Add crit to UI 
-		const damageRows = html.find('.red-base-damage').parents(".dice-roll");
-		for (const row of damageRows) {
-			await this._rollCritForDamageRow(item, row);
+		for (const damage of this.models) {
+			if (damage.type === "damage" && !damage.critRoll && damage.damageIndex !== "other") {
+				if (group && damage.group !== group) {
+					continue;
+				}
+
+				const baseRoll = damage.baseRoll;
+				const savage = ItemUtils.appliesSavageAttacks(item);
+				damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
+				this.dicePool.push(damage.critRoll);
+				updated = true;
+			}
 		}
 
-		// Add crit extra if applicable
-		const flags = item?.data.flags.betterRolls5e;
-		const critExtraIndex = parseInt(flags?.critDamage?.value, 10);
-		if (critExtraIndex >= 0) {
-			const entry = CustomRoll.constructDamageRoll({ item, damageIndex: critExtraIndex });
-			const template = await Renderer.renderModel(entry);
-			html.find("div.dice-roll").last().after($(template));
-			
-			this.dicePool.push(entry.baseRoll);
-		}
-
-		// Mark as critical
-		html.attr("data-critical", "true");
-		return true;
+		return updated;
 	}
 
 	async rollDamage(group) {
@@ -178,31 +230,25 @@ export class BetterRollsChatCard {
 			return;
 		}
 
-		// Get the item, and check if it exists
-		const item = this.item;
-		const html = this.renderHtml;
+		// Get the relevant damage group
 		group = encodeURIComponent(group);
 
-		// Show associated damage rows. If already set to critical, roll critical
-		const isCritical = html.attr("data-critical") === "true";
-		const damageRows = html.find('.red-base-damage').parents(`.dice-roll[data-group="${group}"]`);
-		for (const row of damageRows) {
-			$(row).removeClass("br5e-hidden");
-			if (isCritical) {
-				await this._rollCritForDamageRow(item, row);
+		const newModels = [];
+		for (const model of this.models) {
+			if (model.type === "button-damage" && model.group === group) {
+				continue;
 			}
+
+			if (model.type === "damage" && model.group === group) {
+				model.hidden = false;
+				this.dicePool.push(model.baseRoll, model.critRoll);
+			}
+
+			newModels.push(model);
 		}
 
-		// Hide the damage buttons. No longer relevant
-		html.find(`button[data-action="damage"][data-group="${group}"]`)
-			.parents(".card-buttons")
-			.hide();
-
-		// Add the associated dice to the dice pool
-		const rollData = this.flags?.damageDicePools[group];
-		if (rollData) {
-			this.dicePool.push(Roll.fromData(rollData));
-		}
+		// New models with damage prompts removed
+		this.models = newModels;
 	}
 	
 	/**
@@ -211,14 +257,18 @@ export class BetterRollsChatCard {
 	 * @param message 
 	 */
 	async update() {
-		const newRender = this.renderHtml;
-		const chatMessage = ChatMessage.collection.get(this.id);
+		if (ChatMessage.collection.get(this.id)) {
+			const chatMessage = this.message;
+			const { actor, item, flags } = this;
+			const { properties, models } = flags;
+			const templates = Renderer.renderModelList(models);
+			const content = await Renderer.renderCard(templates, { actor, item, properties })
 
-		if (chatMessage) {
 			await this.dicePool.flush();
 			await chatMessage.update({
-				content: newRender.get(0).outerHTML
-			});
+				'flags.betterrolls5e': duplicate(flags),
+				content
+			}, { diff: true });
 		}
 	}
 
@@ -227,45 +277,6 @@ export class BetterRollsChatCard {
 	 */
 	get _critAlreadyRolled() {
 		return this.html.attr("data-critical") === "true";
-	}
-
-	/**
-	 * Private helper to roll crit for a damage row
-	 * @param {Item} item
-	 * @param {*} row
-	 * @private
-	 */
-	async _rollCritForDamageRow(item, row) {
-		row = $(row);
-
-		// Skip if crit already rolled for this row
-		if (row.find(".red-crit-damage").length > 0) {
-			return;
-		}
-
-		const formula = row.find(".dice-formula").text();
-		const total = Number(row.find(".red-base-damage").data("value"));
-		const savage = ItemUtils.appliesSavageAttacks(item);
-		const critRoll = ItemUtils.getCritRoll(formula, total, { savage });
-
-		// Render crit roll tooltip
-		if (critRoll) {
-			// Render crit roll damage
-			const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-crit.html", {
-				crit: Utils.processRoll(critRoll),
-				crittext: BRSettings.critString
-			});
-
-			// Add crit die roll
-			row.find(".red-base-damage").after(template);
-
-			const tooltip = await critRoll.getTooltip();
-			row.find('.dice-row.tooltips').append(
-				$(`<div class="tooltip dual-left dice-row-item">${tooltip}</div>`)
-			);
-
-			this.dicePool.push(critRoll);
-		}
 	}
 
 	/**
@@ -283,7 +294,15 @@ export class BetterRollsChatCard {
 		const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 		
 		[...dmgElements, ...customElements].forEach(element => {
-			$(element).append($(template));
+			element = $(element);
+			element.append($(template));
+
+			// Remove crit button if already rolled
+			const id = element.parents('.dice-roll').attr('data-id');
+			const model = this.models.find(m => m.id === id);
+			if (model.critRoll || model.damageIndex === "other") {
+				element.find('.crit-button').remove();
+			}
 		});
 	
 		// adding click events to the buttons, this gets redone since they can break through rerendering of the card
@@ -314,7 +333,7 @@ export class BetterRollsChatCard {
 			}
 	
 			// applying dmg to the targeted token and sending only the span that the button sits in 
-			const targetActors = getTargetActors() || [];
+			const targetActors = Utils.getTargetActors() || [];
 			targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
 			
 			setTimeout(() => { 
@@ -328,7 +347,8 @@ export class BetterRollsChatCard {
 		html.find('.crit-button').on('click', async (ev) => {
 			ev.preventDefault();
 			ev.stopPropagation();
-			if (await this.rollCrit()) {
+			const group = $(ev.target).parents('.dice-roll').attr('data-group');
+			if (await this.rollCrit(group)) {
 				await this.update();
 			}
 		});
@@ -390,9 +410,9 @@ export class BetterRollsChatCard {
 			const action = button.dataset.action;
 			if (action === "save") {
 				event.preventDefault();
-				let actors = getTargetActors();
-				let ability = button.dataset.ability;
-				let params = await CustomRoll.eventToAdvantage(event);
+				const actors = Utils.getTargetActors();
+				const ability = button.dataset.ability;
+				const params = await CustomRoll.eventToAdvantage(event);
 				for (let i = 0; i < actors.length; i++) {
 					if (actors[i]) {
 						CustomRoll.fullRollAttribute(actors[i], ability, "save", params);

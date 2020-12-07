@@ -1,5 +1,5 @@
 import { i18n } from "./betterrolls5e.js";
-import { BRSettings } from "./settings.js";
+import { BRSettings, getSettings } from "./settings.js";
 import { Utils, ActorUtils, ItemUtils } from "./utils.js";
 
 /**
@@ -38,6 +38,7 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @typedef DamageDataProps
  * @type {object}
  * @property {"damage"} type
+ * @property {number | "versatile" | "other"} damageIndex
  * @property {boolean?} hidden
  * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
@@ -82,32 +83,45 @@ function renderModuleTemplate(path, props) {
 }
 
 /**
- * A collection of functions used to build html
- * Because of re-usability needs due to needing runtime editing,
+ * A collection of functions used to build html from metadata.
  */
 export class Renderer {
 	/**
-	 * Renders a model by checking the type. Calls the other render functions depending on what it is
-	 * @param {RenderModel} model 
+	 * Current id that is auto-incremented.
+	 * IDs need to be unique within a render, but between runs it is unimportant,
+	 * therefore this does not need to be persisted.
+	 * @private
 	 */
-	static async renderModel(model) {
+	static _currentId = 1;
+
+	/**
+	 * Renders a model by checking the type. Calls the other render functions depending on what it is
+	 * @param {RenderModel} model
+	 * @returns {Promise<string>}
+	 */
+	static async renderModel(model, settings=null) {
 		if (typeof model === "string" || !model) {
 			return model;
 		}
 
+		// Assign an id if we need to
+		if (!model.id) {
+			model.id = `${Renderer._currentId++}`;
+		}
+
 		switch (model.type) {
 			case "header":
-				return Renderer.renderHeader(model);
+				return Renderer.renderHeader(model, settings);
 			case "description":
-				return Renderer.renderDescription(model);
+				return Renderer.renderDescription(model, settings);
 			case "multiroll":
-				return Renderer.renderMultiRoll(model);
+				return Renderer.renderMultiRoll(model, settings);
 			case "damage":
-				return Renderer.renderDamage(model);
+				return Renderer.renderDamage(model, settings);
 			case "button-save":
-				return Renderer.renderSaveButton(model);
+				return Renderer.renderSaveButton(model, settings);
 			case "button-damage":
-				return Renderer.renderDamageButton(model);
+				return Renderer.renderDamageButton(model, settings);
 			case "raw":
 				// todo: print a warning, this means its unconverted
 				return model.content?.html ?? model.content;
@@ -123,6 +137,7 @@ export class Renderer {
 	static renderHeader(properties) {
 		const { img, title, slotLevel } = properties;
 		return renderModuleTemplate("red-header.html", {
+			id: properties.id,
 			item: { img: img ?? "icons/svg/mystery-man.svg", name: title },
 			slotLevel
 		});
@@ -138,15 +153,17 @@ export class Renderer {
 
 	/**
 	 * Renders a multiroll, which represent most D20 rolls.
-	 * @param {MultiRollDataProps} properties 
+	 * @param {MultiRollDataProps} properties
+	 * @param {BRSettings} settings
 	 */
-	static async renderMultiRoll(properties) {
-		const title = BRSettings.rollTitlePlacement !== "0" ? properties.title : null;
+	static async renderMultiRoll(properties, settings) {
+		const { rollTitlePlacement, d20RollIconsEnabled } = getSettings(settings);
+		const title = rollTitlePlacement !== "0" ? properties.title : null;
 		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
 		
 		// Show D20 die icons if enabled
 		let entries = properties.entries;
-		if (BRSettings.d20RollIconsEnabled) {
+		if (d20RollIconsEnabled) {
 			entries = entries.map(e => ({
 				...e,
 				d20Result: e.roll?.terms.find(t => t.faces === 20)?.total
@@ -162,7 +179,7 @@ export class Renderer {
 	 * Renders damage html data
 	 * @param {DamageDataProps} properties 
 	 */
-	static async renderDamage(properties) {
+	static async renderDamage(properties, settings) {
 		const { damageType, baseRoll, critRoll, isVersatile, context } = properties;
 		if (baseRoll.terms.length === 0) return;
 		
@@ -171,12 +188,13 @@ export class Renderer {
 			tooltips.push(await critRoll.getTooltip());
 		}
 
-		const critString = BRSettings.critString;
-		const titlePlacement = BRSettings.damageTitlePlacement.toString();
-		const damagePlacement = BRSettings.damageRollPlacement.toString();
-		const contextPlacement = BRSettings.damageContextPlacement.toString();
-		const replaceTitle = BRSettings.contextReplacesTitle;
-		const replaceDamage = BRSettings.contextReplacesDamage;
+		settings = getSettings(settings);
+		const critString = settings.critString;
+		const titlePlacement = settings.damageTitlePlacement.toString();
+		const damagePlacement = settings.damageRollPlacement.toString();
+		const contextPlacement = settings.damageContextPlacement.toString();
+		const replaceTitle = settings.contextReplacesTitle;
+		const replaceDamage = settings.contextReplacesDamage;
 
 		const labels = {
 			"1": [],
@@ -228,9 +246,9 @@ export class Renderer {
 		for (let p in labels) {
 			labels[p] = labels[p].join(" - ");
 		};
-		
 
 		return renderModuleTemplate("red-damageroll.html", {
+			id: properties.id,
 			tooltips,
 			base: Utils.processRoll(baseRoll),
 			crit: Utils.processRoll(critRoll),
@@ -254,6 +272,7 @@ export class Renderer {
 	static async renderSaveButton(properties) {
 		const abilityLabel = CONFIG.DND5E.abilities[properties.ability];
 		return renderModuleTemplate("red-save-button.html", {
+			id: properties.id,
 			abilityLabel,
 			...properties
 		});
@@ -265,8 +284,19 @@ export class Renderer {
 	 */
 	static async renderDamageButton(properties) {
 		return renderModuleTemplate("red-damage-button.html", {
+			id: properties.id,
 			group: encodeURIComponent(properties.group)
 		})
+	}
+
+	/**
+	 * Turns a list of model objects into a list of rendered templates
+	 * @param {RenderModel[]} models 
+	 * @param {BRSettings} settings
+	 * @returns {Promise<string[]>}
+	 */
+	static renderModelList(models, settings) {
+		return Promise.all(models.map(m => Renderer.renderModel(m, settings)));
 	}
 
 	/**
@@ -278,8 +308,8 @@ export class Renderer {
 		// Add token's ID to chat roll, if valid
 		let tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
 
-		templates = await Promise.all(templates);
-		templates = templates.map(Renderer.renderModel);
+		templates = await Promise.all(await templates);
+		templates = await Promise.all(templates.map(Renderer.renderModel));
 
 		// Default properties to the item properties if item is given
 		if (properties == null && item) {
@@ -291,7 +321,7 @@ export class Renderer {
 			actor,
 			tokenId,
 			isCritical: isCrit,
-			templates: await Promise.all(templates),
+			templates,
 			properties
 		});
 	}

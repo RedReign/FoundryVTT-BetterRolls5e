@@ -7,7 +7,8 @@ const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
  */
 class Settings {
 	/**
-	 * Register better rolls settings
+	 * Register better rolls settings.
+	 * This should only be called once, at initialization.
 	 */
 	init() {
 		game.settings.register("betterrolls5e", "diceEnabled", {
@@ -273,6 +274,10 @@ class Settings {
 		return getBRSetting("quickDefaultDescriptionEnabled");
 	}
 
+	get imageButtonEnabled() {
+		return getBRSetting("imageButtonEnabled");
+	}
+
 	get altSecondaryEnabled() {
 		return getBRSetting("altSecondaryEnabled");
 	}
@@ -303,8 +308,12 @@ class Settings {
 		return getBRSetting("d20RollIconsEnabled");
 	}
 
+	get queryAdvantageEnabled() {
+		return getBRSetting("queryAdvantageEnabled");
+	}
+
 	/**
-	 * Returns all config settings as an object with all data retrieved.
+	 * Returns all config config as an object with all data retrieved.
 	 * Internally this resolves all getters, returning their results.
 	 * @returns {BRSettings}
 	 */
@@ -325,6 +334,39 @@ class Settings {
 }
 
 /**
- * Class instance that can be used to both initialize and retrieve settings
+ * Class instance that can be used to both initialize and retrieve config
  */
 export const BRSettings = new Settings();
+
+/**
+ * Returns a proxy that returns the given config and falls
+ * back to global better roll config.
+ * @param {Settings} config
+ * @returns {Settings}
+ */
+export const getSettings = config => {
+	if (!config || typeof config !== "object") {
+		return BRSettings;
+	}
+
+	if (config.__isProxy) {
+		return config;
+	}
+
+	const proxy = new Proxy(config, {
+		get: (target, name) => {
+			if (name === "__isProxy") {
+				return true;
+			}
+
+			if (Reflect.has(target, name)) {
+				return Reflect.get(target, name);
+			}
+
+			return Reflect.get(BRSettings, name);
+		}
+	});
+
+	proxy.isWrapped = true;
+	return proxy;
+};

@@ -2,6 +2,7 @@ import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 import { ItemUtils } from "./utils.js";
+import { getSettings } from "./settings.js";
 
 export function i18n(key) {
 	return game.i18n.localize(key);
@@ -29,7 +30,7 @@ export function isCheck(item) {
 const dnd5e = DND5E;
 
 function getQuickDescriptionDefault() {
-	return game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled");
+	return getSettings().quickDefaultDescriptionEnabled;
 }
 
 CONFIG.betterRolls5e = {
@@ -169,7 +170,9 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	const flags = item.data.flags.betterRolls5e;
 
 	// Check settings
-	let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled");
+	const settings = getSettings();
+	const diceEnabled = settings.diceEnabled;
+	const contextEnabled = settings.damageContextPlacement !== "0" ? true : false;
 
 	if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
 
@@ -177,7 +180,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	// Create the buttons
 	let buttons = $(`<div class="item-buttons"></div>`);
 	let buttonsWereAdded = false;
-	let contextEnabled = (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") ? true : false;
 
 	// TODO: Make the logic in this switch statement simpler.
 	switch (item.data.type) {
@@ -314,7 +316,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			if (params.forceCrit) {
 				fields.push([
 					"flavor",
-					{ text: `${game.settings.get("betterrolls5e", "critString")}` }
+					{ text: `${getSettings().critString}` }
 				]);
 			}
 			
@@ -479,8 +481,11 @@ export function changeRollsToDual (actor, html, data, params) {
 	// Assign new action to item image button
 	let itemImage = html.find(paramRequests.itemButton);
 	if (itemImage.length > 0) {
+
 		itemImage.off();
 		itemImage.click(async event => {
+			const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
+
 			let li = $(event.currentTarget).parents(".item"),
 				actorID = actor.id,
 				itemID = String(li.attr("data-item-id")),
@@ -493,12 +498,12 @@ export function changeRollsToDual (actor, html, data, params) {
 				window.ItemMacro.runMacro(actorID, itemID);
 
 			// Case 2 - If the image button should roll a vanilla roll
-			} else if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
+			} else if (!imageButtonEnabled) {
 				item.actor.sheet._onItemRoll(event);
 
 			// Case 3 - If Alt is pressed
 			} else if (event.altKey) {
-				if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
+				if (altSecondaryEnabled) {
 					event.preventDefault();
 					CustomRoll.newItemRoll(item, mergeObject(params, {preset:1})).toMessage();
 				} else {
@@ -578,8 +583,8 @@ export function BetterRolls() {
 	
 	// Returns if an event should have its corresponding Quick Roll be an Alt Roll.
 	function isAlt(event) {
-		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
-		else { return false; }
+		const { altSecondaryEnabled } = getSettings();
+		return event && event.altKey && altSecondaryEnabled;
 	};
 
 	// Prefer synthetic actors over game.actors to avoid consumables and spells being missdepleted.
