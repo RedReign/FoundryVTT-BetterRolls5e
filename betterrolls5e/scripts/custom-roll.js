@@ -397,7 +397,7 @@ export class CustomItemRoll {
 	async roll() {
 		const { params, item } = this;
 		
-		await ItemUtils.ensureFlags(item);
+		await ItemUtils.ensureFlags(item, { commit: true });
 		const actor = item.actor;
 		const itemData = item.data.data;
 		

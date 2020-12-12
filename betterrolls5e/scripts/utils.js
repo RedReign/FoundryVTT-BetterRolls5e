@@ -185,20 +185,33 @@ export class ItemUtils {
 
 	/**
 	 * Ensures that better rolls flag data is set on the item if applicable.
-	 * Performs an item update if anything was set.
-	 * @param {*} item 
+	 * Performs an item update if anything was set and commit is true
+	 * @param {Item} itemData item to update
 	 * @param {boolean} commit whether to update at the end or not
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
-		if (!item.data || CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
+		const flags = this.ensureDataFlags(item.data);
+		
+		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
+		if (commit) {
+			await item.update({"flags.betterRolls5e": flags}, { diff: true });
+		}
+	}
+
+	/**
+	 * Assigns the data flags to the item. Does not save to database.
+	 * @param {*} itemData The item.data property to be updated
+	 */
+	static ensureDataFlags(itemData) {
+		if (!itemData || CONFIG.betterRolls5e.validItemTypes.indexOf(itemData.type) == -1) { return; }
 		
 		// Initialize flags
-		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")]);
-		let flags = duplicate(item.data.flags.betterRolls5e ?? {});
+		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[itemData.type.concat("Flags")]);
+		let flags = duplicate(itemData.flags.betterRolls5e ?? {});
 		flags = mergeObject(baseFlags, flags ?? {});
 		
 		// If quickDamage flags should exist, update them based on which damage formulae are available
-		if (CONFIG.betterRolls5e.allFlags[item.data.type.concat("Flags")].quickDamage) {
+		if (CONFIG.betterRolls5e.allFlags[itemData.type.concat("Flags")].quickDamage) {
 			let newQuickDamageValues = [];
 			let newQuickDamageAltValues = [];
 			
@@ -207,7 +220,7 @@ export class ItemUtils {
 				flags.quickDamage = {type: "Array", value: [], altValue: []};
 			}
 			
-			for (let i = 0; i < item.data.data.damage.parts.length; i++) {
+			for (let i = 0; i < itemData.data.damage.parts.length; i++) {
 				newQuickDamageValues[i] = flags.quickDamage.value[i] ?? true;
 				newQuickDamageAltValues[i] = flags.quickDamage.altValue[i] ?? true;
 			}
@@ -216,14 +229,8 @@ export class ItemUtils {
 			flags.quickDamage.altValue = newQuickDamageAltValues;
 		}
 	
-		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
-		if (commit) {
-			await item.update({"flags.betterRolls5e": flags}, { diff: true });
-		} else {
-			item.data.flags.betterRolls5e = flags;
-		}
-
-		return item.data.flags.betterRolls5e;
+		itemData.flags.betterRolls5e = flags;
+		return itemData.flags.betterRolls5e;
 	}
 
 	static placeTemplate(item) {
