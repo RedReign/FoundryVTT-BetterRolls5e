@@ -226,6 +226,14 @@ export class ItemUtils {
 		return item.data.flags.betterRolls5e;
 	}
 
+	static placeTemplate(item) {
+		if (item?.hasAreaTarget) {
+			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
+			if (template) template.drawPreview();
+			if (item.sheet?.rendered) item.sheet.minimize();
+		}
+	}
+
 	/** 
 	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */
