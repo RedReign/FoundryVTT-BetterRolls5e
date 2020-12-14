@@ -1399,16 +1399,18 @@ export class CustomItemRoll {
 			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
 		}
 		
-		if ( lvl !== item.data.data.level ) {
+		if (lvl !== item.data.data.level) {
 			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": lvl}, {inplace: false}), actor);
 		}
 		
-		// Update Actor data
-		if ( consume && (lvl !== 0) ) {
+		// Update Actor data to deduct spell slots
+		// Will eventually be removed once all consumptions move to use the new Item._getUsageUpdates() in a later release
+		if (consume && (lvl !== 0)) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
 			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-	  		if ( slots === 0 || Number.isNaN(slots)) {
-				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
+			if (slots === 0 || Number.isNaN(slots)) {
+				const label = game.i18n.localize(spellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${lvl}`);
+				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
 				return "error";
 			}
 			await actor.update({
