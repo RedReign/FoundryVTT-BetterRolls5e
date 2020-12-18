@@ -136,17 +136,21 @@ export class Utils {
 
 	/**
 	 * Returns all selected actors
+	 * @param param1.required True if a warning should be shown if the list is empty
 	 */
-	static getTargetActors() {
+	static getTargetActors({required=false}={}) {
 		const character = game.user.character;
 		const controlled = canvas.tokens.controlled;
-	
-		if ( controlled.length === 0 ) return [character] || null;
-		if ( controlled.length > 0 ) {
-			const actors = controlled.map(character => character.actor);
-			return actors;
+		if (!controlled.length && character) {
+			return [character];
 		}
-		else throw new Error(`You must designate a specific Token as the roll target`);
+
+		const results = controlled.map(character => character.actor).filter(a => a);
+		if (required && !controlled.length) {
+			ui.notifications.warn(game.i18n.localize("DND5E.ActionWarningNoToken"));
+		}
+
+		return results;
 	}
 }
 

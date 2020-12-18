@@ -87,7 +87,7 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			// Feats consume uses by default in vanilla 5e, so this is the one place that defaults to use: true
+			// Feats consume uses by default in vanilla 5e
 			quickCharges: { type: "Boolean", value: {use: true, resource: true, charge: false}, altValue: {use: true, resource: true, charge: false} },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
@@ -110,7 +110,8 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: true}, altValue: {quantity: false, use: false, resource: true} },
+			// Consumables consume uses by default in vanilla 5e
+			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },

@@ -406,18 +406,15 @@ export class CustomRoll {
 	static async sendChatMessage(actor, models, { item=null, properties=null, isCrit=null, builder=null, settings=null }={}) {
 		const { damagePromptEnabled } = getSettings(settings);
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
-		const flags = {};
 
 		// If any models are promises, await on them
-		models = await Promise.all(models);
+		// Filter out any null/undefined ones
+		models = (await Promise.all(models)).filter(m => m);
 
+		// Assign groups to models + hide damage entries if damage prompt is enabled
+		// Models increment on a junction
 		let group = -1;
-		flags.damageDicePools = {};
-
-		// Assign groups, and hide damage entries if damage prompt is enabled
 		for (const model of models) {
-			if (!model) continue;
-
 			if (["multiroll", "button-save"].includes(model.type)) {
 				group++;
 			} else if (model.type === "damage") {
@@ -429,7 +426,7 @@ export class CustomRoll {
 			}
 		}
 
-		// If damage buttons need to show, we need to hide damage entries under certain conditions
+		// If damage buttons are enabled, hide damage entries under certain conditions
 		if (damagePromptEnabled) {
 			// Insert damage buttons before all damage entries
 			const oldModels = models;
@@ -454,18 +451,12 @@ export class CustomRoll {
 				}
 				dicePools[model.group].push(model.baseRoll, model.critRoll);
 			}
-			
-			// Push dicepools into flags
-			for (const [group, pool] of Object.entries(dicePools)) {
-				flags.damageDicePools[group] = pool.pool;
-			}
 		}
 
 		// Render the models
 		const templates = await Renderer.renderModelList(models, settings);
 		const content = await Renderer.renderCard(templates, { actor, item, properties, isCrit });
-		flags.models = models;
-		flags.properties = properties;
+		const flags = { models, properties };
 
 		// Output the rolls to chat
 		const dicePool = new DiceCollection();
@@ -474,6 +465,12 @@ export class CustomRoll {
 
 		// Create the chat message
 		const chatData = createChatData(actor, content, { hasMaestroSound, flags });
+		
+		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
+		if ((item?.data.type === "consumable") && !actor.items.has(this.id) ) {
+			chatData.flags["dnd5e.itemData"] = item.data;
+		}
+		
 		if (builder) {
 			await Hooks.callAll("messageBetterRolls", builder, chatData);
 		}
@@ -708,6 +705,8 @@ export class CustomItemRoll {
 		}
 
 		const { params, item } = this;
+		this.models = [];
+		this.properties = [];
 		
 		await ItemUtils.ensureFlags(item, { commit: true });
 		const actor = this.actor ?? item?.actor;
@@ -719,8 +718,9 @@ export class CustomItemRoll {
 			this.updateForPreset();
 		}
 
-		let lvl, consume, placeTemplate;
+		let placeTemplate = false;
 
+		// Pre-update item configurations
 		if (item) {
 			// Set ammo (if needed)
 			if (this.params.useCharge.resource) {
@@ -734,39 +734,36 @@ export class CustomItemRoll {
 			if (!params.slotLevel && item.data.type === "spell") {
 				const config = await this.configureSpell();
 				if (config === "error") { return "error"; }
-
-				({lvl, consume, placeTemplate } = config);
-				params.slotLevel = lvl;
+				placeTemplate = config.placeTemplate;
 			}
 		}
 
 		// Convert all requested fields into templates to be entered into the chat message.
 		this.models = this._processFields();
-		
-		// Load Item Footer Properties if params.properties is true
-		this.properties = (params.properties) ? ItemUtils.getPropertyList(item) : [];
-		
+
+		// Post-build item updates
 		if (item) {
 			// Check to consume charges. Prevents the roll if charges are required and none are left.
-			let chargeCheck = await this.consumeCharge();
+			let chargeCheck = await this.consume();
 			if (chargeCheck === "error") {
 				this.error = true;
 				return;
 			}
 
+			// Load Item Footer Properties if params.properties is true
+			if (params.properties) {
+				this.properties = ItemUtils.getPropertyList(item);
+			}
+
+			// Place the template if applicable
 			if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
 				ItemUtils.placeTemplate(item);
 			}
 		}
 		
 		this.rolled = true;
-		
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
-		
-		if (chargeCheck === "destroy") {
-			await actor.deleteOwnedItem(item.id);
-		}
 	}
 
 	/**
@@ -1075,7 +1072,8 @@ export class CustomItemRoll {
 	}
 	
 	/**
-	 * Determine the spell level and spell slot consumption if this is an item
+	 * Determine the spell level and spell slot consumption if this is an item,
+	 * and returns the spell configuration, or "error" on forced close.
 	 */
 	async configureSpell() {
 		let { item, actor } = this;
@@ -1108,21 +1106,8 @@ export class CustomItemRoll {
 			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": lvl}, {inplace: false}), actor);
 		}
 		
-		// Update Actor data to deduct spell slots
-		// Will eventually be removed once all consumptions move to use the new Item._getUsageUpdates() in a later release
-		if (consume && (lvl !== 0)) {
-			let spellSlot = isPact ? "pact" : "spell"+lvl;
-			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-			if (slots === 0 || Number.isNaN(slots)) {
-				const label = game.i18n.localize(spellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${lvl}`);
-				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
-				return "error";
-			}
-			await actor.update({
-				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
-			});
-		}
-		
+		this.params.slotLevel = lvl;
+		this.params.consumeSlot = consume;
 		return { lvl, consume, placeTemplate };
 	}
 	
@@ -1131,12 +1116,34 @@ export class CustomItemRoll {
 	 * NOTE: As of D&D System 1.2, all of this can now be handled internally by Item._handleConsumeResource.
 	 * This was tweaked to support 1.2, but we are waiting and seeing before moving everything over.
 	 * We might no longer need specialized use/consume code.
-	 * That function also handles spell slot updates, so we will need slot consumption from configureSpell()
 	 * @private
 	 */
-	async consumeCharge() {
+	async consume() {
 		const { item, actor } = this;
 		if (!item) return;
+
+		const actorUpdates = {};
+		const itemUpdates = {};
+		const resourceUpdates = {};
+
+		// Determine spell slot to consume (this can eventually be fed into _getUsageUpdates())
+		const spellLevel = this.params.slotLevel;
+		let consumeSpellSlot = false;
+		if (this.params.consumeSlot) {
+			consumeSpellSlot = spellLevel === "pact" ? "pack" : `spell${spellLevel}`;
+		}
+
+		// Update Actor data to deduct spell slots
+		if (consumeSpellSlot) {
+			const slots = parseInt(actor.data.data.spells[consumeSpellSlot].value);
+			if (slots === 0 || Number.isNaN(slots)) {
+				const label = game.i18n.localize(consumeSpellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${spellLevel}`);
+				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
+				return "error";
+			}
+
+			actorUpdates[`data.spells.${consumeSpellSlot}.value`] = Math.max(slots - 1, 0);
+		}
 
 		const itemData = item.data.data;
 		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
@@ -1145,14 +1152,10 @@ export class CustomItemRoll {
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
 		const uses = itemData.uses || {};
-		const autoDestroy = uses.autoDestroy;
 		const current = uses.value || 0;
-		const remaining = request.use ? Math.max(current - 1, 0) : current;
-		const q = itemData.quantity;
-
-		const actorUpdates = {};
-		const itemUpdates = {};
-		const resourceUpdates = {};
+		const quantity = itemData.quantity;
+		
+		const autoDestroy = uses.autoDestroy || request.quantity;
 
 		let output = "success";
 
@@ -1163,12 +1166,12 @@ export class CustomItemRoll {
 
 		// Check for consuming quantity, but not uses
 		if (request.quantity && !request.use) {
-			if (!q) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+			if (!quantity) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming quantity and uses
 		if (hasUses && request.use && request.quantity) {
-			if (!current && q <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+			if (!current && quantity <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming charge ("Action Recharge")
@@ -1182,35 +1185,41 @@ export class CustomItemRoll {
 			if (allowed === false) { return "error"; }
 		}
 
-		// Handle uses, but not quantity
-		if (hasUses && request.use && !request.quantity) {
-			itemUpdates["data.uses.value"] = remaining;
-		}
-		
-		// Handle quantity, but not uses
-		else if (request.quantity && !request.use) {
-			if (q <= 1 && autoDestroy) {
+		// Handle quantity when uses are not consumed
+		// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
+		// We are waiting and seeing what the DND system uses before moving everything over
+		if (request.quantity && !request.use) {
+			if (quantity <= 1 && autoDestroy) {
 				output = "destroy";
 			}
-			itemUpdates["data.quantity"] = q - 1;
+			itemUpdates["data.quantity"] = quantity - 1;
 		}
 
-		// Handle quantity and uses
-		else if (hasUses && request.use && request.quantity) {
-			let remainingU = remaining;
-			let remainingQ = q;
-			console.log(remainingQ, remainingU);
-			if (remainingU < 1) {
-				remainingQ -= 1;
-				ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
-				if (remainingQ >= 1) {
-					remainingU = itemData.uses.max || 0;
-				} else { remainingU = 0; }
-				if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
-			}
+		// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)
+		// This can be handled by Item._getUsageUpdates() in DND 1.2.0, but leaving it here just in case
+		if (request.use && hasUses) {
+			const remaining = request.use ? Math.max(current - 1, 0) : current;
+			
+			if (!autoDestroy) {
+				// Handle uses if quantity is not affected
+				itemUpdates["data.uses.value"] = remaining;
+			} else {
+				// Handle quantity and uses
+				let remainingU = remaining;
+				let remainingQ = quantity;
+				console.log(remainingQ, remainingU);
+				if (remainingU < 1) {
+					remainingQ -= 1;
+					ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
+					if (remainingQ >= 1) {
+						remainingU = itemData.uses.max || 0;
+					} else { remainingU = 0; }
+					if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
+				}
 
-			itemUpdates["data.quantity"] = Math.max(remainingQ,0);
-			itemUpdates["data.uses.value"] = Math.max(remainingU,0);
+				itemUpdates["data.quantity"] = Math.max(remainingQ,0);
+				itemUpdates["data.uses.value"] = Math.max(remainingU,0);
+			}
 		}
 
 		// Handle charge ("Action Recharge")
@@ -1224,6 +1233,11 @@ export class CustomItemRoll {
 		if (!isObjectEmpty(resourceUpdates)) {
 			const resource = actor.items.get(itemData.consume?.target);
 			if (resource) await resource.update(resourceUpdates);
+		}
+
+		// Destroy item if it gets consumed
+		if (output === "destroy") {
+			await actor.deleteOwnedItem(item.id);
 		}
 
 		return output;

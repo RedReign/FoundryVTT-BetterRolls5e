@@ -98,10 +98,10 @@ export class BetterRollsChatCard {
 		this.speaker = game.actors.get(message.data.speaker.actor);
 		
 		this.html = html;
-		this.actorId = this.html.attr("data-actor-id");
-		this.itemId = this.html.attr("data-item-id");
-		this.tokenId = this.html.attr("data-token-id");
-		this._setupDamageButtons();
+		this.actorId = html.attr("data-actor-id");
+		this.itemId = html.attr("data-item-id");
+		this.tokenId = html.attr("data-token-id");
+		this._setupDamageOverlayButtons();
 		this._setupCardButtons();
 
 		// Hide Save DCs
@@ -143,6 +143,11 @@ export class BetterRollsChatCard {
 		}
 	}
 
+	/**
+	 * Returns the settings saved into this card.
+	 * Currently does nothing, but eventually setting overrides should be saved
+	 * onto this card.
+	 */
 	get settings() {
 		return getSettings();
 	}
@@ -172,10 +177,17 @@ export class BetterRollsChatCard {
 	 * Returns the item instance associated with this card.
 	 */
 	get item() {
-		const item = this.itemId ? this.actor?.getOwnedItem(this.itemId) : null;
-		if (this.itemId && !item) {
+		const storedData = this.message.getFlag("dnd5e", "itemData");
+		if (!storedData && !this.itemId) {
+			return null;
+		}
+
+		const actor = this.actor;
+		const Item5e = game.dnd5e.entities.Item5e;
+		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.getOwnedItem(this.itemId);
+		if (!item) {
 			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			ui.notifications.warn(message);
+			ui.notifications.error(message);
 			throw new Error(message);
 		}
 
@@ -225,9 +237,13 @@ export class BetterRollsChatCard {
 		return updated;
 	}
 
+	/**
+	 * Rolls damage for a damage group. Returns true if successful
+	 * @param {string} group
+	 */
 	async rollDamage(group) {
-		if (!this.hasPermission) {
-			return;
+		if (!this.hasPermission || !this.models) {
+			return false;
 		}
 
 		// Get the relevant damage group
@@ -249,6 +265,7 @@ export class BetterRollsChatCard {
 
 		// New models with damage prompts removed
 		this.models = newModels;
+		return true;
 	}
 	
 	/**
@@ -276,7 +293,7 @@ export class BetterRollsChatCard {
 	 * Internal method to setup the temporary buttons that that affect damage
 	 * entries, like crit rolls and damage application.
 	 */
-	async _setupDamageButtons() {
+	async _setupDamageOverlayButtons() {
 		if (!BRSettings.chatDamageButtonsEnabled) {
 			return;
 		}
@@ -292,8 +309,8 @@ export class BetterRollsChatCard {
 
 			// Remove crit button if already rolled
 			const id = element.parents('.dice-roll').attr('data-id');
-			const model = this.models.find(m => m.id === id);
-			if (model.critRoll != null || model.damageIndex === "other") {
+			const model = this.models?.find(m => m.id === id);
+			if (!model || model?.critRoll != null || model?.damageIndex === "other") {
 				element.find('.crit-button').remove();
 			}
 		});
@@ -393,31 +410,33 @@ export class BetterRollsChatCard {
 	}
 	
 	/**
-	 * Bind card button events
+	 * Bind card button events. These are the clickable action buttons.
 	 * @private
 	 */
 	_setupCardButtons() {
 		this.html.find(".card-buttons").off()
 		this.html.find(".card-buttons button").off().click(async event => {
+			event.preventDefault();
 			const button = event.currentTarget;
+			button.disabled = true;
+
 			const action = button.dataset.action;
+			
 			if (action === "save") {
-				event.preventDefault();
-				const actors = Utils.getTargetActors();
+				const actors = Utils.getTargetActors({ required: true });
 				const ability = button.dataset.ability;
 				const params = await CustomRoll.eventToAdvantage(event);
-				for (let i = 0; i < actors.length; i++) {
-					if (actors[i]) {
-						CustomRoll.fullRollAttribute(actors[i], ability, "save", params);
-					}
+				for (const actor of actors) {
+					CustomRoll.fullRollAttribute(actor, ability, "save", params);
 				}
-				setTimeout(() => {button.disabled = false;}, 1);
 			} else if (action === "damage") {
-				event.preventDefault();
-				await this.rollDamage(button.dataset.group);
-				await this.update();
-				setTimeout(() => {button.disabled = false;}, 1);
+				if (await this.rollDamage(button.dataset.group)) {	
+					await this.update();
+				}
 			}
+
+			// Re-enable the button
+			setTimeout(() => {button.disabled = false;}, 1);
 		});
 	}
 }
