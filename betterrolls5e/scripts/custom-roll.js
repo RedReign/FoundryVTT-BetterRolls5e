@@ -397,7 +397,7 @@ export class CustomItemRoll {
 	async roll() {
 		const { params, item } = this;
 		
-		await ItemUtils.ensureFlags(item);
+		await ItemUtils.ensureFlags(item, { commit: true });
 		const actor = item.actor;
 		const itemData = item.data.data;
 		
@@ -407,6 +407,7 @@ export class CustomItemRoll {
 			this.updateForPreset();
 		}
 
+		// Set ammo (if needed)
 		if (this.params.useCharge.resource) {
 			const consume = itemData.consume;
 			if ( consume?.type === "ammo" ) {
@@ -414,11 +415,14 @@ export class CustomItemRoll {
 			}
 		}
 		
-		if (!params.slotLevel) {
-			if (item.data.type === "spell") {
-				params.slotLevel = await this.configureSpell();
-				if (params.slotLevel === "error") { return "error"; }
-			}
+		// Determine spell level and configuration settings
+		let lvl, consume, placeTemplate;
+		if (!params.slotLevel && item.data.type === "spell") {
+			const config = await this.configureSpell();
+			if (config === "error") { return "error"; }
+
+			({lvl, consume, placeTemplate } = config);
+			params.slotLevel = lvl;
 		}
 
 		// Convert all requested fields into templates to be entered into the chat message.
@@ -428,21 +432,19 @@ export class CustomItemRoll {
 		let chargeCheck = await this.consumeCharge();
 		if (chargeCheck === "error") { return "error"; }
 		
-		// Show properties
+		// Get title/properties/etc
+		let printedSlotLevel = (item.data.type === "spell" && this.params.slotLevel != item.data.data.level) ? dnd5e.spellLevels[this.params.slotLevel] : null;
+		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item, slotLevel:printedSlotLevel}));
 		this.properties = (params.properties) ? this.listProperties() : null;
-		
-		let printedSlotLevel = ( item.data.type === "spell" && this.params.slotLevel != item.data.data.level ) ? dnd5e.spellLevels[this.params.slotLevel] : null;
-			
-		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item:item, slotLevel:printedSlotLevel}));
-		
+
 		// Add token's ID to chat roll, if valid
 		let tokenId;
 		if (actor.token) {
 			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
 		}
 		
-		if (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0)) {
-			this.placeTemplate();
+		if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
+			ItemUtils.placeTemplate(item);
 		}
 		
 		this.rolled = true;
@@ -451,7 +453,7 @@ export class CustomItemRoll {
 		
 		await new Promise(r => setTimeout(r, 25));
 		
-		let content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
+		this.content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
 			item: item,
 			actor: actor,
 			tokenId: tokenId,
@@ -461,7 +463,6 @@ export class CustomItemRoll {
 			templates: this.templates,
 			properties: this.properties
 		});
-		this.content = content;
 		
 		if (chargeCheck === "destroy") { await actor.deleteOwnedItem(item.id); }
 
@@ -1386,10 +1387,9 @@ export class CustomItemRoll {
 				window.PH.actor = actor;
 				window.PH.item = item;
 				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
-				lvl = spellFormData.get("level");
-				consume = Boolean(spellFormData.get("consumeSlot"));
-				placeTemplate = Boolean(spellFormData.get("placeTemplate"));
-				// console.log(lvl, consume, placeTemplate);
+				lvl = spellFormData.level;
+				consume = Boolean(spellFormData.consumeSlot);
+				placeTemplate = Boolean(spellFormData.placeTemplate);
 			}
 			catch(error) { return "error"; }
 		}
@@ -1399,16 +1399,18 @@ export class CustomItemRoll {
 			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
 		}
 		
-		if ( lvl !== item.data.data.level ) {
+		if (lvl !== item.data.data.level) {
 			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": lvl}, {inplace: false}), actor);
 		}
 		
-		// Update Actor data
-		if ( consume && (lvl !== 0) ) {
+		// Update Actor data to deduct spell slots
+		// Will eventually be removed once all consumptions move to use the new Item._getUsageUpdates() in a later release
+		if (consume && (lvl !== 0)) {
 			let spellSlot = isPact ? "pact" : "spell"+lvl;
 			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-	  if ( slots === 0 || Number.isNaN(slots) ) {
-				ui.notifications.error(game.i18n.localize("DND5E.SpellCastNoSlots"));
+			if (slots === 0 || Number.isNaN(slots)) {
+				const label = game.i18n.localize(spellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${lvl}`);
+				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
 				return "error";
 			}
 			await actor.update({
@@ -1416,31 +1418,21 @@ export class CustomItemRoll {
 			});
 		}
 		
-		if (placeTemplate) {
-			this.placeTemplate();
-		}
-		
-		return lvl;
+		return { lvl, consume, placeTemplate };
 	}
 	
-	// Places a template if the item has an area of effect
-	placeTemplate() {
-		let item = this.item;
-		if (item.hasAreaTarget) {
-			const template = game.dnd5e.canvas.AbilityTemplate.fromItem(item);
-			if ( template ) template.drawPreview(event);
-			if (item.actor && item.actor.sheet) {
-				if (item.sheet.rendered) item.sheet.minimize();
-				if (item.actor.sheet.rendered) item.actor.sheet.minimize();
-			}
-		}
-	}
-	
-	// Consumes charges & resources assigned on an item.
+	/**
+	 * Consumes charges & resources assigned on an item.
+	 * NOTE: As of D&D System 1.2, all of this can now be handled internally by Item._handleConsumeResource.
+	 * This was tweaked to support 1.2, but we are waiting and seeing before moving everything over.
+	 * We might no longer need specialized use/consume code.
+	 * That function also handles spell slot updates, so we will need slot consumption from configureSpell()
+	 */
 	async consumeCharge() {
-		let item = this.item,
-			itemData = item.data.data;
-		
+		const { item, actor } = this;
+		if (!item) return;
+
+		const itemData = item.data.data;
 		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
@@ -1451,7 +1443,11 @@ export class CustomItemRoll {
 		const current = uses.value || 0;
 		const remaining = request.use ? Math.max(current - 1, 0) : current;
 		const q = itemData.quantity;
-		const updates = {};
+
+		const actorUpdates = {};
+		const itemUpdates = {};
+		const resourceUpdates = {};
+
 		let output = "success";
 
 		// Check for consuming uses, but not quantity
@@ -1474,16 +1470,15 @@ export class CustomItemRoll {
 			if (!recharge.charged) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
-		// Check for consuming resource.
-		// Note that _handleResourceConsumption() will actually consume the resource as well as perform the check, hence why it must be performed last.
+		// Check for consuming resource. The results are in resourceUpdates
 		if (hasResource && request.resource) {
-			const allowed = await item._handleResourceConsumption({isCard: true, isAttack: true});
+			const allowed = await item._handleConsumeResource(itemUpdates, actorUpdates, resourceUpdates);
 			if (allowed === false) { return "error"; }
 		}
 
 		// Handle uses, but not quantity
 		if (hasUses && request.use && !request.quantity) {
-			updates["data.uses.value"] = remaining;
+			itemUpdates["data.uses.value"] = remaining;
 		}
 		
 		// Handle quantity, but not uses
@@ -1491,7 +1486,7 @@ export class CustomItemRoll {
 			if (q <= 1 && autoDestroy) {
 				output = "destroy";
 			}
-			updates["data.quantity"] = q - 1;
+			itemUpdates["data.quantity"] = q - 1;
 		}
 
 		// Handle quantity and uses
@@ -1508,16 +1503,22 @@ export class CustomItemRoll {
 				if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
 			}
 
-			updates["data.quantity"] = Math.max(remainingQ,0);
-			updates["data.uses.value"] = Math.max(remainingU,0);
+			itemUpdates["data.quantity"] = Math.max(remainingQ,0);
+			itemUpdates["data.uses.value"] = Math.max(remainingU,0);
 		}
 
 		// Handle charge ("Action Recharge")
 		if (request.charge) {
-			updates["data.recharge.charged"] = false;
+			itemUpdates["data.recharge.charged"] = false;
 		}
 
-		item.update(updates);
+		if (!isObjectEmpty(itemUpdates)) await item.update(itemUpdates);
+		if (!isObjectEmpty(actorUpdates)) await actor.update(actorUpdates);
+
+		if (!isObjectEmpty(resourceUpdates)) {
+			const resource = actor.items.get(itemData.consume?.target);
+			if (resource) await resource.update(resourceUpdates);
+		}
 
 		return output;
 	}

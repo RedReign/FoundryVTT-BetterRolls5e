@@ -160,9 +160,9 @@ Hooks.on(`ready`, () => {
 	}
 });
 
-// Create flags for item when it's first created
-Hooks.on(`createOwnedItem`, (actor, itemData) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? ItemUtils.ensureFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
+// Create flags for the item when it's first created
+Hooks.on(`preCreateOwnedItem`, (actor, itemData) => {
+	ItemUtils.ensureDataFlags(itemData);
 });
 
 /**
