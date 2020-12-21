@@ -128,10 +128,16 @@ export class CustomRoll {
 			}
 		}
 
+		// Populate the roll entries
 		const entries = [];
-		for (let i = 0; i < numRolls; i++) {
-			const roll = new Roll(formula).roll();
-			entries.push(Utils.processRoll(roll, critThreshold, [20]));
+		try {
+			for (let i = 0; i < numRolls; i++) {
+				const roll = new Roll(formula).roll();
+				entries.push(Utils.processRoll(roll, critThreshold, [20]));
+			}
+		} catch (err) {
+			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
+			throw err; // propagate the error
 		}
 
 		// Mark ignored rolls due to advantage/disadvantage
@@ -302,29 +308,34 @@ export class CustomRoll {
 		}
 
 		// Assemble roll data and defer to the general damage construction
-		const rollFormula = [formula, ...parts].join("+");
-		const baseRoll = new Roll(rollFormula, rollData).roll();
-		const total = baseRoll.total;
+		try {
+			const rollFormula = [formula, ...parts].join("+");
+			const baseRoll = new Roll(rollFormula, rollData).roll();
+			const total = baseRoll.total;
 
-		// Roll crit damage if relevant
-		let critRoll = null;
-		if (damageIndex !== "other") {
-			if (isCrit && critBehavior !== "0") {
-				critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, savage });
+			// Roll crit damage if relevant
+			let critRoll = null;
+			if (damageIndex !== "other") {
+				if (isCrit && critBehavior !== "0") {
+					critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, savage });
+				}
 			}
-		}
 
-		return {
-			type: "damage",
-			damageIndex,
-			title: options.title ?? title,
-			damageType,
-			context,
-			baseRoll,
-			critRoll,
-			hidden,
-			isVersatile: isVersatile ?? false
-		};
+			return {
+				type: "damage",
+				damageIndex,
+				title: options.title ?? title,
+				damageType,
+				context,
+				baseRoll,
+				critRoll,
+				hidden,
+				isVersatile: isVersatile ?? false
+			};
+		} catch (err) {
+			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
+			throw err; // propagate the error
+		}
 	}
 
 	/**
@@ -562,7 +573,7 @@ export class CustomRoll {
 	 */
 	static async fullRollSkill(actor, skill, params={}) {
 		const label = i18n(dnd5e.skills[skill]);
-		const formula = ActorUtils.getSkillCheckRoll(actor, skill).formula;
+		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
 		return CustomRoll.fullRollActor(actor, label, formula, "skill", params);
 	}
 
@@ -599,10 +610,10 @@ export class CustomRoll {
 		let titleString;
 		let formula = "";
 		if (rollType === "check") {
-			formula = ActorUtils.getAbilityCheckRoll(actor, ability).formula;
+			formula = (await ActorUtils.getAbilityCheckRoll(actor, ability)).formula;
 			titleString = `${i18n(label)} ${i18n("br5e.chat.check")}`;
 		} else if (rollType === "save") {
-			formula = ActorUtils.getAbilitySaveRoll(actor, ability).formula;
+			formula = (await ActorUtils.getAbilitySaveRoll(actor, ability)).formula;
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
 

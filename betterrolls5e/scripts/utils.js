@@ -248,85 +248,48 @@ export class ActorUtils {
 	}
 
 	/**
-	 * Returns a roll object that can be used to roll a skill check
-	 * @param {*} actor 
-	 * @param {*} skill
-	 * @returns {Roll} 
+	 * Returns a roll object for a skill check
+	 * @param {Actor} actor 
+	 * @param {string} skill
+	 * @returns {Promise<Roll>} 
 	 */
 	static getSkillCheckRoll(actor, skill) {
-		const skillData = actor.data.data.skills[skill];
-
-		const parts = ["@mod"];
-		const data = {mod: skillData.total};
-		
-		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
-		if (skillBonus) {
-			parts.push("@skillBonus");
-			data["skillBonus"] = skillBonus;
-		}
-		
-		// Halfling Luck + Reliable Talent check
-		let d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		if (ActorUtils.hasReliableTalent(actor) && skillData.value >= 1) {
-			d20String = `{${d20String},10}kh`;
-		}
-
-		return new Roll([d20String, ...parts].join("+"), data);
+		return actor.rollSkill(skill, { 
+			fastForward: true,
+			chatMessage: false,
+			advantage: false,
+			disadvantage: false
+		});
 	}
 
+	/**
+	 * Returns a roll object for an ability check
+	 * @param {Actor} actor 
+	 * @param {string} abl
+	 * @returns {Promise<Roll>}
+	 */
 	static getAbilityCheckRoll(actor, abl) {
-		let parts = ["@mod"];
-		
-		const data = actor.getRollData();
-		data.mod = data.abilities[abl].mod;
-	
-		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
-		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
-		
-		if (checkBonus && parseInt(checkBonus) !== 0) {
-			parts.push("@checkBonus");
-			data["checkBonus"] = checkBonus;
-		} else if (secondCheckBonus && parseInt(secondCheckBonus) !== 0) {
-			parts.push("@secondCheckBonus");
-			data["secondCheckBonus"] = secondCheckBonus;
-		}
-
-		if (actor.getFlag("dnd5e", "jackOfAllTrades")) {
-			parts.push(`floor(@attributes.prof / 2)`);
-		}
-
-		// Halfling Luck check
-		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		return new Roll([d20String, ...parts].join("+"), data);
+		return actor.rollAbilityTest(abl, {
+			fastForward: true,
+			chatMessage: false,
+			advantage: false,
+			disadvantage: false
+		});
 	}
 
+	/**
+	 * Returns a roll object for an ability save
+	 * @param {Actor} actor 
+	 * @param {string} abl
+	 * @returns {Promise<Roll>}
+	 */
 	static getAbilitySaveRoll(actor, abl) {
-		let actorData = actor.data.data;
-		let parts = [];
-		let data = {mod: []};
-
-		// Support modifiers and global save bonus
-		const saveBonus = getProperty(actorData, "bonuses.abilities.save") || null;
-		let ablData = actor.data.data.abilities[abl];
-		let ablParts = {};
-		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
-		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
-		let mods = [ablParts.mod, ablParts.prof, saveBonus];
-		for (let i=0; i<mods.length; i++) {
-			if (mods[i] && mods[i] !== "0") {
-				data.mod.push(mods[i]);
-			}
-		}
-		data.mod = data.mod.join("+");
-
-		// Halfling Luck check
-		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-
-		if (data.mod !== "") {
-			parts.push("@mod");
-		}
-
-		return new Roll([d20String, ...parts].join("+"), data);
+		return actor.rollAbilitySave(abl, {
+			fastForward: true,
+			chatMessage: false,
+			advantage: false,
+			disadvantage: false
+		});
 	}
 }
 
@@ -546,14 +509,13 @@ export class ItemUtils {
 
 	/**
 	 * Gets the item's roll data.
-	 * This is similar to item.getRollData(), but with a different
+	 * This uses item.getRollData(), but with a different
 	 * ability mod formula that handles feat weapon types.
 	 * If core ever swaps supports feat weapon types / levels, swap back.
 	 * @param {*} item 
 	 */
 	static getRollData(item, { abilityMod, slotLevel=undefined } = {}) {
-		const rollData = item.actor.getRollData();
-		rollData.item = duplicate(item.data.data);
+		const rollData = item.getRollData();
 
 		const abl = abilityMod ?? this.getAbilityMod(item);
 		rollData.mod = rollData.abilities[abl]?.mod || 0;
@@ -561,9 +523,6 @@ export class ItemUtils {
 		if (slotLevel) {
 			rollData.item.level = slotLevel;
 		}
-
-		const prof = "proficient" in rollData.item ? (rollData.item.proficient || 0) : 1;
-		rollData["prof"] = Math.floor(prof * rollData.attributes.prof);
 
 		return rollData;
 	}

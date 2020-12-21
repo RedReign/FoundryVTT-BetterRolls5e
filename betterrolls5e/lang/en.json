@@ -79,6 +79,7 @@
 	"br5e.error.noItemWithId": "No item is known with that ID on actor",
 	"br5e.error.noChargesLeft": "This item has run out of charges!",
 	"br5e.error.autoDestroy": "The {name} disappears as its last charge is consumed.",
+	"br5e.error.rollEvaluation": "Dice roll evaluation failed: {msg}",
 	
 	"br5e.settings.critThreshold": "Critical Threshold",
 	"br5e.settings.critDamage": "Extra Critical Damage",

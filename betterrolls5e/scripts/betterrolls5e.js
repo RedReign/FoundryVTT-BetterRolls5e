@@ -4,7 +4,11 @@ import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 import { ItemUtils } from "./utils.js";
 import { getSettings } from "./settings.js";
 
-export function i18n(key) {
+export function i18n(key, data=null) {
+	if (data) {
+		return game.i18n.format(key, data);
+	}
+
 	return game.i18n.localize(key);
 }
 
