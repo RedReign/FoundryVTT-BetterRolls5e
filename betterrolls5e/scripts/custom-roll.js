@@ -206,7 +206,7 @@ export class CustomRoll {
 			}
 		}
 
-		// Get Formula
+		// Get Roll. Use Formula if given, otherwise get it from the item
 		let roll = null;
 		if (formula) {
 			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
@@ -251,7 +251,7 @@ export class CustomRoll {
 		const { item, damageIndex, slotLevel, isCrit, hidden } = options;
 		const actor = options?.actor ?? item?.actor;
 		const isVersatile = damageIndex === "versatile";
-		const isFirst = damageIndex === 0 || damageIndex === "versatile";
+		const isFirst = damageIndex === 0 || isVersatile;
 		const savage = options.savage ?? ItemUtils.appliesSavageAttacks(item);
 		
 		const settings = getSettings(options.settings);
