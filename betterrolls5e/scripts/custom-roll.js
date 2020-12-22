@@ -293,10 +293,11 @@ export class CustomRoll {
 				}
 
 				// Add any roll bonuses but only to the first entry
-				if (isFirst && rollData.bonuses && isAttack(item)) {
-					let actionType = `${itemData.actionType}`;
-					if (rollData.bonuses[actionType].damage) {
-						parts.unshift(rollData.bonuses[actionType].damage);
+				if (isFirst && rollData.bonuses) {
+					const actionType = `${itemData.actionType}`;
+					const bonus = rollData.bonuses[actionType]?.damage;
+					if (bonus && (parseInt(bonus) !== 0)) {
+						parts.unshift(bonus);
 					}
 				}
 			}
