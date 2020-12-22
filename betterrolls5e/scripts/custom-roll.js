@@ -176,7 +176,7 @@ export class CustomRoll {
 	// Rolls a skill check through a character
 	static async rollSkillCheck(actor, skill, params = {}) {
 		let parts = ["@mod"],
-			data = {mod: skill.total},
+			data = {mod: skill.mod + skill.prof},
 			flavor = null;
 		
 		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
@@ -1348,12 +1348,14 @@ export class CustomItemRoll {
 			parts.push(bonus);
 		}
 		
+		// Establish number of rolls using advantage/disadvantage and elven accuracy
+		const rollState = args.rollState ?? CustomRoll.getRollState({adv:args.adv, disadv:args.disadv});
+		let numRolls = rollState ? 2 : this.config.d20Mode;
+
 		// Halfling Luck check
 		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
-		
-		//(numRolls = 1, dice = "1d20", parts = [], data = {}, title, critThreshold, rollState, triggersCrit = false)
-		const output = await CustomRoll.rollMultiple(this.config.d20Mode, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);
-		if (output.isCrit && triggersCrit) {
+		const output = await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);
+		if (output.isCrit) {
 			this.isCrit = true;
 		}
 
