@@ -31,8 +31,8 @@ Hooks.on("ready", () => {
 });
 
 // Create flags for item when it's first created
-Hooks.on("createOwnedItem", (actor, itemData) => {
-	BRSettings.diceEnabled ? ItemUtils.ensureFlags(game.actors.get(actor._id).items.get(itemData._id)) : null;
+Hooks.on("preCreateOwnedItem", (actor, itemData) => {
+	ItemUtils.ensureDataFlags(itemData);
 });
 
 // Modify context menu for damage rolls (they break)
