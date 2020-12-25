@@ -745,11 +745,15 @@ export class CustomItemRoll {
 					this.ammo = this.actor.items.get(consume.target);
 				}
 			}
-			
+
 			// Determine spell level and configuration settings
 			if (!params.slotLevel && item.data.type === "spell") {
 				const config = await this.configureSpell();
-				if (config === "error") { return "error"; }
+				if (config === "error") { 
+					this.error = true;
+					return;
+				}
+
 				placeTemplate = config.placeTemplate;
 			}
 		}
@@ -778,6 +782,7 @@ export class CustomItemRoll {
 		}
 		
 		this.rolled = true;
+		this.error = false;
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 	}
