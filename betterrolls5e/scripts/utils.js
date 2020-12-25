@@ -62,7 +62,7 @@ export class Utils {
 		let low = 0;
 		for (const d of roll.dice) {
 			if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
-				for (const result of d.results) {
+				for (const result of d.results.filter(r => !r.rerolled)) {
 					if (result.result >= (threshold || d.faces)) {
 						high += 1;
 					} else if (result.result == 1) {
