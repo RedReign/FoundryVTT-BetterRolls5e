@@ -85,30 +85,32 @@ export class BetterRollsChatCard {
 	}
 
 	/**
-	 * Initializes data. Used in the constructor or 
-	 * by BetterRollsChatCard.bind()
+	 * Initializes data. Used in the constructor or by BetterRollsChatCard.bind().
 	 * @param {*} message 
 	 * @param {*} html
 	 * @private
 	 */
 	updateBinding(message, html) {
+		// IMPLEMENTATION WARNING: DO NOT STORE html into the class properties (NO this.html AT ALL)
+		// Foundry will sometimes call renderChatMessage() multiple times with un-bound HTML,
+		// and we can't do anything except rely on closures to handle events.
 		this.message = message;
 		this.id = message.id;
 		this.flags = FoundryProxy.create(message.data.flags?.betterrolls5e ?? {});
 		this.speaker = game.actors.get(message.data.speaker.actor);
 		
-		this.html = html;
 		this.actorId = html.attr("data-actor-id");
 		this.itemId = html.attr("data-item-id");
 		this.tokenId = html.attr("data-token-id");
-		this._setupDamageOverlayButtons();
-		this._setupCardButtons();
 
 		// Hide Save DCs
 		const actor = this.speaker;
 		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
-			this.html.find(".hideSave").text(i18n("br5e.hideDC.string"));
+			html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 		}
+		
+		this._setupCardButtons(html);
+		this._setupOverlayButtons(html);
 	}
 
 	/**
@@ -145,8 +147,8 @@ export class BetterRollsChatCard {
 
 	/**
 	 * Returns the settings saved into this card.
-	 * Currently does nothing, but eventually setting overrides should be saved
-	 * onto this card.
+	 * Currently returns global settings, but eventually 
+	 * setting overrides should be saved onto this card.
 	 */
 	get settings() {
 		return getSettings();
@@ -206,14 +208,15 @@ export class BetterRollsChatCard {
 	 * Rolls crit dice if its not already rolled for the current card.
 	 * This is used when *augmenting* a roll to a crit, and not the initial render.
 	 * The change is not sent to users until update() is called.
-	 * @param {string?} optional group parameter to limit the crit roll
+	 * @param {string | null} group If not null, limits the updates to the specified group
+	 * @param {boolean} isCrit Whether to enable or disable crits
 	 * @returns if the crit roll went through
 	 */
-	async rollCrit(group) {
+	async updateCritStatus(group, isCrit) {
 		// Do nothing if crit is already rolled or if we don't have permission
 		const settings = this.settings;
 		const critBehavior = settings.critBehavior;
-		if (critBehavior === "0" || !this.hasPermission) {
+		if ((isCrit && critBehavior === "0") || !this.hasPermission) {
 			return false;
 		}
 
@@ -221,16 +224,29 @@ export class BetterRollsChatCard {
 		let updated = false;
 
 		for (const damage of this.models) {
-			if (damage.type === "damage" && damage.critRoll == null && damage.damageIndex !== "other") {
+			if (damage.type === "damage" && damage.damageIndex !== "other") {
 				if (group && damage.group !== group) {
 					continue;
 				}
 
-				const baseRoll = damage.baseRoll;
-				const savage = ItemUtils.appliesSavageAttacks(item);
-				damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
-				this.dicePool.push(damage.critRoll);
-				updated = true;
+				if (isCrit && damage.critRoll == null) {
+					// Enable Crit (from backup if available)
+					if (damage.critBackup) {
+						damage.critRoll = damage.critBackup;
+					} else {
+						const baseRoll = damage.baseRoll;
+						const savage = ItemUtils.appliesSavageAttacks(item);
+						damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
+						this.dicePool.push(damage.critRoll);	
+					}
+
+					updated = true;
+				} else if (!isCrit && damage.critRoll) {
+					// Disable crit but keep a backup
+					damage.critBackup = damage.critRoll;
+					damage.critRoll = undefined;
+					updated = true;
+				}
 			}
 		}
 
@@ -267,6 +283,56 @@ export class BetterRollsChatCard {
 		this.models = newModels;
 		return true;
 	}
+
+	/**
+	 * Assigns a RollState to a model. Cannot be used to unset it.
+	 * @param {*} id 
+	 * @param {*} rollState 
+	 */
+	async updateRollState(id, rollState) {
+		if (!this.hasPermission || !this.models || !rollState) {
+			return false;
+		}
+
+		const model = this.models.find(m => m.id === id);
+		if (model?.type !== 'multiroll' || model.rollState) {
+			return false;
+		}
+
+		// Calculate required number of rolls
+		let numRolls = Math.max(model.entries?.length, 2);
+		if (numRolls == 2 && model.elvenAccuracy && rollState !== "lowest") {
+			numRolls = 3;
+		}
+
+		// Add more rolls if necessary
+		while (model.entries?.length < numRolls) {
+			const roll = new Roll(model.formula).roll();
+			model.entries.push(Utils.processRoll(roll, model.critThreshold, [20]));
+			this.dicePool.push(roll);
+		}
+
+		// Determine roll result
+		const rollTotals = model.entries.map(r => r.roll.total);
+		let chosenResult = rollTotals[0];
+		if (rollState == "highest") {
+			chosenResult = Math.max(...rollTotals);
+		} else if (rollState == "lowest") {
+			chosenResult = Math.min(...rollTotals);
+		}
+
+		// Mark the non-results as ignored
+		model.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
+		
+		// Update remaining properties
+		model.rollState = rollState;
+		model.isCrit = model.entries.some(e => !e.ignored && e.isCrit);
+
+		// Update crit status
+		this.updateCritStatus(model.group, model.isCrit);
+		
+		return true;
+	}
 	
 	/**
 	 * Updates a chat message to have this HTML as its content.
@@ -290,91 +356,124 @@ export class BetterRollsChatCard {
 	}
 
 	/**
-	 * Internal method to setup the temporary buttons that that affect damage
+	 * Internal method to setup the temporary buttons used to update advantage or disadvantage,
+	 * as well as those that that affect damage
 	 * entries, like crit rolls and damage application.
 	 */
-	async _setupDamageOverlayButtons() {
-		if (!BRSettings.chatDamageButtonsEnabled) {
-			return;
+	async _setupOverlayButtons(html) {
+		// Multiroll buttons (perhaps introduce a new toggle property?)
+		if (this.models && BRSettings.chatDamageButtonsEnabled) {
+			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-multiroll-overlay.html");
+			
+			// Add multiroll overlay buttons to the DOM.
+			for (const model of this.models) {
+				if (model.type === "multiroll" && !model.rollState) {
+					const element = html.find(`.red-dual[data-id=${model.id}] .dice-row.red-totals`);
+					element.append($(templateMulti));
+				}
+			}
+
+			// Handle clicking the multi-roll overlay buttons
+			html.find(".multiroll-overlay-br button").click(async event => {
+				event.preventDefault();
+				event.stopPropagation();
+				const button = event.currentTarget;
+				const id = $(button).parents(".red-dual").attr('data-id');
+				const action = button.dataset.action;
+				if (action === "rollState") {
+					const rollState = button.dataset.state;
+					if (await this.updateRollState(id, rollState)) {
+						await this.update();
+					}
+				}
+			});
 		}
 
-		const { html } = this;
-		const template = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
-		const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
-		const customElements = html.find('[data-type=custom] .red-base-die').toArray();
-		
-		[...dmgElements, ...customElements].forEach(element => {
-			element = $(element);
-			element.append($(template));
-
-			// Remove crit button if already rolled
-			const id = element.parents('.dice-roll').attr('data-id');
-			const model = this.models?.find(m => m.id === id);
-			if (!model || model?.critRoll != null || model?.damageIndex === "other") {
-				element.find('.crit-button').remove();
-			}
-		});
-	
-		// adding click events to the buttons, this gets redone since they can break through rerendering of the card
-		html.find('.dmgBtn-container-br.right button').click(async ev => {
-			ev.preventDefault();
-			ev.stopPropagation();
-	
-			// find out the proper dmg thats supposed to be applied
-			const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
-			let dmg = dmgElement.find('.red-base-die').text();
-	
-			if (dmgElement.find('.red-extra-die').length > 0) {
-				const critDmg = dmgElement.find('.red-extra-die').text();
-				const dialogPosition = {
-					x: ev.originalEvent.screenX,
-					y: ev.originalEvent.screenY
-				};
-	
-				dmg = await this._applyCritDamageToActor(Number(dmg), Number(critDmg), dialogPosition);
-			}
-	
-			// getting the modifier depending on which of the buttons was pressed
-			let modifier = ev.target.dataset.modifier;
-	
-			// sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
-			if (modifier === undefined) {
-				modifier = $(ev.target).parent().attr('data-modifier');
-			}
-	
-			// applying dmg to the targeted token and sending only the span that the button sits in 
-			const targetActors = Utils.getTargetActors() || [];
-			targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
+		// Setup augment crit and apply damage button
+		if (BRSettings.chatDamageButtonsEnabled) {
+			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
+			const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
+			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 			
-			setTimeout(() => { 
-				if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
-					canvas.hud.token.render();
-				}
-			}, 50);
-		});
+			[...dmgElements, ...customElements].forEach(element => {
+				element = $(element);
+				element.append($(templateDamage));
 
-		// Enable crit button
-		html.find('.crit-button').on('click', async (ev) => {
-			ev.preventDefault();
-			ev.stopPropagation();
-			const group = $(ev.target).parents('.dice-roll').attr('data-group');
-			if (await this.rollCrit(group)) {
-				await this.update();
-			}
-		});
-	
-		// logic to only show the buttons when the mouse is within the chatcard
-		html.find('.dmgBtn-container-br').hide();
-		html.hover(evIn => {
-			if (this.hasPermission) {
-				html.find('.dmgBtn-container-br.left').show();
-			}
-			if (canvas?.tokens.controlled.length > 0) {
-				html.find('.dmgBtn-container-br.right').show();
-			}
-		}, evOut => {
-			html.find('.dmgBtn-container-br').hide();
-		});
+				// Remove crit button if already rolled
+				const id = element.parents('.dice-roll').attr('data-id');
+				const model = this.models?.find(m => m.id === id);
+				if (!model || model?.critRoll != null || model?.damageIndex === "other") {
+					element.find('.crit-button').remove();
+				}
+			});
+		
+			// Handle apply damage overlay button events
+			html.find('.apply-damage-buttons button').click(async ev => {
+				ev.preventDefault();
+				ev.stopPropagation();
+		
+				// find out the proper dmg thats supposed to be applied
+				const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
+				let dmg = dmgElement.find('.red-base-die').text();
+		
+				if (dmgElement.find('.red-extra-die').length > 0) {
+					const critDmg = dmgElement.find('.red-extra-die').text();
+					const dialogPosition = {
+						x: ev.originalEvent.screenX,
+						y: ev.originalEvent.screenY
+					};
+		
+					dmg = await this._applyCritDamageToActor(Number(dmg), Number(critDmg), dialogPosition);
+				}
+		
+				// getting the modifier depending on which of the buttons was pressed
+				let modifier = ev.target.dataset.modifier;
+		
+				// sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
+				if (modifier === undefined) {
+					modifier = $(ev.target).parent().attr('data-modifier');
+				}
+		
+				// applying dmg to the targeted token and sending only the span that the button sits in 
+				const targetActors = Utils.getTargetActors() || [];
+				targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
+				
+				setTimeout(() => { 
+					if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
+						canvas.hud.token.render();
+					}
+				}, 50);
+			});
+
+			// Handle crit button application event
+			html.find('.crit-button').on('click', async (ev) => {
+				ev.preventDefault();
+				ev.stopPropagation();
+				const group = $(ev.target).parents('.dice-roll').attr('data-group');
+				if (await this.updateCritStatus(group, true)) {
+					await this.update();
+				}
+			});
+		}
+
+		// Enable Hover Events (to show/hide the elements)
+		this._onHoverEnd(html);
+		html.hover(this._onHover.bind(this, html), this._onHoverEnd.bind(this, html));
+	}
+
+	_onHover(html) {
+		const { hasPermission } = this;
+		html.find(".die-result-overlay-br").show();
+
+		// Apply Damage / Augment Crit
+		const controlled = canvas?.tokens.controlled.length > 0;
+		html.find('.multiroll-overlay-br').toggle(hasPermission);
+		html.find('.crit-button').toggle(hasPermission);
+		html.find('.apply-damage-buttons').toggle(controlled);
+	}
+
+	_onHoverEnd(html) {
+		html.find(".die-result-overlay-br").attr("style", "display: none;");
 	}
 	
 	async _applyCritDamageToActor(dmg, critdmg, position) {
@@ -413,9 +512,9 @@ export class BetterRollsChatCard {
 	 * Bind card button events. These are the clickable action buttons.
 	 * @private
 	 */
-	_setupCardButtons() {
-		this.html.find(".card-buttons").off()
-		this.html.find(".card-buttons button").off().click(async event => {
+	_setupCardButtons(html) {
+		html.find(".card-buttons").off()
+		html.find(".card-buttons button").off().click(async event => {
 			event.preventDefault();
 			const button = event.currentTarget;
 			button.disabled = true;

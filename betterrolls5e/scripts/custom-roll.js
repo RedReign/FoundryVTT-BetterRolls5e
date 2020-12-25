@@ -145,9 +145,9 @@ export class CustomRoll {
 			let rollTotals = entries.map(r => r.roll.total);
 			let chosenResult = rollTotals[0];
 			if (rollState == "highest") {
-				chosenResult = rollTotals.sort(function(a, b){return a-b})[rollTotals.length-1];
+				chosenResult = Math.max(...rollTotals);
 			} else if (rollState == "lowest") {
-				chosenResult = rollTotals.sort(function(a, b){return a-b})[0];
+				chosenResult = Math.min(...rollTotals);
 			}
 
 			// Mark the non-results as ignored
@@ -157,6 +157,8 @@ export class CustomRoll {
 		const results = {
 			type: "multiroll",
 			title,
+			critThreshold,
+			elvenAccuracy,
 			rollState,
 			rollType,
 			formula,
@@ -424,11 +426,13 @@ export class CustomRoll {
 		models = (await Promise.all(models)).filter(m => m);
 
 		// Assign groups to models + hide damage entries if damage prompt is enabled
-		// Models increment on a junction
+		// Groups increment on a junction
 		let group = -1;
 		for (const model of models) {
 			if (["multiroll", "button-save"].includes(model.type)) {
+				// This is a junction, so start a new group
 				group++;
+				model.group = `br!${group}`;
 			} else if (model.type === "damage") {
 				// Damage entries are only prompted after attacks/saves
 				if (group < 0) continue;

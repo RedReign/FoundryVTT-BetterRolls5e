@@ -53,6 +53,7 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 });
 
 // Bind to any newly rendered chat cards at runtime
+// For whatever reason, this callback is sometimes called with unattached html elements
 Hooks.on("renderChatMessage", (message, html, data) => {
 	BetterRollsChatCard.bind(message, html);
 });

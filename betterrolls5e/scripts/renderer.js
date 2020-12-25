@@ -26,7 +26,10 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @type {object}
  * @property {"multiroll"} type
  * @property {string} title
- * @property {string} rollState
+ * @property {"highest" | "lowest" | "first" | null} rollState advantage/disadvantage/normal/none
+ * @property {string?} group Damage group used to identify what damage entries would be affected by a crit
+ * @property {number} critThreshold
+ * @property {boolean?} elvenAccuracy whether elven accuracy applies to this attack
  * @property {string} rollType
  * @property {string} formula
  * @property {boolean} isCrit

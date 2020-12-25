@@ -142,6 +142,9 @@
 	"br5e.querying.normal": "Normal",
 	"br5e.querying.advantage": "Advantage",
 	
+	"br5e.chat.multiRollButtons.advantage.hint": "Roll with Advantage (Shift)",
+	"br5e.chat.multiRollButtons.disadvantage.hint": "Roll with Disadvantage (Ctrl)",
+
 	"br5e.chat.damageButtons.fullDamage.hint": "Click to apply full damage to selected token(s).",
 	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",
 	"br5e.chat.damageButtons.doubleDamage.hint": "Click to apply double damage to selected token(s).",

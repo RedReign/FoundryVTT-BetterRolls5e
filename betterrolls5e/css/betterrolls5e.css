@@ -14,6 +14,7 @@
 }
 
 .red-dual .dice-row {
+	position: relative;
 	clear: both;
 	display: flex;
 	justify-content: space-between;
@@ -143,24 +144,23 @@
     align-items:baseline;
 }
 
-.dmgBtn-container-br {
-    align-self: flex-end;
+.die-result-overlay-br {
     text-align: right!important;
     flex-grow: 1;
-    position: absolute;
-    bottom: 1px;
-}
-
-.dmgBtn-container-br.left {
-	align-self: flex-start;
+	position: absolute;
 	left: 0;
+	right: 0;
+	bottom: 1px;
+
+	display: flex;
+	justify-content: space-between;
 }
 
 .dmgBtn-container-br.right {
     right: 0;
 }
 
-.dmgBtn-container-br button {
+.die-result-overlay-br button {
     width: 22px; 
     height: 22px; 
     font-size: 10px; 
@@ -169,7 +169,7 @@
 	border: 1px solid #999;
 }
 
-.dmgBtn-container-br button i {
+.die-result-overlay-br button i {
     margin-left: -2.5px;
 }
 

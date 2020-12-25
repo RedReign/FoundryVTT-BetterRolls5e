@@ -1,19 +1,21 @@
-<span class="dmgBtn-container-br left temporary">
-    <button class="crit-button">
-        <i class="fas fa-plus" title="{{ localize "br5e.chat.damageButtons.crit.hint"}}"></i>
-    </button>
-</span>
-<span class="dmgBtn-container-br right temporary">
-    <button data-modifier="1">
-        <i class="fas fa-user-minus" title="{{ localize "br5e.chat.damageButtons.fullDamage.hint" }}"></i>
-    </button>
-    <button data-modifier="0.5">
-        <i class="fas fa-user-shield" title="{{ localize "br5e.chat.damageButtons.halfDamage.hint" }}"></i>
-    </button>
-    <button data-modifier="2">
-        <i class="fas fa-user-injured" title="{{ localize "br5e.chat.damageButtons.doubleDamage.hint" }}"></i>
-    </button>
-    <button data-modifier="-1">
-        <i class="fas fa-user-plus" title="{{ localize "br5e.chat.damageButtons.healing.hint" }}"></i>
-    </button>
-</span>
+<div class="die-result-overlay-br damage-overlay-br">
+    <span>
+        <button class="crit-button">
+            <i class="fas fa-plus" title="{{ localize "br5e.chat.damageButtons.crit.hint"}}"></i>
+        </button>
+    </span>
+    <span class="apply-damage-buttons">
+        <button data-modifier="1">
+            <i class="fas fa-user-minus" title="{{ localize "br5e.chat.damageButtons.fullDamage.hint" }}"></i>
+        </button>
+        <button data-modifier="0.5">
+            <i class="fas fa-user-shield" title="{{ localize "br5e.chat.damageButtons.halfDamage.hint" }}"></i>
+        </button>
+        <button data-modifier="2">
+            <i class="fas fa-user-injured" title="{{ localize "br5e.chat.damageButtons.doubleDamage.hint" }}"></i>
+        </button>
+        <button data-modifier="-1">
+            <i class="fas fa-user-plus" title="{{ localize "br5e.chat.damageButtons.healing.hint" }}"></i>
+        </button>
+    </span>
+</div>
