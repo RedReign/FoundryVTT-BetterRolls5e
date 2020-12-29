@@ -1,16 +1,9 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
-import { ItemUtils } from "./utils.js";
+import { i18n, ItemUtils } from "./utils.js";
 import { getSettings } from "./settings.js";
-
-export function i18n(key, data=null) {
-	if (data) {
-		return game.i18n.format(key, data);
-	}
-
-	return game.i18n.localize(key);
-}
+import { RollFields } from "./fields.js";
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
@@ -630,5 +623,6 @@ export function BetterRolls() {
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.fullRollSkill,
 		rollItem:CustomRoll.newItemRoll,
+		builder:RollFields
 	};
 }

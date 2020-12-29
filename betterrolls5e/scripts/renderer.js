@@ -1,12 +1,11 @@
-import { i18n } from "./betterrolls5e.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { Utils, ActorUtils, ItemUtils } from "./utils.js";
+import { i18n, Utils, ActorUtils, ItemUtils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
+ * Not part of the entry list
  * @typedef HeaderDataProps
  * @type {object}
- * @property {"header"} type
  * @property {string} img image path to show in the box
  * @property {string} title header title text
  */
@@ -72,7 +71,14 @@ import { Utils, ActorUtils, ItemUtils } from "./utils.js";
  * Union type of all possible render model types, separatable by the type property.
  * @typedef { HeaderDataProps | DescriptionDataProps | 
  * 		MultiRollDataProps | DamageDataProps | ButtonSaveProps | ButtonDamageProps
- * } RenderModel
+ * } RenderModelEntry
+ */
+
+/**
+ * The model data used to render a card
+ * @typedef RenderModel
+ * @property {RenderModelEntry[]} entries
+ * @property {string[]} properties list of item properties
  */
 
 /**
@@ -293,31 +299,15 @@ export class Renderer {
 	}
 
 	/**
-	 * Turns a list of model objects into a list of rendered templates
-	 * @param {RenderModel[]} models 
-	 * @param {BRSettings} settings
-	 * @returns {Promise<string[]>}
-	 */
-	static renderModelList(models, settings) {
-		return Promise.all(models.map(m => Renderer.renderModel(m, settings)));
-	}
-
-	/**
 	 * Renders a full card
-	 * @param {Array<string | RenderModel | Promise<string | RenderModel>>} templates
+	 * @param {RenderModel} data
 	 * @param {*} param1 
 	 */
-	static async renderCard(templates, {actor=null, item=null, isCrit=false, properties=null}) {
+	static async renderCard(data, {actor=null, item=null, isCrit=false, settings=null}) {
+		const templates = await Promise.all(data.entries.map(m => Renderer.renderModel(m, settings)));
+
 		// Add token's ID to chat roll, if valid
 		let tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
-
-		templates = await Promise.all(await templates);
-		templates = await Promise.all(templates.map(Renderer.renderModel));
-
-		// Default properties to the item properties if item is given
-		if (properties == null && item) {
-			properties = ItemUtils.getPropertyList(item);
-		}
 
 		return renderModuleTemplate("red-fullroll.html", {
 			item,
@@ -325,7 +315,7 @@ export class Renderer {
 			tokenId,
 			isCritical: isCrit,
 			templates,
-			properties
+			properties: data.properties
 		});
 	}
 }

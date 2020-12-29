@@ -57,3 +57,11 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 Hooks.on("renderChatMessage", (message, html, data) => {
 	BetterRollsChatCard.bind(message, html);
 });
+
+Hooks.on("preRenderBetterRolls", (aa) => {
+	console.log(aa);
+});
+
+Hooks.on("renderBetterRolls", (aa) => {
+	console.log(aa);
+})

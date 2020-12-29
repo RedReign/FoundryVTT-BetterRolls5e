@@ -1,4 +1,4 @@
-import { i18n } from "./betterrolls5e.js";
+import { i18n } from "./utils.js";
 
 const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
 

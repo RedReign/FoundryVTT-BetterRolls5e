@@ -1,9 +1,23 @@
-import { i18n, isAttack, isSave } from "./betterrolls5e.js";
+import { isAttack, isSave } from "./betterrolls5e.js";
 import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
 import { getSettings } from "./settings.js";
 
 /**
- * Check if maestro is turned on.
+ * Shorthand for both game.i18n.format() and game.i18n.localize() depending
+ * on whether data is supplied or not
+ * @param {string} key 
+ * @param {object?} data optional data that if given will do a format() instead 
+ */
+export function i18n(key, data=null) {
+	if (data) {
+		return game.i18n.format(key, data);
+	}
+
+	return game.i18n.localize(key);
+}
+
+/**
+ * Check if the maestro module is enabled and turned on.
  */
 function isMaestroOn() {
 	let output = false;
@@ -91,7 +105,7 @@ export class Utils {
 	}
 
 	/**
-	 * Get Roll modifiers given a browser event
+	 * Get roll state modifiers given a browser event
 	 * @param {*} ev 
 	 */
 	static getEventRollModifiers(eventToCheck) {
@@ -105,6 +119,34 @@ export class Utils {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Determines rollstate based on several parameters
+	 * @param {object} param0 
+	 */
+	static getRollState({rollState=null, event=null, adv=null, disadv=null}={}) {
+		if (rollState) return rollState;
+
+		if (adv || disadv) {
+			adv = adv || 0;
+			disadv = disadv || 0;
+			if (adv > 0 || disadv > 0) {
+				if (adv > disadv) { return "highest"; }
+				else if (adv < disadv) { return "lowest"; }
+			} else { 
+				return null;
+			}
+		}
+
+		if (event) {
+			const modifiers = Utils.getEventRollModifiers(event);
+			if (modifiers.adv || modifiers.disadv) {
+				return Utils.getRollState(modifiers);
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -451,7 +493,8 @@ export class ItemUtils {
 
 	/**
 	 * Returns the ability mod the item uses for the attack.
-	 * If no item is given, returns null
+	 * If no item is given, returns null.
+	 * This does not use the built in Item.abilityMod because that one doesn't handle feats
 	 * @param {*} itm 
 	 */
 	static getAbilityMod(itm) {
@@ -459,38 +502,39 @@ export class ItemUtils {
 
 		const itemData = itm.data.data;
 		const actorData = itm.actor.data.data;
+
+		// If there is already an ability configured, use it
+		if (itemData.ability) return itemData.ability;
 	
-		let abl = itemData.ability || "";
-	
-		if ((itm.data.type == "weapon") && itemData.properties.fin && ["","str","dex"].includes(abl)) {
-			// If the item is a finesse weapon, and abl is "", "str", or "dex"
+		// If the item is a finesse weapon, and abl is "str", or "dex", or default
+		if ((itm.data.type == "weapon") && itemData.properties.fin) {
 			if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) {
-				abl = "str";
+				return "str";
 			} else {
-				abl = "dex";
+				return "dex";
 			}
-		} else if (!abl) {
-			if (itm.data.type == "spell") {
-				// Spells
-				abl = actorData.attributes.spellcasting;
-			} else if (["weapon", "feat"].includes(itm.data.type)) {
-				// Weapons / Feats, based on the "Action Type" field
-				switch (itemData.actionType) {
-					case "mwak":
-						abl = "str";
-						break;
-					case "rwak":
-						abl = "dex";
-						break;
-					case "msak":
-					case "rsak":
-						abl = actorData.attributes.spellcasting;
-						break;
-				}
+		} 
+		
+		// Spells
+		if (itm.data.type == "spell") {
+			return actorData.attributes.spellcasting || "int";
+		} 
+		
+		// Weapons or feats
+		if (["weapon", "feat"].includes(itm.data.type)) {
+			// Weapons / Feats, based on the "Action Type" field
+			switch (itemData.actionType) {
+				case "mwak":
+					return "str";
+				case "rwak":
+					return "dex";
+				case "msak":
+				case "rsak":
+					return actorData.attributes.spellcasting;
 			}
 		}
 
-		return abl;
+		return null;
 	}
 
 	/**
@@ -873,5 +917,63 @@ export class DiceCollection {
 		}
 
 		return hasDice;
+	}
+}
+
+/**
+ * Creates objects (proxies) which can be used to deserialize flags efficiently.
+ * Currently this is used so that Roll objects unwrap properly.
+ */
+export const FoundryProxy = {
+	// A set of all created proxies. Weaksets do not prevent garbage collection,
+	// allowing us to safely test if something is a proxy by adding it in here
+	proxySet: new WeakSet(),
+
+	/**
+	 * Creates a new proxy that turns serialized objects (like rolls) into objects.
+	 * Use the result as if it was the original object.
+	 * @param {*} data 
+	 */
+	create(data) {
+		const proxy = new Proxy(data, FoundryProxy);
+		FoundryProxy.proxySet.add(proxy);
+		return proxy;
+	},
+
+	/**
+	 * @private 
+	 */
+	get(target, key) {
+		const value = target[key];
+
+		// Prevent creating the same proxy again
+		if (FoundryProxy.proxySet.has(value)) {
+			return value;
+		}
+
+		if (value !== null && typeof value === 'object') {
+			if (value.class === "Roll") {
+				// This is a serialized roll, convert to roll object
+				return Roll.fromData(value);
+			} else if (!{}.hasOwnProperty.call(target, key)) {
+				// this is a getter or setter function, so no proxy-ing
+				return value;
+			} else {
+				// Create a nested proxy, and save the reference
+				const proxy = FoundryProxy.create(value);
+				target[key] = proxy;
+				return proxy;
+			}
+		} else {
+			return value;
+		}
+	},
+
+	/**
+	 * @private 
+	 */
+	set(target, key, value) {
+		target[key] = value;
+		return true;
 	}
 }

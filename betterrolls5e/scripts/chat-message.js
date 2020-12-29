@@ -1,66 +1,7 @@
-import { i18n } from "./betterrolls5e.js";
 import { CustomRoll } from "./custom-roll.js";
 import { Renderer } from "./renderer.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { DiceCollection, ItemUtils, Utils } from "./utils.js";
-
-/**
- * Creates objects (proxies) which can be used to deserialize flags efficiently.
- * Currently this is used so that Roll objects unwrap properly.
- */
-const FoundryProxy = {
-	// A set of all created proxies. Weaksets do not prevent garbage collection,
-	// allowing us to safely test if something is a proxy by adding it in here
-	proxySet: new WeakSet(),
-
-	/**
-	 * Creates a new proxy that turns serialized objects (like rolls) into objects.
-	 * Use the result as if it was the original object.
-	 * @param {*} data 
-	 */
-	create(data) {
-		const proxy = new Proxy(data, FoundryProxy);
-		FoundryProxy.proxySet.add(proxy);
-		return proxy;
-	},
-
-	/**
-	 * @private 
-	 */
-	get(target, key) {
-		const value = target[key];
-
-		// Prevent creating the same proxy again
-		if (FoundryProxy.proxySet.has(value)) {
-			return value;
-		}
-
-		if (value !== null && typeof value === 'object') {
-			if (value.class === "Roll") {
-				// This is a serialized roll, convert to roll object
-				return Roll.fromData(value);
-			} else if (!{}.hasOwnProperty.call(target, key)) {
-				// this is a getter or setter function, so no proxy-ing
-				return value;
-			} else {
-				// Create a nested proxy, and save the reference
-				const proxy = FoundryProxy.create(value);
-				target[key] = proxy;
-				return proxy;
-			}
-		} else {
-			return value;
-		}
-	},
-
-	/**
-	 * @private 
-	 */
-	set(target, key, value) {
-		target[key] = value;
-		return true;
-	}
-}
+import { i18n, DiceCollection, ItemUtils, Utils, FoundryProxy } from "./utils.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.
@@ -73,15 +14,8 @@ export class BetterRollsChatCard {
 		this.updateBinding(message, html);
 	}
 
-	/**
-	 * @returns {import("./renderer.js").RenderModel[]}
-	 */
-	get models() {
-		return this.flags.models;
-	}
-
-	set models(value) {
-		this.flags.models = value;
+	get message() {
+		return ChatMessage.collection.get(this.id);
 	}
 
 	/**
@@ -93,12 +27,16 @@ export class BetterRollsChatCard {
 	updateBinding(message, html) {
 		// IMPLEMENTATION WARNING: DO NOT STORE html into the class properties (NO this.html AT ALL)
 		// Foundry will sometimes call renderChatMessage() multiple times with un-bound HTML,
-		// and we can't do anything except rely on closures to handle events.
-		this.message = message;
+		// and we can't do anything except rely on closures to handle those events.
 		this.id = message.id;
-		this.flags = FoundryProxy.create(message.data.flags?.betterrolls5e ?? {});
-		this.speaker = game.actors.get(message.data.speaker.actor);
+		const flags = FoundryProxy.create(message.data.flags?.betterrolls5e ?? {});
 		
+		/** @type {import("./renderer.js").RenderModel} */
+		this.data = flags.data;
+
+		this.params = flags.params;
+		
+		this.speaker = game.actors.get(message.data.speaker.actor);
 		this.actorId = html.attr("data-actor-id");
 		this.itemId = html.attr("data-item-id");
 		this.tokenId = html.attr("data-token-id");
@@ -108,9 +46,21 @@ export class BetterRollsChatCard {
 		if ((!actor && !game.user.isGM) || actor?.permission != 3) {
 			html.find(".hideSave").text(i18n("br5e.hideDC.string"));
 		}
-		
+
+		// Setup the events for card buttons (the permanent ones, not the hover ones)
 		this._setupCardButtons(html);
-		this._setupOverlayButtons(html);
+		
+		// Setup hover buttons when hovered (for optimization)
+		// Just like with html, we cannot save hoverInitialized to the object
+		let hoverInitialized = false;
+		html.hover(async () => {
+			if (!hoverInitialized) {
+				hoverInitialized = true;
+				await this._setupOverlayButtons(html);
+				this._onHover(html);
+				console.log("BetterRolls5e | Hover Buttons Initialized");
+			}
+		})
 	}
 
 	/**
@@ -223,7 +173,7 @@ export class BetterRollsChatCard {
 		const item = this.item;
 		let updated = false;
 
-		for (const damage of this.models) {
+		for (const damage of this.data.entries) {
 			if (damage.type === "damage" && damage.damageIndex !== "other") {
 				if (group && damage.group !== group) {
 					continue;
@@ -258,62 +208,62 @@ export class BetterRollsChatCard {
 	 * @param {string} group
 	 */
 	async rollDamage(group) {
-		if (!this.hasPermission || !this.models) {
+		if (!this.hasPermission || !this.data) {
 			return false;
 		}
 
 		// Get the relevant damage group
 		group = encodeURIComponent(group);
 
-		const newModels = [];
-		for (const model of this.models) {
-			if (model.type === "button-damage" && model.group === group) {
+		const newEntries = [];
+		for (const entry of this.data.entries) {
+			if (entry.type === "button-damage" && entry.group === group) {
 				continue;
 			}
 
-			if (model.type === "damage" && model.group === group) {
-				model.hidden = false;
-				this.dicePool.push(model.baseRoll, model.critRoll);
+			if (entry.type === "damage" && entry.group === group) {
+				entry.hidden = false;
+				this.dicePool.push(entry.baseRoll, entry.critRoll);
 			}
 
-			newModels.push(model);
+			newEntries.push(entry);
 		}
 
-		// New models with damage prompts removed
-		this.models = newModels;
+		// New data render entries with damage prompts removed
+		this.data.entries = newEntries;
 		return true;
 	}
 
 	/**
-	 * Assigns a RollState to a model. Cannot be used to unset it.
+	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
 	 * @param {*} id 
 	 * @param {*} rollState 
 	 */
 	async updateRollState(id, rollState) {
-		if (!this.hasPermission || !this.models || !rollState) {
+		if (!this.hasPermission || !this.data || !rollState) {
 			return false;
 		}
 
-		const model = this.models.find(m => m.id === id);
-		if (model?.type !== 'multiroll' || model.rollState) {
+		const multiroll = this.data.entries.find(m => m.id === id);
+		if (multiroll?.type !== 'multiroll' || multiroll.rollState) {
 			return false;
 		}
 
 		// Calculate required number of rolls
-		let numRolls = Math.max(model.entries?.length, 2);
-		if (numRolls == 2 && model.elvenAccuracy && rollState !== "lowest") {
+		let numRolls = Math.max(multiroll.entries?.length, 2);
+		if (numRolls == 2 && multiroll.elvenAccuracy && rollState !== "lowest") {
 			numRolls = 3;
 		}
 
 		// Add more rolls if necessary
-		while (model.entries?.length < numRolls) {
-			const roll = new Roll(model.formula).roll();
-			model.entries.push(Utils.processRoll(roll, model.critThreshold, [20]));
+		while (multiroll.entries?.length < numRolls) {
+			const roll = new Roll(multiroll.formula).roll();
+			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20]));
 			this.dicePool.push(roll);
 		}
 
 		// Determine roll result
-		const rollTotals = model.entries.map(r => r.roll.total);
+		const rollTotals = multiroll.entries.map(r => r.roll.total);
 		let chosenResult = rollTotals[0];
 		if (rollState == "highest") {
 			chosenResult = Math.max(...rollTotals);
@@ -322,14 +272,14 @@ export class BetterRollsChatCard {
 		}
 
 		// Mark the non-results as ignored
-		model.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
+		multiroll.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
 		
 		// Update remaining properties
-		model.rollState = rollState;
-		model.isCrit = model.entries.some(e => !e.ignored && e.isCrit);
+		multiroll.rollState = rollState;
+		multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
 
 		// Update crit status
-		this.updateCritStatus(model.group, model.isCrit);
+		this.updateCritStatus(multiroll.group, multiroll.isCrit);
 		
 		return true;
 	}
@@ -340,16 +290,15 @@ export class BetterRollsChatCard {
 	 * @param message 
 	 */
 	async update() {
-		if (ChatMessage.collection.get(this.id)) {
-			const chatMessage = this.message;
-			const { actor, item, flags } = this;
-			const { properties, models } = flags;
-			const templates = Renderer.renderModelList(models);
-			const content = await Renderer.renderCard(templates, { actor, item, properties })
+		const chatMessage = this.message;
+		if (chatMessage) {
+			const { actor, item, params, data } = this;
+			const settings = this.settings;
+			const content = await Renderer.renderCard(data, { actor, item, settings })
 
 			await this.dicePool.flush();
 			await chatMessage.update({
-				'flags.betterrolls5e': duplicate(flags),
+				'flags.betterrolls5e': duplicate({data, params}),
 				content
 			}, { diff: true });
 		}
@@ -362,13 +311,13 @@ export class BetterRollsChatCard {
 	 */
 	async _setupOverlayButtons(html) {
 		// Multiroll buttons (perhaps introduce a new toggle property?)
-		if (this.models && BRSettings.chatDamageButtonsEnabled) {
+		if (this.data && BRSettings.chatDamageButtonsEnabled) {
 			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-multiroll-overlay.html");
 			
 			// Add multiroll overlay buttons to the DOM.
-			for (const model of this.models) {
-				if (model.type === "multiroll" && !model.rollState) {
-					const element = html.find(`.red-dual[data-id=${model.id}] .dice-row.red-totals`);
+			for (const entry of this.data.entries) {
+				if (entry.type === "multiroll" && !entry.rollState) {
+					const element = html.find(`.red-dual[data-id=${entry.id}] .dice-row.red-totals`);
 					element.append($(templateMulti));
 				}
 			}
@@ -401,8 +350,8 @@ export class BetterRollsChatCard {
 
 				// Remove crit button if already rolled
 				const id = element.parents('.dice-roll').attr('data-id');
-				const model = this.models?.find(m => m.id === id);
-				if (!model || model?.critRoll != null || model?.damageIndex === "other") {
+				const entry = this.data?.entries.find(m => m.id === id);
+				if (!entry || entry?.critRoll != null || entry?.damageIndex === "other") {
 					element.find('.crit-button').remove();
 				}
 			});
