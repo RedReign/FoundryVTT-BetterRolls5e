@@ -1,6 +1,8 @@
 import { isAttack, isSave } from "./betterrolls5e.js";
-import { DND5E as dnd5e } from "../../../systems/dnd5e/module/config.js";
 import { getSettings } from "./settings.js";
+import { DND5E } from "../../../systems/dnd5e/module/config.js";
+
+export const dnd5e = DND5E;
 
 /**
  * Shorthand for both game.i18n.format() and game.i18n.localize() depending
@@ -102,6 +104,44 @@ export class Utils {
 			critType, 
 			isCrit: high > 0,
 		};
+	}
+
+	/**
+	 * Returns an {adv, disadv} object when given an event.
+	 * This one is done via a dialog, and will likely be tweaked eventually
+	 */ 
+	static async eventToAdvantage(ev, itemType) {
+		if (ev.shiftKey) {
+			return {adv:1, disadv:0};
+		} else if ((keyboard.isCtrl(ev))) {
+			return {adv:0, disadv:1};
+		} else if (getSettings().queryAdvantageEnabled) {
+			// Don't show dialog for items that aren't tool or weapon.
+			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
+				return {adv:0, disadv:0};
+			}
+			return new Promise(resolve => {
+				new Dialog({
+					title: i18n("br5e.querying.title"),
+					buttons: {
+						disadvantage: {
+							label: i18n("br5e.querying.disadvantage"),
+							callback: () => resolve({adv:0, disadv:1})
+						},
+						normal: {
+							label: i18n("br5e.querying.normal"),
+							callback: () => resolve({adv:0, disadv:0})
+						},
+						advantage: {
+							label: i18n("br5e.querying.advantage"),
+							callback: () => resolve({adv:1, disadv:0})
+						}
+					}
+				}).render(true);
+			});
+		} else {
+			return {adv:0, disadv:0};
+		}
 	}
 
 	/**

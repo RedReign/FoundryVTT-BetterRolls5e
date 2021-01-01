@@ -1,10 +1,8 @@
 import { isAttack, isSave, isCheck } from "./betterrolls5e.js";
-import { i18n, DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
+import { dnd5e, i18n, DiceCollection, ActorUtils, ItemUtils, Utils, FoundryProxy } from "./utils.js";
 import { Renderer } from "./renderer.js";
-import { BRSettings, getSettings } from "./settings.js";
+import { getSettings } from "./settings.js";
 import { RollFields } from "./fields.js";
-
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
 
 /**
  * Parameters used when full rolling an actor
@@ -15,68 +13,12 @@ import { DND5E } from "../../../systems/dnd5e/module/config.js";
  * @property {number?} critThreshold
  */
 
-let dnd5e = DND5E;
-
-/**
- * Populates a dice pool using a render model or a list of render models
- * @param {import("./renderer.js").RenderModelEntry | Array<import("./renderer.js").RenderModelEntry>} renderEntries 
- * @param {DiceCollection} dicePool 
- */
-function populateDicePool(renderEntries, dicePool) {
-	// If this is an array, recursively run on sub entries
-	if (renderEntries instanceof Array) {
-		renderEntries.forEach(e => populateDicePool(e, dicePool));
-		return;
-	}
-
-	if (renderEntries.type === "multiroll") {
-		dicePool?.push(...renderEntries.entries.map(e => e.roll));
-	} else if (renderEntries.type === "damage") {
-		dicePool.push(renderEntries.baseRoll, renderEntries.critRoll);
-	}
-}
-
 /**
  * General class for macro support, actor rolls, and most static rolls.
  * It provides utility functions that can be used to create a new roll,
  * as well as the most common Actor roll functions.
  */
 export class CustomRoll {
-	// Returns an {adv, disadv} object when given an event
-	static async eventToAdvantage(ev, itemType) {
-		if (ev.shiftKey) {
-			return {adv:1, disadv:0};
-		} else if ((keyboard.isCtrl(ev))) {
-			return {adv:0, disadv:1};
-		} else if (getSettings().queryAdvantageEnabled) {
-			// Don't show dialog for items that aren't tool or weapon.
-			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
-				return {adv:0, disadv:0};
-			}
-			return new Promise(resolve => {
-				new Dialog({
-					title: i18n("br5e.querying.title"),
-					buttons: {
-						disadvantage: {
-							label: i18n("br5e.querying.disadvantage"),
-							callback: () => resolve({adv:0, disadv:1})
-						},
-						normal: {
-							label: i18n("br5e.querying.normal"),
-							callback: () => resolve({adv:0, disadv:0})
-						},
-						advantage: {
-							label: i18n("br5e.querying.advantage"),
-							callback: () => resolve({adv:1, disadv:0})
-						}
-					}
-				}).render(true);
-			});
-		} else {
-			return {adv:0, disadv:0};
-		}
-	}
-
 	/**
 	 * Internal method to perform a basic actor full roll of "something".
 	 * It creates and display a chat message on completion.
@@ -105,7 +47,7 @@ export class CustomRoll {
 	 * @param {string} skill shorthand referring to the skill name
 	 * @param {FullRollActorParams} params parameters
 	 */
-	static async fullRollSkill(actor, skill, params={}) {
+	static async rollSkill(actor, skill, params={}) {
 		const label = i18n(dnd5e.skills[skill]);
 		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
 		return CustomRoll.fullRollActor(actor, label, formula, "skill", params);
@@ -118,7 +60,7 @@ export class CustomRoll {
 	 * @param {FullRollActorParams} params 
 	 */
 	static async rollCheck(actor, ability, params) {
-		return await CustomRoll.fullRollAttribute(actor, ability, "check", params);
+		return await CustomRoll.rollAttribute(actor, ability, "check", params);
 	}
 	
 	/**
@@ -128,7 +70,7 @@ export class CustomRoll {
 	 * @param {FullRollActorParams} params 
 	 */
 	static async rollSave(actor, ability, params) {
-		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
+		return await CustomRoll.rollAttribute(actor, ability, "save", params);
 	}
 	
 	/**
@@ -138,7 +80,7 @@ export class CustomRoll {
 	 * @param {String} rollType		String of either "check" or "save"
 	 * @param {FullRollActorParams} params
 	 */
-	static async fullRollAttribute(actor, ability, rollType, params={}) {
+	static async rollAttribute(actor, ability, rollType, params={}) {
 		const label = dnd5e.abilities[ability];
 
 		let titleString;
@@ -154,8 +96,13 @@ export class CustomRoll {
 		return CustomRoll.fullRollActor(actor, titleString, formula, rollType, params);
 	}
 	
-	static newItemRoll(item, params, fields) {
-		return new CustomItemRoll(item, params, fields);
+	static newItemRoll(itemOrActor, params, fields) {
+		// params.event is an available parameter for backwards compatibility reasons
+		// but really we're interested in the rollState. Handle that here.
+		params.rollState = Utils.getRollState({ event, ...params });
+		delete params.event;
+		
+		return new CustomItemRoll(itemOrActor, params, fields);
 	}
 }
 
@@ -194,25 +141,248 @@ let defaultParams = {
 
 // A custom roll with data corresponding to an item on a character's sheet.
 export class CustomItemRoll {
-	constructor(actorOrItem, params, fields) {
-		const { item, actor } = Utils.resolveActorOrItem(actorOrItem);
-		this.item = item;
-		this.actor = actor;
-		this.itemFlags = item?.data.flags;
+	constructor(itemOrActor, params, fields) {
+		if (itemOrActor) {
+			const { item, actor } = Utils.resolveActorOrItem(itemOrActor);
+			if (item) {
+				this.item = item;
+			} else if (actor) {
+				this.actor = actor;
+			}
+		}
 
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
 		this.fields = fields ?? [];	// Where requested roll fields are stored, in the order they should be rendered.
 
-		/** @type {import("./renderer.js").RenderModel} */
-		this.data = { entries: [] }; // Data results from fields, which get turned into templates
+		/** @type {Array<import("./renderer.js").RenderModelEntry>} */
+		this.entries = []; // Data results from fields, which get turned into templates
+		this.properties = [];
 		
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
-		
-		this.params.rollState = Utils.getRollState({ event: this.params.event || event, ...this.params });
-		delete this.params.event;
+		this.dicePool = new DiceCollection();
+	}
 
-		this.settings = BRSettings.serialize();
+	static fromMessage(message) {
+		const data = message.data.flags.betterrolls5e;
+		const roll = new CustomItemRoll(null, data.params, []);
+		roll.messageId = message.id;
+		roll.rolled = true;
+		roll.isCrit = data.isCrit;
+		roll.entries = FoundryProxy.create(data.entries);
+		roll.properties = data.properties;
+		roll.params = data.params;
+
+		// Set these up so that lazy loading can be done
+		roll.actorId = data.actorId;
+		roll.itemId = data.itemId;
+		roll.tokenId = data.tokenId;
+		roll.storedItemData = message.getFlag("dnd5e", "itemData");
+
+		return roll;
+	}
+
+	set item(item) {
+		this._item = item;
+		this.itemId = item.id;
+		this.actor = item?.actor;
+	}
+
+	get item() {
+		if (this._item) return this._item;
+
+		let storedData = null;
+		if (this.messageId) {
+			const message = game.messages.get(this.messageId);
+			storedData = message.getFlag("dnd5e", "itemData");
+		}
+
+		if (!storedData && !this.itemId) {
+			return null;
+		}
+
+		const actor = this.actor;
+		const Item5e = game.dnd5e.entities.Item5e;
+		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.getOwnedItem(this.itemId);
+		if (!item) {
+			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			ui.notifications.error(message);
+			throw new Error(message);
+		}
+
+		this._item = item; // store a backup so we don't need to fetch again
+		return item;
+	}
+
+	set actor(actor) {
+		this._actor = actor;
+		this.actorId = actor.id;
+		this.tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
+	}
+
+	/**
+	 * Returns the actor associated 
+	 */
+	get actor() {
+		if (this._actor) return this._actor;
+
+		let actor = null;
+		if (this.tokenId) {
+			const [sceneId, tokenId] = this.tokenId.split(".");
+			
+			const scene = game.scenes.get(sceneId);
+			if (!scene) return null;
+
+			const tokenData = scene.getEmbeddedEntity("Token", tokenId);
+			if (!tokenData) return null;
+
+			actor = new Token(tokenData).actor;
+		} else {
+			actor = game.actors.get(this.actorId);
+		}
+		
+		this._actor = actor;
+		return actor;
+	}
+
+	get settings() {
+		return getSettings(this.params.settings);
+	}
+
+	/**
+	 * Getter to retrieve if the current user has advanced permissions over the chat card.
+	 */
+	get hasPermission() {
+		const message = game.messages.get(this.messageId);
+		return game.user.isGM || message?.isAuthor;
+	}
+	
+	/**
+	 * Rolls crit dice if its not already rolled for the current card.
+	 * This is used when *augmenting* an existing roll to a crit.
+	 * @param {string | null} group If not null, limits the updates to the specified group
+	 * @param {boolean} isCrit Whether to enable or disable crits
+	 * @returns if the crit roll went through
+	 */
+	async updateCritStatus(group, isCrit) {
+		// Do nothing if crit is already rolled or if we don't have permission
+		const critBehavior = this.settings.critBehavior;
+		if ((isCrit && critBehavior === "0") || !this.hasPermission) {
+			return false;
+		}
+
+		const item = this.item;
+		let updated = false;
+
+		for (const damage of this.entries) {
+			if (damage.type === "damage" && damage.damageIndex !== "other") {
+				if (group && damage.group !== group) {
+					continue;
+				}
+
+				if (isCrit && damage.critRoll == null) {
+					// Enable Crit (from backup if available)
+					if (damage.critBackup) {
+						damage.critRoll = damage.critBackup;
+					} else {
+						const baseRoll = damage.baseRoll;
+						const savage = ItemUtils.appliesSavageAttacks(item);
+						damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
+						this.dicePool.push(damage.critRoll);	
+					}
+
+					updated = true;
+				} else if (!isCrit && damage.critRoll) {
+					// Disable crit but keep a backup
+					damage.critBackup = damage.critRoll;
+					damage.critRoll = undefined;
+					updated = true;
+				}
+			}
+		}
+
+		return updated;
+	}
+
+	/**
+	 * Rolls damage for a damage group. Returns true if successful
+	 * @param {string} group
+	 */
+	async rollDamage(group) {
+		if (!this.hasPermission || !this.entries?.length) {
+			return false;
+		}
+
+		// Get the relevant damage group
+		group = encodeURIComponent(group);
+
+		const newEntries = [];
+		for (const entry of this.entries) {
+			if (entry.type === "button-damage" && entry.group === group) {
+				continue;
+			}
+
+			if (entry.type === "damage" && entry.group === group) {
+				entry.hidden = false;
+				this.dicePool.push(entry.baseRoll, entry.critRoll);
+			}
+
+			newEntries.push(entry);
+		}
+
+		// New data render entries with damage prompts removed
+		this.entries = newEntries;
+		return true;
+	}
+
+	/**
+	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
+	 * @param {*} id 
+	 * @param {*} rollState 
+	 */
+	async updateRollState(id, rollState) {
+		if (!this.hasPermission || !this.entries?.length || !rollState) {
+			return false;
+		}
+
+		const multiroll = this.entries.find(m => m.id === id);
+		if (multiroll?.type !== 'multiroll' || multiroll.rollState) {
+			return false;
+		}
+
+		// Calculate required number of rolls
+		let numRolls = Math.max(multiroll.entries?.length, 2);
+		if (numRolls == 2 && multiroll.elvenAccuracy && rollState !== "lowest") {
+			numRolls = 3;
+		}
+
+		// Add more rolls if necessary
+		while (multiroll.entries?.length < numRolls) {
+			const roll = new Roll(multiroll.formula).roll();
+			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20]));
+			this.dicePool.push(roll);
+		}
+
+		// Determine roll result
+		const rollTotals = multiroll.entries.map(r => r.roll.total);
+		let chosenResult = rollTotals[0];
+		if (rollState == "highest") {
+			chosenResult = Math.max(...rollTotals);
+		} else if (rollState == "lowest") {
+			chosenResult = Math.min(...rollTotals);
+		}
+
+		// Mark the non-results as ignored
+		multiroll.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
+		
+		// Update remaining properties
+		multiroll.rollState = rollState;
+		multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
+
+		// Update crit status
+		this.updateCritStatus(multiroll.group, multiroll.isCrit);
+		
+		return true;
 	}
 	
 	/**
@@ -224,11 +394,10 @@ export class CustomItemRoll {
 			console.log("Already rolled!", this);
 			return;
 		}
-
-		const { params, item } = this;
 		
 		Hooks.call("preRollItemBetterRolls", this);
 		
+		const { params, item } = this;
 		if (Number.isInteger(params.preset)) {
 			this.updateForPreset();
 		}
@@ -260,13 +429,13 @@ export class CustomItemRoll {
 			}
 		}
 
-		// Process all fields (this builds the data object)
+		// Process all fields (this builds the data entries)
 		for (const field of this.fields) {
 			this._processField(field);
 		}
 
 		// If this was a crit and there are damage entries, handle any bonus crit damage
-		const hasDamage = this.data.entries.some(m => m.type === "damage");
+		const hasDamage = this.entries.some(m => m.type === "damage");
 		if (this.isCrit && hasDamage && this.item?.data.flags.betterRolls5e?.critDamage?.value) {
 			this._processField(["crit"]);
 		}
@@ -282,7 +451,7 @@ export class CustomItemRoll {
 
 			// Load Item Footer Properties if params.properties is true
 			if (params.properties) {
-				this.data.properties = ItemUtils.getPropertyList(item);
+				this.properties = ItemUtils.getPropertyList(item);
 			}
 
 			// Place the template if applicable
@@ -296,31 +465,12 @@ export class CustomItemRoll {
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 
-		const { damagePromptEnabled } = getSettings(settings);
-		
-		// Assign groups to data + hide damage entries if damage prompt is enabled
-		// Groups increment on a junction (which are attacks and saves)
-		let group = -1;
-		for (const entry of this.data.entries) {
-			if (["multiroll", "button-save"].includes(entry.type)) {
-				// This is a junction, so start a new group
-				group++;
-				entry.group = `br!${group}`;
-			} else if (entry.type === "damage") {
-				// Damage entries are only prompted after attacks/saves
-				if (group < 0) continue;
-
-				entry.group = `br!${group}`;
-				entry.hidden = entry.hidden ?? damagePromptEnabled;
-			}
-		}
-
 		// If damage buttons are enabled, hide damage entries under certain conditions
-		if (damagePromptEnabled) {
+		if (getSettings(this.settings)) {
 			// Insert damage buttons before all damage entries
 			const newEntries = [];
 			const injectedGroups = new Set();
-			for (const entry of this.data.entries) {
+			for (const entry of this.entries) {
 				if (entry.type === "damage" && entry.hidden && !injectedGroups.has(entry.group)) {
 					injectedGroups.add(entry.group);
 					newEntries.push({
@@ -331,8 +481,48 @@ export class CustomItemRoll {
 				newEntries.push(entry);
 			}
 
-			this.data.entries = newEntries;
+			this.entries = newEntries;
 		}
+		
+		// Add models (non-hidden) to dice pool
+		for (const entry of this.entries.filter(e => !e.hidden)) {
+			if (entry.type === "multiroll") {
+				this.dicePool.push(...entry.entries.map(e => e.roll));
+			} else if (entry.type === "damage") {
+				this.dicePool.push(entry.baseRoll, entry.critRoll);
+			}
+		}
+	}
+
+	async render() {
+		this.content = Renderer.renderCard(this);
+		await Hooks.callAll("renderBetterRolls", this);
+		return this.content;
+	}
+
+	/**
+	 * @private
+	 */
+	_getFlags() {
+		const flags = {
+			betterrolls5e: {
+				actorId: this.actorId,
+				itemId: this.itemId,
+				tokenId: this.tokenId,
+				isCrit: this.isCrit,
+				entries: this.entries,
+				properties: this.properties,
+				params: this.params
+			}
+		}
+
+		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
+		const { actor, item } = this;
+		if ((item?.data.type === "consumable") && !actor.items.has(item.id) ) {
+			flags["dnd5e.itemData"] = item.data;
+		}
+
+		return flags;
 	}
 
 	/**
@@ -346,46 +536,49 @@ export class CustomItemRoll {
 
 		if (this.error) return;
 		
-		const { item, isCrit, settings, params, data } = this;
+		const { item, params, entries } = this;
 		const actor = this.actor ?? item?.actor;
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
-
-		// Render the data
-		const content = await Renderer.renderCard(data, { actor, item, settings, isCrit });
-		const flags = { params, data };
-
-		// Output the rolls to chat
-		const dicePool = new DiceCollection();
-		populateDicePool(data.entries.filter(e => !e?.hidden), dicePool);
-		await dicePool.flush();
-		
-		await Hooks.callAll("renderBetterRolls", this, content);
 
 		// Create the chat message
 		const chatData = {
 			user: game.user._id,
-			content: content,
+			content: await this.render(),
 			speaker: {
 				actor: actor?._id,
 				token: actor?.token,
 				alias: actor?.token?.name || actor?.name
 			},
-			flags: { betterrolls5e: flags },
+			flags: this._getFlags(),
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			roll: new Roll("0").roll(),
 			...Utils.getWhisperData(),
 			sound: Utils.getDiceSound(hasMaestroSound)
 		};
 		
-		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
-		if ((item?.data.type === "consumable") && !actor.items.has(this.id) ) {
-			chatData.flags["dnd5e.itemData"] = item.data;
-		}
-		
 		await Hooks.callAll("messageBetterRolls", this, chatData);
 
 		// Send the chat message
+		await this.dicePool.flush();
 		return ChatMessage.create(chatData);
+	}
+
+	/**
+	 * Updates the associated chat message to have this HTML as its content.
+	 * Nothing updates until this method is called.
+	 * @param message 
+	 */
+	async update() {
+		const chatMessage = game.messages.get(this.messageId);
+		if (chatMessage) {
+			const content = await this.render();
+			await Hooks.callAll("updateBetterRolls", this, content);
+			await this.dicePool.flush();
+			await chatMessage.update({
+				...flattenObject({ flags: duplicate(this._getFlags()) }),
+				content
+			}, { diff: true });
+		}
 	}
 
 	/**
@@ -424,15 +617,40 @@ export class CustomItemRoll {
 			settings: this.settings
 		};
 
+		// Add non-null entries
 		const newEntries = RollFields.constructModelsFromField(field, metadata);
-		if (newEntries[0]?.type === 'multiroll') {
-			if (field[1]?.triggersCrit ?? true) {
-				this.isCrit = newEntries[0].isCrit;
+		newEntries.forEach(this.addRenderEntry.bind(this));
+	}
+
+	/**
+	 * Adds a render entry to the list. Does not add to dicepool, but does flag for crit.
+	 * If damage prompt is enabled, any damage entries will be hidden unless hiden has a value.
+	 * @param {import("./renderer.js").RenderModelEntry} entry 
+	 */
+	addRenderEntry(entry) {
+		if (!entry) return;
+
+		if (entry.type === "multiroll") {
+			if (!this.params.forceCrit && (entry.triggersCrit ?? true)) {
+				this.isCrit = entry.isCrit;
 			}
 		}
 
-		// Add non-null entries
-		this.data.entries.push(...newEntries?.filter(e => e));
+		if (entry.type === "multiroll" || entry.type === "button-save") {
+			// Assign roll group
+			this._lastGroupIdx = (this._lastGroupIdx ?? -1) + 1;
+			entry.group = `br!${this._lastGroupIdx}`
+		}
+
+		if (entry.type === "damage") {
+			entry.hidden = entry.hidden ?? getSettings(this.settings).damagePromptEnabled;
+			const lastGroup = [...this.entries].reverse().find(e => e.group)?.group;
+			if (lastGroup) {
+				entry.group = lastGroup;
+			}
+		}
+
+		this.entries.push(entry);
 	}
 	
 	/**
@@ -512,7 +730,6 @@ export class CustomItemRoll {
 		let lvl = null;
 		let consume = false;
 		let placeTemplate = false;
-		let isPact = false;
 		
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
@@ -530,7 +747,6 @@ export class CustomItemRoll {
 		}
 		
 		if (lvl == "pact") {
-			isPact = true;
 			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
 		}
 		

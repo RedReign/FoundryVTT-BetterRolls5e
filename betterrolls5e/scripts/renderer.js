@@ -1,5 +1,6 @@
+import { CustomItemRoll } from "./custom-roll.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { i18n, Utils, ActorUtils, ItemUtils } from "./utils.js";
+import { i18n, Utils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
@@ -72,13 +73,6 @@ import { i18n, Utils, ActorUtils, ItemUtils } from "./utils.js";
  * @typedef { HeaderDataProps | DescriptionDataProps | 
  * 		MultiRollDataProps | DamageDataProps | ButtonSaveProps | ButtonDamageProps
  * } RenderModelEntry
- */
-
-/**
- * The model data used to render a card
- * @typedef RenderModel
- * @property {RenderModelEntry[]} entries
- * @property {string[]} properties list of item properties
  */
 
 /**
@@ -300,20 +294,16 @@ export class Renderer {
 
 	/**
 	 * Renders a full card
-	 * @param {RenderModel} data
+	 * @param {CustomItemRoll} data
 	 * @param {*} param1 
 	 */
-	static async renderCard(data, {actor=null, item=null, isCrit=false, settings=null}) {
+	static async renderCard(data) {
 		const templates = await Promise.all(data.entries.map(m => Renderer.renderModel(m, settings)));
-
-		// Add token's ID to chat roll, if valid
-		let tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
-
 		return renderModuleTemplate("red-fullroll.html", {
-			item,
-			actor,
-			tokenId,
-			isCritical: isCrit,
+			item: data.item,
+			actor: data.actor,
+			tokenId: data.tokenId,
+			isCritical: data.isCrit,
 			templates,
 			properties: data.properties
 		});

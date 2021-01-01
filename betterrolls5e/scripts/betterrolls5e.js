@@ -414,9 +414,9 @@ export function changeRollsToDual (actor, html, data, params) {
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
 			if ( keyboard.isCtrl(event) ) {
-				CustomRoll.fullRollAttribute(actor, ability, "check");
+				CustomRoll.rollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
-				CustomRoll.fullRollAttribute(actor, ability, "save");
+				CustomRoll.rollAttribute(actor, ability, "save");
 			} else {
 				new Dialog({
 					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
@@ -424,11 +424,11 @@ export function changeRollsToDual (actor, html, data, params) {
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
-							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "check"); }
+							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "check"); }
 						},
 						save: {
 							label: i18n("Saving Throw"),
-							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "save"); }
+							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "save"); }
 						}
 					}
 				}).render(true);
@@ -445,8 +445,8 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await CustomRoll.eventToAdvantage(event);
-			CustomRoll.fullRollAttribute(actor, ability, "check", params);
+				params = await Utils.eventToAdvantage(event);
+			CustomRoll.rollAttribute(actor, ability, "check", params);
 		});
 	}
 	
@@ -459,8 +459,8 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await CustomRoll.eventToAdvantage(event);
-			CustomRoll.fullRollAttribute(actor, ability, "save", params);
+				params = await Utils.eventToAdvantage(event);
+			CustomRoll.rollAttribute(actor, ability, "save", params);
 		});
 	}
 	
@@ -470,9 +470,9 @@ export function changeRollsToDual (actor, html, data, params) {
 		skillName.off();
 		skillName.click(async event => {
 			event.preventDefault();
-			let params = await CustomRoll.eventToAdvantage(event);
+			let params = await Utils.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
-			CustomRoll.fullRollSkill(actor, skill, params);
+			CustomRoll.rollSkill(actor, skill, params);
 		});
 	}
 	
@@ -488,7 +488,7 @@ export function changeRollsToDual (actor, html, data, params) {
 				actorID = actor.id,
 				itemID = String(li.attr("data-item-id")),
 				item = actor.getOwnedItem(itemID),
-				params = await CustomRoll.eventToAdvantage(event);
+				params = await Utils.eventToAdvantage(event);
 
 			// Case 1 - If the image button should roll an "Item Macro" macro
 			if (window.ItemMacro?.hasMacro(item)) {
@@ -621,7 +621,7 @@ export function BetterRolls() {
 		rollSave:CustomRoll.rollSave,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
 		rollSavingThrow:CustomRoll.rollAbilitySave,
-		rollSkill:CustomRoll.fullRollSkill,
+		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
 		builder:RollFields
 	};

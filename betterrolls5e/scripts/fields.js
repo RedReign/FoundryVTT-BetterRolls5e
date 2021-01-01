@@ -1,4 +1,4 @@
-import { i18n, ActorUtils, ItemUtils, Utils } from "./utils.js";
+import { dnd5e, i18n, ActorUtils, ItemUtils, Utils } from "./utils.js";
 import { BRSettings, getSettings } from "./settings.js";
 
 /**

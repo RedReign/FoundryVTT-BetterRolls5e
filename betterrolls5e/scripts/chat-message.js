@@ -1,7 +1,6 @@
-import { CustomRoll } from "./custom-roll.js";
-import { Renderer } from "./renderer.js";
-import { BRSettings, getSettings } from "./settings.js";
-import { i18n, DiceCollection, ItemUtils, Utils, FoundryProxy } from "./utils.js";
+import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
+import { BRSettings } from "./settings.js";
+import { i18n, Utils } from "./utils.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.
@@ -10,7 +9,6 @@ import { i18n, DiceCollection, ItemUtils, Utils, FoundryProxy } from "./utils.js
  */
 export class BetterRollsChatCard {
 	constructor(message, html) {
-		this.dicePool = new DiceCollection();
 		this.updateBinding(message, html);
 	}
 
@@ -28,18 +26,9 @@ export class BetterRollsChatCard {
 		// IMPLEMENTATION WARNING: DO NOT STORE html into the class properties (NO this.html AT ALL)
 		// Foundry will sometimes call renderChatMessage() multiple times with un-bound HTML,
 		// and we can't do anything except rely on closures to handle those events.
-		this.id = message.id;
-		const flags = FoundryProxy.create(message.data.flags?.betterrolls5e ?? {});
-		
-		/** @type {import("./renderer.js").RenderModel} */
-		this.data = flags.data;
-
-		this.params = flags.params;
-		
+		this.id = message.id;		
+		this.roll = CustomItemRoll.fromMessage(message);
 		this.speaker = game.actors.get(message.data.speaker.actor);
-		this.actorId = html.attr("data-actor-id");
-		this.itemId = html.attr("data-item-id");
-		this.tokenId = html.attr("data-token-id");
 
 		// Hide Save DCs
 		const actor = this.speaker;
@@ -96,226 +85,17 @@ export class BetterRollsChatCard {
 	}
 
 	/**
-	 * Returns the settings saved into this card.
-	 * Currently returns global settings, but eventually 
-	 * setting overrides should be saved onto this card.
-	 */
-	get settings() {
-		return getSettings();
-	}
-
-	/**
-	 * Returns Actor5e object associated with this card,
-	 * preferring the token actor.
-	 */
-	get actor() {
-		if (this.tokenId) {
-			const [sceneId, tokenId] = this.tokenId.split(".");
-			
-			const scene = game.scenes.get(sceneId);
-			if (!scene) return null;
-
-			const tokenData = scene.getEmbeddedEntity("Token", tokenId);
-			if (!tokenData) return null;
-
-			const token = new Token(tokenData);
-			return token.actor;
-		}
-
-		return game.actors.get(this.actorId);
-	}
-
-	/**
-	 * Returns the item instance associated with this card.
-	 */
-	get item() {
-		const storedData = this.message.getFlag("dnd5e", "itemData");
-		if (!storedData && !this.itemId) {
-			return null;
-		}
-
-		const actor = this.actor;
-		const Item5e = game.dnd5e.entities.Item5e;
-		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.getOwnedItem(this.itemId);
-		if (!item) {
-			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			ui.notifications.error(message);
-			throw new Error(message);
-		}
-
-		return item;
-	}
-
-	/**
-	 * Getter to retrieve if the current user has advanced permissions over the chat card.
-	 */
-	get hasPermission() {
-		const message = game.messages.get(this.id);
-		return game.user.isGM || message?.isAuthor;
-	}
-
-	/**
-	 * Rolls crit dice if its not already rolled for the current card.
-	 * This is used when *augmenting* a roll to a crit, and not the initial render.
-	 * The change is not sent to users until update() is called.
-	 * @param {string | null} group If not null, limits the updates to the specified group
-	 * @param {boolean} isCrit Whether to enable or disable crits
-	 * @returns if the crit roll went through
-	 */
-	async updateCritStatus(group, isCrit) {
-		// Do nothing if crit is already rolled or if we don't have permission
-		const settings = this.settings;
-		const critBehavior = settings.critBehavior;
-		if ((isCrit && critBehavior === "0") || !this.hasPermission) {
-			return false;
-		}
-
-		const item = this.item;
-		let updated = false;
-
-		for (const damage of this.data.entries) {
-			if (damage.type === "damage" && damage.damageIndex !== "other") {
-				if (group && damage.group !== group) {
-					continue;
-				}
-
-				if (isCrit && damage.critRoll == null) {
-					// Enable Crit (from backup if available)
-					if (damage.critBackup) {
-						damage.critRoll = damage.critBackup;
-					} else {
-						const baseRoll = damage.baseRoll;
-						const savage = ItemUtils.appliesSavageAttacks(item);
-						damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
-						this.dicePool.push(damage.critRoll);	
-					}
-
-					updated = true;
-				} else if (!isCrit && damage.critRoll) {
-					// Disable crit but keep a backup
-					damage.critBackup = damage.critRoll;
-					damage.critRoll = undefined;
-					updated = true;
-				}
-			}
-		}
-
-		return updated;
-	}
-
-	/**
-	 * Rolls damage for a damage group. Returns true if successful
-	 * @param {string} group
-	 */
-	async rollDamage(group) {
-		if (!this.hasPermission || !this.data) {
-			return false;
-		}
-
-		// Get the relevant damage group
-		group = encodeURIComponent(group);
-
-		const newEntries = [];
-		for (const entry of this.data.entries) {
-			if (entry.type === "button-damage" && entry.group === group) {
-				continue;
-			}
-
-			if (entry.type === "damage" && entry.group === group) {
-				entry.hidden = false;
-				this.dicePool.push(entry.baseRoll, entry.critRoll);
-			}
-
-			newEntries.push(entry);
-		}
-
-		// New data render entries with damage prompts removed
-		this.data.entries = newEntries;
-		return true;
-	}
-
-	/**
-	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
-	 * @param {*} id 
-	 * @param {*} rollState 
-	 */
-	async updateRollState(id, rollState) {
-		if (!this.hasPermission || !this.data || !rollState) {
-			return false;
-		}
-
-		const multiroll = this.data.entries.find(m => m.id === id);
-		if (multiroll?.type !== 'multiroll' || multiroll.rollState) {
-			return false;
-		}
-
-		// Calculate required number of rolls
-		let numRolls = Math.max(multiroll.entries?.length, 2);
-		if (numRolls == 2 && multiroll.elvenAccuracy && rollState !== "lowest") {
-			numRolls = 3;
-		}
-
-		// Add more rolls if necessary
-		while (multiroll.entries?.length < numRolls) {
-			const roll = new Roll(multiroll.formula).roll();
-			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20]));
-			this.dicePool.push(roll);
-		}
-
-		// Determine roll result
-		const rollTotals = multiroll.entries.map(r => r.roll.total);
-		let chosenResult = rollTotals[0];
-		if (rollState == "highest") {
-			chosenResult = Math.max(...rollTotals);
-		} else if (rollState == "lowest") {
-			chosenResult = Math.min(...rollTotals);
-		}
-
-		// Mark the non-results as ignored
-		multiroll.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
-		
-		// Update remaining properties
-		multiroll.rollState = rollState;
-		multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
-
-		// Update crit status
-		this.updateCritStatus(multiroll.group, multiroll.isCrit);
-		
-		return true;
-	}
-	
-	/**
-	 * Updates a chat message to have this HTML as its content.
-	 * Nothing updates until this method is called.
-	 * @param message 
-	 */
-	async update() {
-		const chatMessage = this.message;
-		if (chatMessage) {
-			const { actor, item, params, data } = this;
-			const settings = this.settings;
-			const content = await Renderer.renderCard(data, { actor, item, settings })
-
-			await this.dicePool.flush();
-			await chatMessage.update({
-				'flags.betterrolls5e': duplicate({data, params}),
-				content
-			}, { diff: true });
-		}
-	}
-
-	/**
 	 * Internal method to setup the temporary buttons used to update advantage or disadvantage,
 	 * as well as those that that affect damage
 	 * entries, like crit rolls and damage application.
 	 */
 	async _setupOverlayButtons(html) {
 		// Multiroll buttons (perhaps introduce a new toggle property?)
-		if (this.data && BRSettings.chatDamageButtonsEnabled) {
+		if (this.roll && BRSettings.chatDamageButtonsEnabled) {
 			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-multiroll-overlay.html");
 			
 			// Add multiroll overlay buttons to the DOM.
-			for (const entry of this.data.entries) {
+			for (const entry of this.roll.entries) {
 				if (entry.type === "multiroll" && !entry.rollState) {
 					const element = html.find(`.red-dual[data-id=${entry.id}] .dice-row.red-totals`);
 					element.append($(templateMulti));
@@ -331,8 +111,8 @@ export class BetterRollsChatCard {
 				const action = button.dataset.action;
 				if (action === "rollState") {
 					const rollState = button.dataset.state;
-					if (await this.updateRollState(id, rollState)) {
-						await this.update();
+					if (await this.roll.updateRollState(id, rollState)) {
+						await this.roll.update();
 					}
 				}
 			});
@@ -350,7 +130,7 @@ export class BetterRollsChatCard {
 
 				// Remove crit button if already rolled
 				const id = element.parents('.dice-roll').attr('data-id');
-				const entry = this.data?.entries.find(m => m.id === id);
+				const entry = this.roll?.entries.find(m => m.id === id);
 				if (!entry || entry?.critRoll != null || entry?.damageIndex === "other") {
 					element.find('.crit-button').remove();
 				}
@@ -399,8 +179,8 @@ export class BetterRollsChatCard {
 				ev.preventDefault();
 				ev.stopPropagation();
 				const group = $(ev.target).parents('.dice-roll').attr('data-group');
-				if (await this.updateCritStatus(group, true)) {
-					await this.update();
+				if (await this.roll.updateCritStatus(group, true)) {
+					await this.roll.update();
 				}
 			});
 		}
@@ -411,7 +191,7 @@ export class BetterRollsChatCard {
 	}
 
 	_onHover(html) {
-		const { hasPermission } = this;
+		const hasPermission = this.roll.hasPermission;
 		html.find(".die-result-overlay-br").show();
 
 		// Apply Damage / Augment Crit
@@ -473,13 +253,13 @@ export class BetterRollsChatCard {
 			if (action === "save") {
 				const actors = Utils.getTargetActors({ required: true });
 				const ability = button.dataset.ability;
-				const params = await CustomRoll.eventToAdvantage(event);
+				const params = await Utils.eventToAdvantage(event);
 				for (const actor of actors) {
-					CustomRoll.fullRollAttribute(actor, ability, "save", params);
+					CustomRoll.rollAttribute(actor, ability, "save", params);
 				}
 			} else if (action === "damage") {
-				if (await this.rollDamage(button.dataset.group)) {	
-					await this.update();
+				if (await this.roll.rollDamage(button.dataset.group)) {	
+					await this.roll.update();
 				}
 			}
 
