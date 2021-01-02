@@ -66,13 +66,17 @@ export class RollFields {
 				numRolls = 3;
 			}
 		}
+		
+		// Split the D20 and bonuses. We assume the first is a d20 roll always...
+		const fullRoll = new Roll(formula);
+		const baseRoll = new Roll(fullRoll.terms[0].formula ?? fullRoll.terms[0]);
+		const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ')).roll();
 
 		// Populate the roll entries
 		const entries = [];
 		try {
 			for (let i = 0; i < numRolls; i++) {
-				const roll = new Roll(formula).roll();
-				entries.push(Utils.processRoll(roll, critThreshold, [20]));
+				entries.push(Utils.processRoll(baseRoll.reroll(), critThreshold, [20], bonusRoll));
 			}
 		} catch (err) {
 			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
@@ -102,7 +106,8 @@ export class RollFields {
 			rollType,
 			formula,
 			entries,
-			isCrit: entries.some(e => !e.ignored && e.isCrit)
+			isCrit: entries.some(e => !e.ignored && e.isCrit),
+			bonus: bonusRoll
 		};
 
 		return results;
@@ -352,9 +357,9 @@ export class RollFields {
 	 */
 	static constructModelsFromField(field, metadata) {
 		let [fieldType, data] = field;
-        data = mergeObject(metadata, data ?? {}, { recursive: false });
-        
-        const { item, actor } = data;
+		data = mergeObject(metadata, data ?? {}, { recursive: false });
+		
+		const { item, actor } = data;
 
 		switch (fieldType) {
 			case 'header':

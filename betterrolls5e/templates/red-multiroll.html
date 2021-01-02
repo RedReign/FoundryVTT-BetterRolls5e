@@ -9,6 +9,11 @@
 			<div class="tooltip dual-left dice-row-item">{{{this}}}</div>
 			{{/each}}	
 		</div>
+		<div class="dice-row red-rolls">
+			{{#if bonusTooltip}}
+			<div class="tooltip dice-row-item">{{{bonusTooltip}}}</div>
+			{{/if}}	
+		</div>
 		<div class="dice-row red-totals">
 			{{#each entries}}
 			<h4 class="dice-total dice-row-item red-base-die{{#if this.ignored}} ignored{{/if}} {{this.critType}}">

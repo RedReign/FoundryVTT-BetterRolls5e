@@ -1,6 +1,6 @@
 import { CustomItemRoll } from "./custom-roll.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { i18n, Utils } from "./utils.js";
+import { DiceCollection, i18n, Utils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
@@ -33,7 +33,8 @@ import { i18n, Utils } from "./utils.js";
  * @property {string} rollType
  * @property {string} formula
  * @property {boolean} isCrit
- * @property {Array<{roll: Roll; ignored: boolean; critType: string}>} entries
+ * @property {Array<{roll: Roll; total: number; ignored: boolean; critType: string}>} entries
+ * @property {Roll} bonus
  */
 
 /**
@@ -162,19 +163,31 @@ export class Renderer {
 	static async renderMultiRoll(properties, settings) {
 		const { rollTitlePlacement, d20RollIconsEnabled } = getSettings(settings);
 		const title = rollTitlePlacement !== "0" ? properties.title : null;
-		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
 		
 		// Show D20 die icons if enabled
 		let entries = properties.entries;
 		if (d20RollIconsEnabled) {
-			entries = entries.map(e => ({
-				...e,
-				d20Result: e.roll?.terms.find(t => t.faces === 20)?.total
-			}));
+			// Inner function to recursively find the first d20 die term and show it
+			function findD20Result(d20Roll) {
+				if (!d20Roll) return null;
+
+				for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
+					if (term.faces === 20) return term.total;
+					if (term.terms ?? term.rolls) {
+						const innerResult = findD20Result(term);
+						if (innerResult) return innerResult;
+					}
+				}
+			}
+			entries = entries.map(e => ({ ...e, d20Result: findD20Result(e.roll) }));
 		}
 
+		// Create roll templates
+		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
+		const bonusTooltip = await properties.bonus?.getTooltip();
+
 		return renderModuleTemplate("red-multiroll.html", {
-			...properties, title, entries, tooltips
+			...properties, title, entries, tooltips, bonusTooltip
 		});
 	}
 

@@ -1,7 +1,7 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
-import { i18n, ItemUtils } from "./utils.js";
+import { i18n, Utils, ItemUtils } from "./utils.js";
 import { getSettings } from "./settings.js";
 import { RollFields } from "./fields.js";
 

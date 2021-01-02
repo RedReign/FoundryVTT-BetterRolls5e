@@ -70,8 +70,9 @@ export class Utils {
 	 * @param {Roll} roll 
 	 * @param {number} threshold optional crit threshold
 	 * @param {boolean|number[]} critChecks dice to test, true for all
+	 * @param {Roll?} bonus optional bonus roll to add to the total
 	 */
-	static processRoll(roll, threshold, critChecks=true) {
+	static processRoll(roll, threshold, critChecks=true, bonus=null) {
 		if (!roll) return null;
 
 		let high = 0;
@@ -99,7 +100,7 @@ export class Utils {
 
 		return {
 			roll,
-			total: roll.total,
+			total: roll.total + (bonus?.total ?? 0),
 			ignored: roll.ignored ? true : undefined, 
 			critType, 
 			isCrit: high > 0,
@@ -611,14 +612,14 @@ export class ItemUtils {
 		return rollData;
 	}
 
-	static getAttackRoll(itm, { abilityMod, ammoBonus=null, bonus=null }={}) {
-		const itemData = itm.data.data;
-		const actorData = itm.actor.data.data;
+	static getAttackRoll(item, { abilityMod, ammoBonus=null, bonus=null }={}) {	
+		const itemData = item.data.data;
+		const actorData = item.actor.data.data;
 		const parts = ["@mod"];
-		const rollData = ItemUtils.getRollData(itm, { abilityMod });
+		const rollData = ItemUtils.getRollData(item, { abilityMod });
 		
 		// Add proficiency, expertise, or Jack of all Trades
-		if (itm.data.type == "spell" || itm.data.type == "feat" || itemData.proficient ) {
+		if (item.data.type == "spell" || item.data.type == "feat" || itemData.proficient ) {
 			parts.push(`@prof`);
 			rollData.prof = Math.floor(actorData.attributes.prof);
 		}
@@ -639,7 +640,7 @@ export class ItemUtils {
 			parts.push(bonus);
 		}
 		
-		if (actorData.bonuses && isAttack(itm)) {
+		if (actorData.bonuses && isAttack(item)) {
 			let actionType = `${itemData.actionType}`;
 			if (actorData?.bonuses[actionType]?.attack) {
 				parts.push("@" + actionType);
@@ -648,7 +649,7 @@ export class ItemUtils {
 		}
 
 		// Halfling Luck check and final result
-		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
+		const d20String = ActorUtils.isHalfling(item.actor) ? "1d20r<2" : "1d20";
 		return new Roll([d20String, ...parts].join("+"), rollData);
 	}
 
@@ -906,6 +907,7 @@ export class ItemUtils {
  * that will be flushed to a system like Dice So Nice.
  */
 export class DiceCollection {
+	/** Roll object containing all the dice */
 	pool = new Roll("0").roll();
 
 	/**

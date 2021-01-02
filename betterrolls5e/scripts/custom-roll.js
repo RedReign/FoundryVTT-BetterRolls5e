@@ -34,7 +34,7 @@ export class CustomRoll {
 			['header', { title }],
 			['check', {
 				formula,
-				rollState: Utils.getRollState(params), 
+				rollState: Utils.getRollState({ event, ...params }), 
 				critThreshold: params?.critThreshold,
 				rollType
 			}]
@@ -96,12 +96,7 @@ export class CustomRoll {
 		return CustomRoll.fullRollActor(actor, titleString, formula, rollType, params);
 	}
 	
-	static newItemRoll(itemOrActor, params, fields) {
-		// params.event is an available parameter for backwards compatibility reasons
-		// but really we're interested in the rollState. Handle that here.
-		params.rollState = Utils.getRollState({ event, ...params });
-		delete params.event;
-		
+	static newItemRoll(itemOrActor, params, fields) {		
 		return new CustomItemRoll(itemOrActor, params, fields);
 	}
 }
@@ -150,6 +145,12 @@ export class CustomItemRoll {
 				this.actor = actor;
 			}
 		}
+
+		// params.event is an available parameter for backwards compatibility reasons
+		// but really we're interested in the rollState. Replace it here.
+		// We don't want event to be serialized when flags are set
+		params.rollState = Utils.getRollState(params);
+		delete params.event;
 
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
 		this.fields = fields ?? [];	// Where requested roll fields are stored, in the order they should be rendered.
@@ -358,8 +359,8 @@ export class CustomItemRoll {
 
 		// Add more rolls if necessary
 		while (multiroll.entries?.length < numRolls) {
-			const roll = new Roll(multiroll.formula).roll();
-			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20]));
+			const roll = multiroll.entries[0].roll.reroll();
+			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20], multiroll.bonus));
 			this.dicePool.push(roll);
 		}
 
@@ -487,7 +488,7 @@ export class CustomItemRoll {
 		// Add models (non-hidden) to dice pool
 		for (const entry of this.entries.filter(e => !e.hidden)) {
 			if (entry.type === "multiroll") {
-				this.dicePool.push(...entry.entries.map(e => e.roll));
+				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
 			} else if (entry.type === "damage") {
 				this.dicePool.push(entry.baseRoll, entry.critRoll);
 			}
@@ -501,11 +502,13 @@ export class CustomItemRoll {
 	}
 
 	/**
+	 * Allows this roll to be serialized into message flags.
 	 * @private
 	 */
 	_getFlags() {
 		const flags = {
 			betterrolls5e: {
+				version: game.modules.get("betterrolls5e").data.version,
 				actorId: this.actorId,
 				itemId: this.itemId,
 				tokenId: this.tokenId,
@@ -528,6 +531,7 @@ export class CustomItemRoll {
 	/**
 	 * Creates and sends a chat message to all players (based on whisper config).
 	 * If not already rolled and rendered, roll() is called first.
+	 * @returns {Promise<ChatMessage>} the created chat message
 	 */
 	async toMessage() {
 		if (!this.rolled) {
@@ -536,7 +540,7 @@ export class CustomItemRoll {
 
 		if (this.error) return;
 		
-		const { item, params, entries } = this;
+		const item = this.item;
 		const actor = this.actor ?? item?.actor;
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 
@@ -566,7 +570,7 @@ export class CustomItemRoll {
 	/**
 	 * Updates the associated chat message to have this HTML as its content.
 	 * Nothing updates until this method is called.
-	 * @param message 
+	 * Requires the chat message to already exist.
 	 */
 	async update() {
 		const chatMessage = game.messages.get(this.messageId);
