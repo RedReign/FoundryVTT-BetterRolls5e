@@ -401,16 +401,16 @@ export class CustomItemRoll {
 		Hooks.call("preRollItemBetterRolls", this);
 		
 		const { params, item } = this;
-		if (Number.isInteger(params.preset)) {
-			this.updateForPreset();
-		}
-
 		let placeTemplate = false;
 
 		// Pre-update item configurations
 		if (item) {
 			await ItemUtils.ensureFlags(item, { commit: true });
 			const itemData = item?.data.data;
+
+			if (Number.isInteger(params.preset)) {
+				this.updateForPreset();
+			}
 
 			// Set ammo (if needed)
 			if (this.params.useCharge.resource) {
@@ -665,6 +665,8 @@ export class CustomItemRoll {
 	 * This creates the default set of fields to process.
 	 */
 	updateForPreset() {
+		if (!this.item) return;
+		
 		let item = this.item,
 			itemData = item.data.data,
 			flags = item.data.flags,

@@ -236,7 +236,7 @@ export class RollFields {
 
 				// Scale damage if its the first entry
 				if (formula && isFirst) {
-					formula = ItemUtils.scaleDamage(item, slotLevel, damageIndex, isVersatile, rollData) || formula;
+					formula = ItemUtils.scaleDamage(item, slotLevel, damageIndex, rollData) || formula;
 				}
 
 				// Add any roll bonuses but only to the first entry

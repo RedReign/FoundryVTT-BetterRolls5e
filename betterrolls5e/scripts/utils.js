@@ -34,7 +34,7 @@ export class Utils {
 	static getVersion() {
 		return game.modules.get("betterrolls5e").data.version;
 	}
-	
+
 	/**
 	 * The sound to play for dice rolling. Returns null if an alternative sound
 	 * from maestro or dice so nice is registered.
@@ -739,41 +739,40 @@ export class ItemUtils {
 		return critRoll;
 	}
 
-	static scaleDamage(item, spellLevel, damageIndex, versatile, rollData) {
+	/**
+	 * @param {number | "versatile"} damageIndex
+	 */
+	static scaleDamage(item, spellLevel, damageIndex, rollData) {
+		let versatile = false;
+		if (damageIndex === "versatile") {
+			damageIndex = 0;
+			versatile = true;
+		}
+
 		let itemData = item.data.data;
 		let actorData = item.actor.data.data;
+
+		const parts = itemData.damage.parts.map(d => d[0]);
+		const scale = itemData.scaling.formula;
+		let formula = versatile ? itemData.damage.versatile : parts[damageIndex];
 		
 		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
-			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
-			let scale = itemData.scaling.formula;
-			let formula = parts[damageIndex];
+			const level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
 			const add = Math.floor((level + 1) / 6);
-			if ( add === 0 ) {}
-			else {
+			if (add > 0) {
 				formula = item._scaleDamage([formula], scale || formula, add, rollData);
-				if (versatile) { 
-					formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData);
-				}
 			}
 			return formula;
 		}
 		
 		// Scaling for spell damage by spell slot used. Affects only the first damage roll of the spell.
 		if (item.data.type === "spell" && itemData.scaling.mode === "level" && spellLevel) {
-			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = itemData.level;
-			let scale = itemData.scaling.formula;
-			let formula = parts[damageIndex];
+			const level = itemData.level;
 			const add = Math.floor(spellLevel - level);
 			if (add > 0) {
 				formula = item._scaleDamage([formula], scale || formula, add, rollData);
-				if (versatile) {
-					formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData);
-				}
 			}
-			
 			return formula;
 		}
 		
