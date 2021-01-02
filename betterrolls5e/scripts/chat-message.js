@@ -96,7 +96,7 @@ export class BetterRollsChatCard {
 			
 			// Add multiroll overlay buttons to the DOM.
 			for (const entry of this.roll.entries) {
-				if (entry.type === "multiroll" && !entry.rollState) {
+				if (entry.type === "multiroll" && !entry.rollState && entry.entries?.length === 1) {
 					const element = html.find(`.red-dual[data-id=${entry.id}] .dice-row.red-totals`);
 					element.append($(templateMulti));
 				}
@@ -121,7 +121,7 @@ export class BetterRollsChatCard {
 		// Setup augment crit and apply damage button
 		if (BRSettings.chatDamageButtonsEnabled) {
 			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
-			const dmgElements = html.find('.red-base-die').parents('.dice-total').toArray(); 
+			const dmgElements = html.find('.dice-total .red-base-die').parents('.dice-row').toArray(); 
 			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 			
 			[...dmgElements, ...customElements].forEach(element => {
