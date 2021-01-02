@@ -119,6 +119,7 @@ export class RollFields {
 	 * @param {string?} options.formula optional formula to use instead of the attack formula
 	 * @param {Actor?} options.actor Actor to derive roll data from if item is not given
 	 * @param {Item?} options.item Item to derive attack formula or roll data from
+	 * @param {"weapon" | "spell" | undefined} options.itemType Type of attack. Used if item is null.
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title Alternative title to use
 	 * @param {number?} options.critThreshold override
@@ -135,7 +136,7 @@ export class RollFields {
 		// Get critical threshold
 		const critThreshold = options.critThreshold ??
 			ItemUtils.getCritThreshold(item) ??
-			ActorUtils.getCritThreshold(actor) ??
+			ActorUtils.getCritThreshold(actor, options.itemType) ??
 			20;
 
 		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);

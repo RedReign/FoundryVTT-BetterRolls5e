@@ -300,15 +300,19 @@ export class ActorUtils {
 
 	/**
 	 * Returns the crit threshold of an actor. Returns null if no actor is given.
-	 * @param {*} actor 
+	 * @param {Actor} actor the actor who's data we want
+	 * @param {"weapon" | "spell" | undefined} itemType the item type we're dealing with
 	 */
-	static getCritThreshold(actor) {
-		if (!actor) null;
+	static getCritThreshold(actor, itemType) {
+		if (!actor) return 20;
 
-		try { 
-			return Number(getProperty(actor, "data.flags.dnd5e.weaponCriticalThreshold")) || 20;
-		} catch(error) { 
-			return actor.data.flags.dnd5e.weaponCriticalThreshold || 20;
+		const actorFlags = actor.data.flags.dnd5e || {};
+		if (itemType === "weapon" && actorFlags.weaponCriticalThreshold) {
+			return parseInt(actorFlags.weaponCriticalThreshold);
+		} else if (itemType === "spell" && actorFlags.spellCriticalThreshold) {
+			return parseInt(actorFlags.spellCriticalThreshold);
+		} else {
+			return 20;
 		}
 	}
 
@@ -396,14 +400,11 @@ export class ItemUtils {
 	static getCritThreshold(item) {
 		if (!item) return null;
 
-		const itemData = item.data.data;
-		const itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
-		if (['mwak', 'rwak'].includes(itemData.actionType)) {
-			let characterCrit = ActorUtils.getCritThreshold(item?.actor);
-			return Math.min(20, characterCrit, itemCrit);
-		} else {
-			return Math.min(20, itemCrit);
-		}
+		// Get item crit. If its a weapon or spell, it might have a DND flag to change the range
+		// We take the smallest item crit value
+		let itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
+		const characterCrit = ActorUtils.getCritThreshold(item.actor, item.data.type);
+		return Math.min(20, characterCrit, itemCrit);
 	}
 
 	static getDuration(item) {
