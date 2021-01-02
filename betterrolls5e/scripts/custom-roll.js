@@ -1,4 +1,4 @@
-import { isAttack, isSave, isCheck } from "./betterrolls5e.js";
+import { isAttack, isSave, isCheck, BetterRolls } from "./betterrolls5e.js";
 import { dnd5e, i18n, DiceCollection, ActorUtils, ItemUtils, Utils, FoundryProxy } from "./utils.js";
 import { Renderer } from "./renderer.js";
 import { getSettings } from "./settings.js";
@@ -286,15 +286,17 @@ export class CustomItemRoll {
 					if (damage.critBackup) {
 						damage.critRoll = damage.critBackup;
 					} else {
-						const baseRoll = damage.baseRoll;
-						const savage = ItemUtils.appliesSavageAttacks(item);
-						damage.critRoll = ItemUtils.getCritRoll(baseRoll.formula, baseRoll.total, { settings, savage });
+						const { formula, total } = damage.baseRoll;
+						const extraCritDice = damage.extraCritDice ?? ItemUtils.getExtraCritDice(item);
+						damage.extraCritDice = extraCritDice;
+						damage.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
+						damage.critBackup = damage.critRoll; // prevent undoing the crit
 						this.dicePool.push(damage.critRoll);	
 					}
 
 					updated = true;
-				} else if (!isCrit && damage.critRoll) {
-					// Disable crit but keep a backup
+				} else if (!isCrit && damage.critRoll && !damage.critBackup) {
+					// Disable crit but keep a backup (so we don't re-roll the crit)
 					damage.critBackup = damage.critRoll;
 					damage.critRoll = undefined;
 					updated = true;
@@ -467,7 +469,7 @@ export class CustomItemRoll {
 		await new Promise(r => setTimeout(r, 25));
 
 		// If damage buttons are enabled, hide damage entries under certain conditions
-		if (getSettings(this.settings)) {
+		if (this.settings) {
 			// Insert damage buttons before all damage entries
 			const newEntries = [];
 			const injectedGroups = new Set();
@@ -508,7 +510,7 @@ export class CustomItemRoll {
 	_getFlags() {
 		const flags = {
 			betterrolls5e: {
-				version: game.modules.get("betterrolls5e").data.version,
+				version: Utils.getVersion(),
 				actorId: this.actorId,
 				itemId: this.itemId,
 				tokenId: this.tokenId,
@@ -622,7 +624,7 @@ export class CustomItemRoll {
 		};
 
 		// Add non-null entries
-		const newEntries = RollFields.constructModelsFromField(field, metadata);
+		const newEntries = RollFields.constructModelsFromField(field, metadata, settings);
 		newEntries.forEach(this.addRenderEntry.bind(this));
 	}
 
@@ -640,16 +642,17 @@ export class CustomItemRoll {
 			}
 		}
 
+		// Assign roll groups for multirolls
 		if (entry.type === "multiroll" || entry.type === "button-save") {
-			// Assign roll group
 			this._lastGroupIdx = (this._lastGroupIdx ?? -1) + 1;
 			entry.group = `br!${this._lastGroupIdx}`
 		}
 
+		// Assign roll groups for damage, and hide it if there is one and hiding is enabled
 		if (entry.type === "damage") {
-			entry.hidden = entry.hidden ?? getSettings(this.settings).damagePromptEnabled;
 			const lastGroup = [...this.entries].reverse().find(e => e.group)?.group;
 			if (lastGroup) {
+				entry.hidden = entry.hidden ?? this.settings.damagePromptEnabled;
 				entry.group = lastGroup;
 			}
 		}
@@ -691,11 +694,13 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
 			
-			if (brFlags.quickDamage && (brFlags.quickDamage[val].length > 0)) {
-				for (let i = 0; i < brFlags.quickDamage[val].length; i++) {
-					const versatile = (i == 0) && flagIsTrue("quickVersatile");
-					if (brFlags.quickDamage[val][i]) { 
-						fields.push(["damage", { index:i, versatile }]);
+			const quickDamage = Object.entries(brFlags.quickDamage?.value ?? []);
+			if (quickDamage.length > 0) {
+				for (let [i, damage] of quickDamage) {
+					const index = Number(i);
+					const versatile = (index == 0) && flagIsTrue("quickVersatile");
+					if (damage) { 
+						fields.push(["damage", { index, versatile }]);
 					}
 				}
 

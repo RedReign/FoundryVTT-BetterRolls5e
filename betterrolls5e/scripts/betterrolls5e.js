@@ -610,6 +610,7 @@ export function BetterRolls() {
 	}].concat(Hooks._hooks.hotbarDrop || []);
 	
 	return {
+		version: Utils.getVersion(),
 		assignMacro:assignMacro,
 		vanillaRoll:vanillaRoll,
 		quickRoll:quickRoll,

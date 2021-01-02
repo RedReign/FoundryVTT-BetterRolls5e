@@ -48,6 +48,7 @@ import { DiceCollection, i18n, Utils } from "./utils.js";
  * @property {string} title
  * @property {string} damageType
  * @property {string} context
+ * @property {number?} extraCritDice
  * @property {Roll} baseRoll
  * @property {Roll?} critRoll
  * @property {boolean?} isVersatile

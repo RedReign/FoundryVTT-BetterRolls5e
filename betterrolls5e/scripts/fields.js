@@ -189,7 +189,7 @@ export class RollFields {
 	 * @param {string?} options.damageType
 	 * @param {string?} options.title title to display. If not given defaults to damage type
 	 * @param {boolean?} options.isCrit Whether to roll crit damage
-	 * @param {boolean?} options.savage If true/false, sets the savage property. Falls back to using the item if not given, or false otherwise.
+	 * @param {boolean?} options.extraCritDice sets the savage property. Falls back to using the item if not given, or false otherwise.
 	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never
 	 * @param {BRSettings} options.settings Override config to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps}
@@ -199,7 +199,7 @@ export class RollFields {
 		const actor = options?.actor ?? item?.actor;
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || isVersatile;
-		const savage = options.savage ?? ItemUtils.appliesSavageAttacks(item);
+		const extraCritDice = options.extraCritDice ?? ItemUtils.getExtraCritDice(item);
 		
 		const settings = getSettings(options.settings);
 		const { critBehavior } = settings;
@@ -265,7 +265,7 @@ export class RollFields {
 			let critRoll = null;
 			if (damageIndex !== "other") {
 				if (isCrit && critBehavior !== "0") {
-					critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, savage });
+					critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, extraCritDice });
 				}
 			}
 
@@ -275,6 +275,7 @@ export class RollFields {
 				title: options.title ?? title,
 				damageType,
 				context,
+				extraCritDice,
 				baseRoll,
 				critRoll,
 				hidden,
@@ -354,13 +355,15 @@ export class RollFields {
 	 * Construct one or more model entries from a field and some metadata
 	 * @param {} field 
 	 * @param {*} metadata
+	 * @param {object} settings BetterRoll settings overrides
 	 * @returns {Array<import("./renderer.js").RenderModelEntry>}
 	 */
-	static constructModelsFromField(field, metadata) {
+	static constructModelsFromField(field, metadata, settings={}) {
 		let [fieldType, data] = field;
 		data = mergeObject(metadata, data ?? {}, { recursive: false });
 		
 		const { item, actor } = data;
+		settings = getSettings(settings);
 
 		switch (fieldType) {
 			case 'header':
@@ -389,7 +392,7 @@ export class RollFields {
 				});
 			case 'savedc':
 				// {customAbl: null, customDC: null}
-				return [RollFields.constructSaveButton({ settings: this.settings, ...data })];
+				return [RollFields.constructSaveButton({ settings, ...data })];
 			case 'custom':
 				const { title, rolls, formula, rollState } = data;
 				const rollData = Utils.getRollData({ item, actor });
@@ -417,7 +420,7 @@ export class RollFields {
 				}
 				break;
 			case 'flavor':
-				const message = data?.text ?? this.item.data.data.chatFlavor;
+				const message = data?.text ?? item.data.data.chatFlavor;
 				if (message) {
 					return [{
 						type: "description",

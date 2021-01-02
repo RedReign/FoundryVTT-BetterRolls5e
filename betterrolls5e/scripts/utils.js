@@ -31,6 +31,10 @@ function isMaestroOn() {
 }
 
 export class Utils {
+	static getVersion() {
+		return game.modules.get("betterrolls5e").data.version;
+	}
+	
 	/**
 	 * The sound to play for dice rolling. Returns null if an alternative sound
 	 * from maestro or dice so nice is registered.
@@ -290,12 +294,12 @@ export class ActorUtils {
 		return ActorUtils.hasElvenAccuracy(actor) && ["dex", "int", "wis", "cha"].includes(ability);
 	}
 
-	static hasSavageAttacks(actor) {
-		try { 
-			return actor.getFlag("dnd5e", "savageAttacks");
-		} catch(error) {
-			return actor.getFlag("dnd5eJP", "savageAttacks");
-		}
+	/**
+	 * Returns the number of additional melee extra critical dice.
+	 * @param {*} actor 
+	 */
+	static getMeleeExtraCritDice(actor) {
+		return actor?.getFlag("dnd5e", "meleeCriticalDamageDice") ?? 0;
 	}
 
 	/**
@@ -585,9 +589,9 @@ export class ItemUtils {
 	 * is not a weapon, or if there is no item.
 	 * @param {item?} item 
 	 */
-	static appliesSavageAttacks(item) {
+	static getExtraCritDice(item) {
 		if (item?.actor && item?.data.type === "weapon") {
-			return ActorUtils.hasSavageAttacks(item.actor);
+			return ActorUtils.getMeleeExtraCritDice(item.actor);
 		}
 
 		return false;
@@ -701,20 +705,21 @@ export class ItemUtils {
 	/**
 	 * Derives the formula for what should be rolled when a crit occurs.
 	 * Note: Item is not necessary to calculate it.
-	 * @param {string} rollFormula
+	 * @param {string} baseFormula
+	 * @param {number} baseTotal
+	 * @param {number?} param2.critDice extra crit dice
 	 * @returns {Roll | boolean} the crit result, or false if there is no dice
 	 */
-	static getCritRoll(baseFormula, baseTotal, {settings=null, savage=false}={}) {
+	static getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRoll = new Roll(critFormula);
-		
+
 		// If the crit formula has no dice, return false
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
 			return false;
 		}
-		
-		const add = savage ? 1 : 0;
-		critRoll.alter(1, add);
+
+		critRoll.alter(1, extraCritDice ?? 0);
 		critRoll.roll();
 
 		const { critBehavior } = getSettings(settings);
