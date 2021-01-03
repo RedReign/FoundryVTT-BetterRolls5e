@@ -743,37 +743,39 @@ export class ItemUtils {
 	 * @param {number | "versatile"} damageIndex
 	 */
 	static scaleDamage(item, spellLevel, damageIndex, rollData) {
-		let versatile = false;
-		if (damageIndex === "versatile") {
-			damageIndex = 0;
-			versatile = true;
-		}
-
-		let itemData = item.data.data;
-		let actorData = item.actor.data.data;
-
-		const parts = itemData.damage.parts.map(d => d[0]);
-		const scale = itemData.scaling.formula;
-		let formula = versatile ? itemData.damage.versatile : parts[damageIndex];
-		
-		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
-		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
-			const level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
-			const add = Math.floor((level + 1) / 6);
-			if (add > 0) {
-				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+		if (item?.data.type === "spell") {
+			let versatile = false;
+			if (damageIndex === "versatile") {
+				damageIndex = 0;
+				versatile = true;
 			}
-			return formula;
-		}
-		
-		// Scaling for spell damage by spell slot used. Affects only the first damage roll of the spell.
-		if (item.data.type === "spell" && itemData.scaling.mode === "level" && spellLevel) {
-			const level = itemData.level;
-			const add = Math.floor(spellLevel - level);
-			if (add > 0) {
-				formula = item._scaleDamage([formula], scale || formula, add, rollData);
+
+			let itemData = item.data.data;
+			let actorData = item.actor.data.data;
+
+			const parts = itemData.damage.parts.map(d => d[0]);
+			const scale = itemData.scaling.formula;
+			let formula = versatile ? itemData.damage.versatile : parts[damageIndex];
+			
+			// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
+			if (itemData.scaling.mode === "cantrip") {
+				const level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
+				const add = Math.floor((level + 1) / 6);
+				if (add > 0) {
+					formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				}
+				return formula;
 			}
-			return formula;
+			
+			// Scaling for spell damage by spell slot used. Affects only the first damage roll of the spell.
+			if (itemData.scaling.mode === "level" && spellLevel) {
+				const level = itemData.level;
+				const add = Math.floor(spellLevel - level);
+				if (add > 0) {
+					formula = item._scaleDamage([formula], scale || formula, add, rollData);
+				}
+				return formula;
+			}
 		}
 		
 		return null;
