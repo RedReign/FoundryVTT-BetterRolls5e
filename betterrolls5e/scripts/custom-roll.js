@@ -166,18 +166,21 @@ export class CustomItemRoll {
 
 	static fromMessage(message) {
 		const data = message.data.flags.betterrolls5e;
-		const roll = new CustomItemRoll(null, data.params, []);
+		const roll = new CustomItemRoll(null, data?.params ?? {}, []);
 		roll.messageId = message.id;
 		roll.rolled = true;
-		roll.isCrit = data.isCrit;
-		roll.entries = FoundryProxy.create(data.entries);
-		roll.properties = data.properties;
-		roll.params = data.params;
+		if (data) {
+			roll.isCrit = data.isCrit;
+			roll.entries = FoundryProxy.create(data.entries);
+			roll.properties = data.properties;
+			roll.params = data.params;
+			
+			// Set these up so that lazy loading can be done
+			roll.actorId = data.actorId;
+			roll.itemId = data.itemId;
+			roll.tokenId = data.tokenId;
+		}
 
-		// Set these up so that lazy loading can be done
-		roll.actorId = data.actorId;
-		roll.itemId = data.itemId;
-		roll.tokenId = data.tokenId;
 		roll.storedItemData = message.getFlag("dnd5e", "itemData");
 
 		return roll;
