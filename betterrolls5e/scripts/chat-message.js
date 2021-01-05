@@ -133,7 +133,7 @@ export class BetterRollsChatCard {
 				// Remove crit button if already rolled
 				const id = element.parents('.dice-roll').attr('data-id');
 				const entry = this.roll?.entries.find(m => m.id === id);
-				if (!entry || this.roll.getCritStatus(entry.group) || entry?.damageIndex === "other") {
+				if (!entry || entry.critRoll || this.roll.getCritStatus(entry.group) || entry?.damageIndex === "other") {
 					element.find('.crit-button').remove();
 				}
 			});
@@ -181,7 +181,7 @@ export class BetterRollsChatCard {
 				ev.preventDefault();
 				ev.stopPropagation();
 				const group = $(ev.target).parents('.dice-roll').attr('data-group');
-				if (await this.roll.updateCritStatus(group, true)) {
+				if (await this.roll.forceCrit(group)) {
 					await this.roll.update();
 				}
 			});

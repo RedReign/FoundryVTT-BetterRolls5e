@@ -262,15 +262,27 @@ export class CustomItemRoll {
 	}
 
 	/**
+	 * Returns the group header.
+	 * Currently this is the multiroll/button-save junction.
+	 * In the future, maybe we want to exchange it for fields? Unsure.
+	 * @param {string} group
+	 * @private
+	 */
+	_getGroupHeader(group) {
+		return this.entries.find(e => 
+			e.group === group &&
+			["multiroll", "button-save"].includes(e.type));
+	}
+
+	/**
 	 * Returns the crit status, for a group if given or for the whole roll is no group is given
 	 * @param {string?} group optional filter to only check for crits within a group
 	 * @returns {boolean} true if the group crit, false otherwise
 	 */
 	getCritStatus(group) {
-		// todo: consider storing group metadata in the flags...
+		// Get crit status from 
 		if (group) {
-			const roll = this.entries
-				.find(e => ["multiroll", "button-save"].includes(e.type) && e.group === group);
+			const roll = this._getGroupHeader(group);
 			return roll?.isCrit ?? false;
 		}
 
@@ -285,7 +297,13 @@ export class CustomItemRoll {
 	 * @returns {Promise<boolean>} if the crit roll went through
 	 */
 	async updateCritStatus(group, isCrit) {
-		// Do nothing if crit is already rolled or if we don't have permission
+		// If crits were forced on, can't turn them off
+		const header = this._getGroupHeader(group);
+		if (!isCrit && header.forceCrit) {
+			return false;
+		}
+		
+		// Do nothing if crits are disabled or if we don't have permission
 		const critBehavior = this.settings.critBehavior;
 		if ((isCrit && critBehavior === "0") || !this.hasPermission) {
 			return false;
@@ -328,7 +346,7 @@ export class CustomItemRoll {
 
 			// If crit extra, show/hide depending on setting
 			if (entry.type === "crit") {
-				entry.hidden = !isCrit;
+				entry.hidden = entry._diceRolled ? false : !isCrit;
 				if (!entry._diceRolled && !entry.hidden) {
 					this.dicePool.push(entry.critRoll);
 				}
@@ -337,6 +355,22 @@ export class CustomItemRoll {
 				// If unhidden > hidden, it was rolled before, so set to true anyways
 				entry._diceRolled = true;
 			}
+		}
+
+		return updated;
+	}
+
+	/**
+	 * Like setCritStatus(), but sets the forceCrit flag, preventing the crit
+	 * from being unset.
+	 * @param {*} group 
+	 */
+	async forceCrit(group) {
+		const updated = await this.updateCritStatus(group, true);
+		const header = this._getGroupHeader(group);
+		if (updated || (header.isCrit && !header.forceCrit)) {
+			header.forceCrit = true;
+			return true;
 		}
 
 		return updated;
@@ -379,8 +413,8 @@ export class CustomItemRoll {
 
 	/**
 	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
-	 * @param {*} id 
-	 * @param {*} rollState 
+	 * @param {string} id The id of the rollstate entry to update
+	 * @param {import("./fields.js").RollState} rollState 
 	 */
 	async updateRollState(id, rollState) {
 		if (!this.hasPermission || !this.entries?.length || !rollState) {
@@ -418,12 +452,13 @@ export class CustomItemRoll {
 		multiroll.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
 		
 		// Update remaining properties
+		// Update crit status if not forcing crit
 		multiroll.rollState = rollState;
-		multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
+		if (!multiroll.forceCrit) {
+			multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
+			this.updateCritStatus(multiroll.group, multiroll.isCrit);
+		}
 
-		// Update crit status
-		this.updateCritStatus(multiroll.group, multiroll.isCrit);
-		
 		return true;
 	}
 	

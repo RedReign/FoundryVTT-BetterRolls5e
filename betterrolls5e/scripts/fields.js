@@ -43,6 +43,7 @@ export class RollFields {
 	 * @param {RollState?} options.rollState highest or lowest or first or none
 	 * @param {string?} options.rollType metadata param for attack vs damage.
 	 * @param {boolean?} options.elvenAccuracy whether the actor should apply elven accuracy
+	 * @param {boolean?} options.forceCrit optional flag to force a crit result
 	 * @param {BRSettings} options.settings additional settings to override
 	 * @returns {import("./renderer.js").MultiRollDataProps}
 	 */
@@ -106,7 +107,8 @@ export class RollFields {
 			rollType,
 			formula,
 			entries,
-			isCrit: entries.some(e => !e.ignored && e.isCrit),
+			forceCrit: options.forceCrit,
+			isCrit: options.forceCrit || entries.some(e => !e.ignored && e.isCrit),
 			bonus: bonusRoll
 		};
 

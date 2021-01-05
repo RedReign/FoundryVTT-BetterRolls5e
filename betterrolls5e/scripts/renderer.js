@@ -1,6 +1,6 @@
 import { CustomItemRoll } from "./custom-roll.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { DiceCollection, i18n, Utils } from "./utils.js";
+import { i18n, Utils } from "./utils.js";
 
 /**
  * Model data for rendering the header template.
@@ -32,6 +32,7 @@ import { DiceCollection, i18n, Utils } from "./utils.js";
  * @property {boolean?} elvenAccuracy whether elven accuracy applies to this attack
  * @property {string} rollType
  * @property {string} formula
+ * @property {boolean?} forceCrit was the crit status forced
  * @property {boolean} isCrit
  * @property {Array<{roll: Roll; total: number; ignored: boolean; critType: string}>} entries
  * @property {Roll} bonus
