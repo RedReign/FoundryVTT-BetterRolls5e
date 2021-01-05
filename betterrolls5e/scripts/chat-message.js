@@ -88,6 +88,7 @@ export class BetterRollsChatCard {
 	 * Internal method to setup the temporary buttons used to update advantage or disadvantage,
 	 * as well as those that that affect damage
 	 * entries, like crit rolls and damage application.
+	 * @private
 	 */
 	async _setupOverlayButtons(html) {
 		// Multiroll buttons (perhaps introduce a new toggle property?)
@@ -119,9 +120,10 @@ export class BetterRollsChatCard {
 		}
 
 		// Setup augment crit and apply damage button
+		// Note: For backwards compatibility, these find on the HTML rather than use the roll models
 		if (BRSettings.chatDamageButtonsEnabled) {
 			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
-			const dmgElements = html.find('.dice-total .red-base-die').parents('.dice-row').toArray(); 
+			const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray(); 
 			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 			
 			[...dmgElements, ...customElements].forEach(element => {
@@ -131,7 +133,7 @@ export class BetterRollsChatCard {
 				// Remove crit button if already rolled
 				const id = element.parents('.dice-roll').attr('data-id');
 				const entry = this.roll?.entries.find(m => m.id === id);
-				if (!entry || entry?.critRoll != null || entry?.damageIndex === "other") {
+				if (!entry || this.roll.getCritStatus(entry.group) || entry?.damageIndex === "other") {
 					element.find('.crit-button').remove();
 				}
 			});
@@ -152,7 +154,7 @@ export class BetterRollsChatCard {
 						y: ev.originalEvent.screenY
 					};
 		
-					dmg = await this._applyCritDamageToActor(Number(dmg), Number(critDmg), dialogPosition);
+					dmg = await this._resolveCritDamage(Number(dmg), Number(critDmg), dialogPosition);
 				}
 		
 				// getting the modifier depending on which of the buttons was pressed
@@ -205,36 +207,42 @@ export class BetterRollsChatCard {
 		html.find(".die-result-overlay-br").attr("style", "display: none;");
 	}
 	
-	async _applyCritDamageToActor(dmg, critdmg, position) {
-		const dialogResult = await new Promise(async (resolve, reject) => {
-			const options = {
-				left: position.x,
-				top: position.y,
-				width: 100 
-			};
+	/**
+	 * Displays a dialog if both dmg and critdmg have a value, otherwise just returns the first not null one.
+	 * @private
+	 */
+	async _resolveCritDamage(dmg, critdmg, position) {
+		if (dmg && critdmg) {
+			return await new Promise(async (resolve, reject) => {
+				const options = {
+					left: position.x,
+					top: position.y,
+					width: 100 
+				};
 
-			const data = {
-				title: i18n("br5e.chat.damageButtons.critPrompt.title"),
-				content: "",
-				buttons: {
-					one: {
-						icon: '<i class="fas fa-check"></i>',
-						label: i18n("br5e.chat.damageButtons.critPrompt.yes"),
-						callback: () => { resolve(dmg + critdmg); }
+				const data = {
+					title: i18n("br5e.chat.damageButtons.critPrompt.title"),
+					content: "",
+					buttons: {
+						one: {
+							icon: '<i class="fas fa-check"></i>',
+							label: i18n("br5e.chat.damageButtons.critPrompt.yes"),
+							callback: () => { resolve(dmg + critdmg); }
+						},
+						two: {
+							icon: '<i class="fas fa-times"></i>',
+							label: i18n("br5e.chat.damageButtons.critPrompt.no"),
+							callback: () => { resolve(dmg); }
+						}
 					},
-					two: {
-						icon: '<i class="fas fa-times"></i>',
-						label: i18n("br5e.chat.damageButtons.critPrompt.no"),
-						callback: () => { resolve(dmg); }
-					}
-				},
-				default: "two"
-			}
+					default: "two"
+				}
 
-			new Dialog(data, options).render(true);
-		});
+				new Dialog(data, options).render(true);
+			});
+		}
 
-		return dialogResult;
+		return dmg || critdmg;
 	}
 	
 	/**
@@ -258,7 +266,8 @@ export class BetterRollsChatCard {
 					CustomRoll.rollAttribute(actor, ability, "save", params);
 				}
 			} else if (action === "damage") {
-				if (await this.roll.rollDamage(button.dataset.group)) {	
+				const group = encodeURIComponent(button.dataset.group);
+				if (await this.roll.rollDamage(group)) {	
 					await this.roll.update();
 				}
 			}

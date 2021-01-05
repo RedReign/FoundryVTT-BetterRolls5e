@@ -46,12 +46,24 @@ import { DiceCollection, i18n, Utils } from "./utils.js";
  * @property {boolean?} hidden
  * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
- * @property {string} damageType
+ * @property {string} damageType If its something like bludgeoning or piercing
  * @property {string} context
- * @property {number?} extraCritDice
+ * @property {number?} extraCritDice Used for things like savage
  * @property {Roll} baseRoll
  * @property {Roll?} critRoll
- * @property {boolean?} isVersatile
+ */
+
+ /**
+ * Model data for rendering bonus crit information.
+ * @typedef CritDataProps
+ * @type {object}
+ * @property {"crit"} type
+ * @property {boolean?} hidden
+ * @property {string?} group Damage group used to identify damage entries as related
+ * @property {string} title
+ * @property {string} damageType If its something like bludgeoning or piercing
+ * @property {string} context
+ * @property {Roll?} critRoll
  */
 
 /**
@@ -72,8 +84,8 @@ import { DiceCollection, i18n, Utils } from "./utils.js";
 
 /**
  * Union type of all possible render model types, separatable by the type property.
- * @typedef { HeaderDataProps | DescriptionDataProps | 
- * 		MultiRollDataProps | DamageDataProps | ButtonSaveProps | ButtonDamageProps
+ * @typedef { HeaderDataProps | DescriptionDataProps | MultiRollDataProps |
+ * 		DamageDataProps | CritDataProps | ButtonSaveProps | ButtonDamageProps
  * } RenderModelEntry
  */
 
@@ -122,6 +134,7 @@ export class Renderer {
 			case "multiroll":
 				return Renderer.renderMultiRoll(model, settings);
 			case "damage":
+			case "crit":
 				return Renderer.renderDamage(model, settings);
 			case "button-save":
 				return Renderer.renderSaveButton(model, settings);
@@ -197,13 +210,16 @@ export class Renderer {
 	 * @param {DamageDataProps} properties 
 	 */
 	static async renderDamage(properties, settings) {
-		const { damageType, baseRoll, critRoll, isVersatile, context } = properties;
-		if (baseRoll.terms.length === 0) return;
+		if (properties.hidden) return "";
+
+		const { damageType, baseRoll, critRoll, context } = properties;
+		const isVersatile = properties.damageIndex === "versatile";
+		if (baseRoll?.terms.length === 0 && critRoll?.terms.length === 0) return;
 		
-		const tooltips = [await baseRoll.getTooltip()];
-		if (critRoll) {
-			tooltips.push(await critRoll.getTooltip());
-		}
+		const tooltips = (await Promise.all([
+			baseRoll?.getTooltip(),
+			critRoll?.getTooltip()
+		])).filter(t => t);
 
 		settings = getSettings(settings);
 		const critString = settings.critString;
@@ -266,6 +282,8 @@ export class Renderer {
 
 		return renderModuleTemplate("red-damageroll.html", {
 			id: properties.id,
+			group: properties.group,
+			damageRollType: properties.type,
 			tooltips,
 			base: Utils.processRoll(baseRoll),
 			crit: Utils.processRoll(critRoll),
@@ -273,11 +291,9 @@ export class Renderer {
 			damagetop: labels[1],
 			damagemid: labels[2],
 			damagebottom: labels[3],
-			formula: baseRoll.formula,
+			formula: baseRoll?.formula ?? critRoll.formula,
 			damageType,
-			hidden: properties.hidden,
-			group: properties.group,
-			maxRoll: new Roll(baseRoll.formula).evaluate({maximize:true}).total,
+			maxRoll: baseRoll ? new Roll(baseRoll.formula).evaluate({maximize:true}).total : null,
 			maxCrit: critRoll ? new Roll(critRoll.formula).evaluate({maximize:true}).total : null
 		});
 	}

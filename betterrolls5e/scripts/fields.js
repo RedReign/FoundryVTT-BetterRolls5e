@@ -182,20 +182,20 @@ export class RollFields {
 	 * @param {object} options
 	 * @param {string} options.formula optional formula to use, higher priority over the item formula
 	 * @param {Actor} options.actor
-	 * @param {Item} options.item 
+	 * @param {Item} options.item
 	 * @param {number | "versatile" | "other"} options.damageIndex 
 	 * @param {number?} options.slotLevel
 	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
 	 * @param {string?} options.damageType
 	 * @param {string?} options.title title to display. If not given defaults to damage type
 	 * @param {boolean?} options.isCrit Whether to roll crit damage
-	 * @param {boolean?} options.extraCritDice sets the savage property. Falls back to using the item if not given, or false otherwise.
-	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never
+	 * @param {number?} options.extraCritDice sets the savage property. Falls back to using the item if not given, or false otherwise.
+	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never.
 	 * @param {BRSettings} options.settings Override config to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps}
 	 */
 	static constructDamageRoll(options={}) {
-		const { item, damageIndex, slotLevel, isCrit, hidden } = options;
+		const { item, damageIndex, slotLevel, hidden, isCrit } = options;
 		const actor = options?.actor ?? item?.actor;
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || isVersatile;
@@ -278,8 +278,69 @@ export class RollFields {
 				extraCritDice,
 				baseRoll,
 				critRoll,
-				hidden,
-				isVersatile: isVersatile ?? false
+				hidden
+			};
+		} catch (err) {
+			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
+			throw err; // propagate the error
+		}
+	}
+
+	/**
+	 * Constructs and rolls damage for a crit bonus entry.
+	 * This is a simpler version of the regular damage entry.
+	 * @param {object} options
+	 * @param {string} options.formula optional formula to use, higher priority over the item formula
+	 * @param {Actor} options.actor
+	 * @param {Item} options.item
+	 * @param {number | "versatile" | "other"} options.damageIndex 
+	 * @param {number?} options.slotLevel
+	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
+	 * @param {string?} options.damageType
+	 * @param {string?} options.title title to display. If not given defaults to damage type
+	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never.
+	 * @param {BRSettings} options.settings Override config to use for the roll
+	 * @returns {import("./renderer.js").DamageDataProps}
+	 */
+	static constructCritDamageRoll(options={}) {
+		const { item, slotLevel, hidden } = options;
+		const actor = options?.actor ?? item?.actor;
+		const rollData =  item ?
+			ItemUtils.getRollData(item, { slotLevel }) :
+			actor?.getRollData();
+
+		// Determine certain fields based on index 
+		let title = options.title;
+		let context = options.context;
+		let damageType = options.damageType;
+		let formula = options.formula;
+
+		// If no formula was given, derive from the item
+		if (!formula && item) {
+			const itemData = item.data.data;
+			const flags = item.data.flags.betterRolls5e;
+			const damageIndex = Number(options.damageIndex ?? flags.critDamage?.value);
+			formula = itemData.damage.parts[damageIndex][0]; 
+			damageType = damageType ?? itemData.damage.parts[damageIndex][1];
+			context = context ?? flags.quickDamage.context?.[damageIndex];
+		}
+
+		// Require a formula to continue
+		if (!formula) { 
+			return null;
+		}
+
+		// Assemble roll data and defer to the general damage construction
+		try {
+			const critRoll = new Roll(formula, rollData).roll();
+
+			return {
+				type: "crit",
+				title: options.title ?? title,
+				damageType,
+				context,
+				critRoll,
+				hidden
 			};
 		} catch (err) {
 			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
@@ -430,11 +491,7 @@ export class RollFields {
 				}
 				break;
 			case 'crit':
-				let damageIndex = data.damageIndex ??
-					item?.data.flags.betterRolls5e?.critDamage?.value;
-				if (damageIndex) {
-					return RollFields.constructItemDamageRange({ item, damageIndex:Number(damageIndex) });
-				}
+				return [RollFields.constructCritDamageRoll({ item, ...data })];
 		}
 
 		return [];

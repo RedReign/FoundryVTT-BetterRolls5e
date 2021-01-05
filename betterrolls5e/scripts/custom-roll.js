@@ -260,13 +260,29 @@ export class CustomItemRoll {
 		const message = game.messages.get(this.messageId);
 		return game.user.isGM || message?.isAuthor;
 	}
+
+	/**
+	 * Returns the crit status, for a group if given or for the whole roll is no group is given
+	 * @param {string?} group optional filter to only check for crits within a group
+	 * @returns {boolean} true if the group crit, false otherwise
+	 */
+	getCritStatus(group) {
+		// todo: consider storing group metadata in the flags...
+		if (group) {
+			const roll = this.entries
+				.find(e => ["multiroll", "button-save"].includes(e.type) && e.group === group);
+			return roll?.isCrit ?? false;
+		}
+
+		return this.isCrit;
+	}
 	
 	/**
 	 * Rolls crit dice if its not already rolled for the current card.
 	 * This is used when *augmenting* an existing roll to a crit.
 	 * @param {string | null} group If not null, limits the updates to the specified group
 	 * @param {boolean} isCrit Whether to enable or disable crits
-	 * @returns if the crit roll went through
+	 * @returns {Promise<boolean>} if the crit roll went through
 	 */
 	async updateCritStatus(group, isCrit) {
 		// Do nothing if crit is already rolled or if we don't have permission
@@ -278,32 +294,48 @@ export class CustomItemRoll {
 		const item = this.item;
 		let updated = false;
 
-		for (const damage of this.entries) {
-			if (damage.type === "damage" && damage.damageIndex !== "other") {
-				if (group && damage.group !== group) {
-					continue;
-				}
+		const entries = group ? this.entries.filter(e => e.group === group) : this.entries;
 
-				if (isCrit && damage.critRoll == null) {
+		for (const entry of entries) {
+			// "Junction" types are used to keep track of crit state
+			if (["multiroll", "button-save"].includes(entry.type)) {
+				entry.isCrit = isCrit;
+			}
+
+			// "Other" damage entries never crit
+			if (entry.type === "damage" && entry.damageIndex !== "other") {
+				if (isCrit && entry.critRoll == null) {
 					// Enable Crit (from backup if available)
-					if (damage.critBackup) {
-						damage.critRoll = damage.critBackup;
+					if (entry._critBackup) {
+						entry.critRoll = entry._critBackup;
 					} else {
-						const { formula, total } = damage.baseRoll;
-						const extraCritDice = damage.extraCritDice ?? ItemUtils.getExtraCritDice(item);
-						damage.extraCritDice = extraCritDice;
-						damage.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
-						damage.critBackup = damage.critRoll; // prevent undoing the crit
-						this.dicePool.push(damage.critRoll);	
+						const { formula, total } = entry.baseRoll;
+						const extraCritDice = entry.extraCritDice ?? ItemUtils.getExtraCritDice(item);
+						entry.extraCritDice = extraCritDice;
+						entry.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
+						entry._critBackup = entry.critRoll; // prevent undoing the crit
+						this.dicePool.push(entry.critRoll);	
 					}
 
 					updated = true;
-				} else if (!isCrit && damage.critRoll && !damage.critBackup) {
+				} else if (!isCrit && entry.critRoll && !entry._critBackup) {
 					// Disable crit but keep a backup (so we don't re-roll the crit)
-					damage.critBackup = damage.critRoll;
-					damage.critRoll = undefined;
+					entry._critBackup = entry.critRoll;
+					entry.critRoll = undefined;
 					updated = true;
 				}
+			}
+
+			// If crit extra, show/hide depending on setting
+			if (entry.type === "crit") {
+				entry.hidden = !isCrit;
+				if (!entry._diceRolled && !entry.hidden) {
+					this.dicePool.push(entry.critRoll);
+				}
+
+				// Always set to true. If hidden > unhidden, we just rolled it.
+				// If unhidden > hidden, it was rolled before, so set to true anyways
+				entry._diceRolled = true;
 			}
 		}
 
@@ -311,7 +343,8 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * Rolls damage for a damage group. Returns true if successful
+	 * Rolls damage for a damage group. Returns true if successful.
+	 * This works by revealing all relevant hidden damage data, and rolling crit if missing
 	 * @param {string} group
 	 */
 	async rollDamage(group) {
@@ -319,8 +352,8 @@ export class CustomItemRoll {
 			return false;
 		}
 
-		// Get the relevant damage group
-		group = encodeURIComponent(group);
+		// Get whether this was a crit or not
+		const isCrit = this.getCritStatus(group);
 
 		const newEntries = [];
 		for (const entry of this.entries) {
@@ -328,10 +361,13 @@ export class CustomItemRoll {
 				continue;
 			}
 
-			if (entry.type === "damage" && entry.group === group) {
-				entry.hidden = false;
-				this.dicePool.push(entry.baseRoll, entry.critRoll);
+			if (entry.group === group) {
+				if (entry.type === "damage" || (entry.type === "crit" && isCrit)) {
+					entry.hidden = false;
+					this.dicePool.push(entry.baseRoll, entry.critRoll);
+				}
 			}
+
 
 			newEntries.push(entry);
 		}
@@ -438,12 +474,6 @@ export class CustomItemRoll {
 		// Process all fields (this builds the data entries)
 		for (const field of this.fields) {
 			this._processField(field);
-		}
-
-		// If this was a crit and there are damage entries, handle any bonus crit damage
-		const hasDamage = this.entries.some(m => m.type === "damage");
-		if (this.isCrit && hasDamage && this.item?.data.flags.betterRolls5e?.critDamage?.value) {
-			this._processField(["crit"]);
 		}
 
 		// Post-build item updates
@@ -652,11 +682,16 @@ export class CustomItemRoll {
 		}
 
 		// Assign roll groups for damage, and hide it if there is one and hiding is enabled
-		if (entry.type === "damage") {
+		if (entry.type === "damage" || entry.type === "crit") {
 			const lastGroup = [...this.entries].reverse().find(e => e.group)?.group;
 			if (lastGroup) {
-				entry.hidden = entry.hidden ?? this.settings.damagePromptEnabled;
 				entry.group = lastGroup;
+				entry.hidden = entry.hidden ?? this.settings.damagePromptEnabled;
+
+				// Hide if this was a crit entry, and the group didn't crit
+				if (!entry.hidden && !this.getCritStatus(lastGroup)) {
+					entry.hidden = true;
+				}
 			}
 		}
 
@@ -720,6 +755,10 @@ export class CustomItemRoll {
 				useCharge = duplicate(getFlag("quickCharges"));
 			}
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
+
+			if (quickDamage.length > 0 && brFlags.critDamage?.value) {
+				fields.push(["crit"]);
+			}
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
 			fields.push(["desc"]);
