@@ -1,6 +1,7 @@
 import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
 import { BRSettings } from "./settings.js";
 import { i18n, Utils } from "./utils.js";
+import { gsap } from "/scripts/greensock/esm/all.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.
@@ -69,6 +70,16 @@ export class BetterRollsChatCard {
 		if (existing) {
 			console.log("BetterRolls5e | Retrieved existing card");
 			existing.updateBinding(message, chatCard);
+
+			// Pulse the card to make it look more obvious
+			// Wait for the event queue before doing so to allow CSS calculations to work,
+			// otherwise the border color will be incorrectly transparent
+			window.setTimeout(() => {
+				gsap.from(html.get(), {
+					"border-color": "red", 
+					"box-shadow": "0 0 6px inset #ff6400",
+					duration: 2});
+			}, 0);
 
 			// Scroll to bottom if the last card had updated
 			const last = ChatMessage.collection.entries[ChatMessage.collection.entries.length - 1];
