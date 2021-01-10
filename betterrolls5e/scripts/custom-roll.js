@@ -112,6 +112,7 @@ let defaultParams = {
 	event: null,
 	adv: 0,
 	disadv: 0,
+	prompt: {}
 };
 
 /*
@@ -346,13 +347,13 @@ export class CustomItemRoll {
 
 			// If crit extra, show/hide depending on setting
 			if (entry.type === "crit") {
-				entry.hidden = entry._diceRolled ? false : !isCrit;
-				if (!entry._diceRolled && !entry.hidden) {
+				entry.revealed = entry._diceRolled ? true : isCrit;
+				if (!entry._diceRolled && entry.revealed) {
 					this.dicePool.push(entry.critRoll);
 				}
 
-				// Always set to true. If hidden > unhidden, we just rolled it.
-				// If unhidden > hidden, it was rolled before, so set to true anyways
+				// Always set to true. If hidden > revealed, we just rolled it.
+				// If revealed > hidden, it was rolled before, so set to true anyways
 				entry._diceRolled = true;
 			}
 		}
@@ -378,36 +379,28 @@ export class CustomItemRoll {
 
 	/**
 	 * Rolls damage for a damage group. Returns true if successful.
-	 * This works by revealing all relevant hidden damage data, and rolling crit if missing
+	 * This works by revealing all relevant hidden damage data, and visually rolling dice
 	 * @param {string} group
 	 */
 	async rollDamage(group) {
-		if (!this.hasPermission || !this.entries?.length) {
+		const wasHidden = this.params.prompt[group];
+		if (!this.hasPermission || !this.entries?.length || !wasHidden) {
 			return false;
 		}
 
 		// Get whether this was a crit or not
 		const isCrit = this.getCritStatus(group);
 
-		const newEntries = [];
-		for (const entry of this.entries) {
-			if (entry.type === "button-damage" && entry.group === group) {
-				continue;
+		// Disable the prompt for this group
+		this.params.prompt[group] = false;
+
+		// Add to dicepool for dice so nice
+		for (const entry of this.entries.filter(e => e.group === group)) {
+			if (entry.type === "damage" || (entry.type === "crit" && isCrit)) {
+				this.dicePool.push(entry.baseRoll, entry.critRoll);
 			}
-
-			if (entry.group === group) {
-				if (entry.type === "damage" || (entry.type === "crit" && isCrit)) {
-					entry.hidden = false;
-					this.dicePool.push(entry.baseRoll, entry.critRoll);
-				}
-			}
-
-
-			newEntries.push(entry);
 		}
 
-		// New data render entries with damage prompts removed
-		this.entries = newEntries;
 		return true;
 	}
 
@@ -536,31 +529,22 @@ export class CustomItemRoll {
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 
-		// If damage buttons are enabled, hide damage entries under certain conditions
-		if (this.settings) {
-			// Insert damage buttons before all damage entries
-			const newEntries = [];
-			const injectedGroups = new Set();
-			for (const entry of this.entries) {
-				if (entry.type === "damage" && entry.hidden && !injectedGroups.has(entry.group)) {
-					injectedGroups.add(entry.group);
-					newEntries.push({
-						type: "button-damage",
-						group: entry.group
-					});
-				}
-				newEntries.push(entry);
+		// If damage buttons are enabled, enable prompts
+		if (this.settings.damagePromptEnabled) {
+			const groups = new Set(this.entries.map(e => e?.group));
+			for (const group of groups) {
+				this.params.prompt[group] = this.params.prompt[group] ?? true;
 			}
-
-			this.entries = newEntries;
 		}
 		
 		// Add models (non-hidden) to dice pool
-		for (const entry of this.entries.filter(e => !e.hidden)) {
+		for (const entry of this.entries) {
 			if (entry.type === "multiroll") {
 				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
-			} else if (entry.type === "damage") {
-				this.dicePool.push(entry.baseRoll, entry.critRoll);
+			} else if (entry.group && !this.params.prompt[entry.group]) {
+				if (entry.type === "damage" || (entry.type === "crit" && entry.revealed)) {
+					this.dicePool.push(entry.baseRoll, entry.critRoll);
+				}
 			}
 		}
 	}
@@ -718,15 +702,13 @@ export class CustomItemRoll {
 
 		// Assign roll groups for damage, and hide it if there is one and hiding is enabled
 		if (entry.type === "damage" || entry.type === "crit") {
-			const lastGroup = [...this.entries].reverse().find(e => e.group)?.group;
-			if (lastGroup) {
-				entry.group = lastGroup;
-				entry.hidden = entry.hidden ?? this.settings.damagePromptEnabled;
+			const reversedEntries = [...this.entries].reverse();
+			const lastGroup = reversedEntries.find(e => e.group)?.group;
+			entry.group = entry.group ?? lastGroup;
 
-				// Hide if this was a crit entry, and the group didn't crit
-				if (!entry.hidden && !this.getCritStatus(lastGroup)) {
-					entry.hidden = true;
-				}
+			// Hide if this was a crit entry, and the group didn't crit
+			if (entry.type === "crit" && this.getCritStatus(lastGroup)) {
+				entry.revealed = true;
 			}
 		}
 

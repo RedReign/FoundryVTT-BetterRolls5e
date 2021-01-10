@@ -192,12 +192,11 @@ export class RollFields {
 	 * @param {string?} options.title title to display. If not given defaults to damage type
 	 * @param {boolean?} options.isCrit Whether to roll crit damage
 	 * @param {number?} options.extraCritDice sets the savage property. Falls back to using the item if not given, or false otherwise.
-	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never.
 	 * @param {BRSettings} options.settings Override config to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps}
 	 */
 	static constructDamageRoll(options={}) {
-		const { item, damageIndex, slotLevel, hidden, isCrit } = options;
+		const { item, damageIndex, slotLevel, isCrit } = options;
 		const actor = options?.actor ?? item?.actor;
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || isVersatile;
@@ -279,8 +278,7 @@ export class RollFields {
 				context,
 				extraCritDice,
 				baseRoll,
-				critRoll,
-				hidden
+				critRoll
 			};
 		} catch (err) {
 			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
@@ -300,12 +298,11 @@ export class RollFields {
 	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
 	 * @param {string?} options.damageType
 	 * @param {string?} options.title title to display. If not given defaults to damage type
-	 * @param {boolean?} options.hidden true if damage prompt required, false if damage prompt never.
 	 * @param {BRSettings} options.settings Override config to use for the roll
 	 * @returns {import("./renderer.js").DamageDataProps}
 	 */
 	static constructCritDamageRoll(options={}) {
-		const { item, slotLevel, hidden } = options;
+		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
 		const rollData =  item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
@@ -341,8 +338,7 @@ export class RollFields {
 				title: options.title ?? title,
 				damageType,
 				context,
-				critRoll,
-				hidden
+				critRoll
 			};
 		} catch (err) {
 			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));

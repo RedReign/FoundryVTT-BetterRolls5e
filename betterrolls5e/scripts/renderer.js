@@ -44,7 +44,6 @@ import { i18n, Utils } from "./utils.js";
  * @type {object}
  * @property {"damage"} type
  * @property {number | "versatile" | "other"} damageIndex
- * @property {boolean?} hidden
  * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
  * @property {string} damageType If its something like bludgeoning or piercing
@@ -59,12 +58,12 @@ import { i18n, Utils } from "./utils.js";
  * @typedef CritDataProps
  * @type {object}
  * @property {"crit"} type
- * @property {boolean?} hidden
  * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
  * @property {string} damageType If its something like bludgeoning or piercing
  * @property {string} context
  * @property {Roll?} critRoll
+ * @property {boolean} revealed Has the crit entry been revealed
  */
 
 /**
@@ -329,7 +328,24 @@ export class Renderer {
 	 * @param {*} param1 
 	 */
 	static async renderCard(data) {
-		const templates = await Promise.all(data.entries.map(m => Renderer.renderModel(m, settings)));
+		const templates = [];  await Promise.all(data.entries.map(m => Renderer.renderModel(m, settings)));
+		
+		const injectedGroups = new Set();
+		for (const entry of data.entries) {
+			const hidden = data.params.prompt[entry.group];
+			if (["damage", "crit"].includes(entry.type) && hidden) {
+				if (!injectedGroups.has(entry.group)) {
+					injectedGroups.add(entry.group);
+					templates.push(await this.renderDamageButton({
+						type: "button-damage",
+						group: entry.group
+					}));
+				}
+			} else if (entry.revealed || entry.type !== "crit") {	
+				templates.push(await Renderer.renderModel(entry));
+			}
+		}
+		
 		return renderModuleTemplate("red-fullroll.html", {
 			item: data.item,
 			actor: data.actor,
