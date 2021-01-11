@@ -67,52 +67,36 @@ export class RollFields {
 				numRolls = 3;
 			}
 		}
-		
-		// Split the D20 and bonuses. We assume the first is a d20 roll always...
-		const fullRoll = new Roll(formula);
-		const baseRoll = new Roll(fullRoll.terms[0].formula ?? fullRoll.terms[0]);
-		const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ')).roll();
 
-		// Populate the roll entries
-		const entries = [];
 		try {
+			// Split the D20 and bonuses. We assume the first is a d20 roll always...
+			const fullRoll = new Roll(formula);
+			const baseRoll = new Roll(fullRoll.terms[0].formula ?? fullRoll.terms[0]);
+			const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ')).roll();
+
+			// Populate the roll entries
+			const entries = [];
 			for (let i = 0; i < numRolls; i++) {
-				entries.push(Utils.processRoll(baseRoll.reroll(), critThreshold, [20], bonusRoll));
+				entries.push({roll: baseRoll.reroll()});
 			}
+
+			return {
+				type: "multiroll",
+				title,
+				critThreshold,
+				elvenAccuracy,
+				rollState,
+				rollType,
+				formula,
+				entries,
+				forceCrit: options.forceCrit,
+				isCrit: options.forceCrit || entries.some(e => !e.ignored && e.isCrit),
+				bonus: bonusRoll
+			};
 		} catch (err) {
 			ui.notifications.error(i18n("br5e.error.rollEvaluation", { msg: err.message}));
 			throw err; // propagate the error
 		}
-
-		// Mark ignored rolls due to advantage/disadvantage
-		if (rollState) {
-			let rollTotals = entries.map(r => r.roll.total);
-			let chosenResult = rollTotals[0];
-			if (rollState == "highest") {
-				chosenResult = Math.max(...rollTotals);
-			} else if (rollState == "lowest") {
-				chosenResult = Math.min(...rollTotals);
-			}
-
-			// Mark the non-results as ignored
-			entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
-		}
-
-		const results = {
-			type: "multiroll",
-			title,
-			critThreshold,
-			elvenAccuracy,
-			rollState,
-			rollType,
-			formula,
-			entries,
-			forceCrit: options.forceCrit,
-			isCrit: options.forceCrit || entries.some(e => !e.ignored && e.isCrit),
-			bonus: bonusRoll
-		};
-
-		return results;
 	}
 
 	/**

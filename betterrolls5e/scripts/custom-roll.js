@@ -579,6 +579,9 @@ export class CustomItemRoll {
 			flags["dnd5e.itemData"] = item.data;
 		}
 
+		// Allow the roll to popout
+		flags["core.canPopout"] = true;
+
 		return flags;
 	}
 
@@ -741,6 +744,7 @@ export class CustomItemRoll {
 				return (brFlags[flag] && (brFlags[flag][val] == true));
 			}
 
+			// Returns the flag or alt-flag depending on setting
 			function getFlag(flag) {
 				return (brFlags[flag] ? (brFlags[flag][val]) : null);
 			}
@@ -751,7 +755,7 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
 			
-			const quickDamage = Object.entries(brFlags.quickDamage?.value ?? []);
+			const quickDamage = Object.entries(getFlag("quickDamage") ?? []);
 			if (quickDamage.length > 0) {
 				for (let [i, damage] of quickDamage) {
 					const index = Number(i);

@@ -31,11 +31,11 @@ import { i18n, Utils } from "./utils.js";
  * @property {number} critThreshold
  * @property {boolean?} elvenAccuracy whether elven accuracy applies to this attack
  * @property {string} rollType
- * @property {string} formula
+ * @property {string} formula The full roll formula to show. This is the entries + bonus
  * @property {boolean?} forceCrit was the crit status forced
  * @property {boolean} isCrit
- * @property {Array<{roll: Roll; total: number; ignored: boolean; critType: string}>} entries
- * @property {Roll} bonus
+ * @property {Array<{roll: Roll}>} entries Main d20 roll. Bonuses are added to this
+ * @property {Roll} bonus Any bonuses to add to the roll (that only get rolled once)
  */
 
 /**
@@ -178,8 +178,27 @@ export class Renderer {
 		const { rollTitlePlacement, d20RollIconsEnabled } = getSettings(settings);
 		const title = rollTitlePlacement !== "0" ? properties.title : null;
 		
+		const rollState = properties.rollState;
+		const critThreshold = properties.critThreshold;
+		let entries = properties.entries.map(e => {
+			return Utils.processRoll(e.roll, critThreshold, [20], properties.bonus);
+		})
+
+		// Mark ignored rolls due to advantage/disadvantage
+		if (rollState) {
+			const rollTotals = entries.map(r => r.roll.total);
+			let chosenResult = rollTotals[0];
+			if (rollState == "highest") {
+				chosenResult = Math.max(...rollTotals);
+			} else if (rollState == "lowest") {
+				chosenResult = Math.min(...rollTotals);
+			}
+
+			// Mark the non-results as ignored
+			entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
+		}
+
 		// Show D20 die icons if enabled
-		let entries = properties.entries;
 		if (d20RollIconsEnabled) {
 			// Inner function to recursively find the first d20 die term and show it
 			function findD20Result(d20Roll) {
@@ -193,6 +212,7 @@ export class Renderer {
 					}
 				}
 			}
+
 			entries = entries.map(e => ({ ...e, d20Result: findD20Result(e.roll) }));
 		}
 
@@ -200,6 +220,7 @@ export class Renderer {
 		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
 		const bonusTooltip = await properties.bonus?.getTooltip();
 
+		// Render final result
 		return renderModuleTemplate("red-multiroll.html", {
 			...properties, title, entries, tooltips, bonusTooltip
 		});
