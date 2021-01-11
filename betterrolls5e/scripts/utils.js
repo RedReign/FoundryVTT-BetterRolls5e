@@ -703,6 +703,24 @@ export class ItemUtils {
 	}
 
 	/**
+	 * Returns the base crit formula, before applying settings to it.
+	 * Only useful really to test if a crit is even possible
+	 * @param {string} baseFormula 
+	 * @returns {Roll | null} the base crit formula, or null if there is no dice
+	 */
+	static getBaseCritFormula(baseFormula) {
+		if (!baseFormula) return null;
+		
+		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
+		let critRoll = new Roll(critFormula);
+		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
+			return null;
+		}
+
+		return critRoll;
+	}
+
+	/**
 	 * Derives the formula for what should be rolled when a crit occurs.
 	 * Note: Item is not necessary to calculate it.
 	 * @param {string} baseFormula
@@ -711,13 +729,8 @@ export class ItemUtils {
 	 * @returns {Roll | null} the crit result, or null if there is no dice
 	 */
 	static getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
-		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
-		let critRoll = new Roll(critFormula);
-
-		// If the crit formula has no dice, return false
-		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
-			return null;
-		}
+		const critRoll = ItemUtils.getBaseCritFormula(baseFormula);
+		if (!critRoll) return null;
 
 		critRoll.alter(1, extraCritDice ?? 0);
 		critRoll.roll();

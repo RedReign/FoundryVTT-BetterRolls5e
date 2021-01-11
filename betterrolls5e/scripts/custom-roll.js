@@ -293,6 +293,19 @@ export class CustomItemRoll {
 
 		return this.isCrit;
 	}
+
+	/**
+	 * Returns true if a roll entry can crit
+	 * @param {import("./renderer.js").RenderModelEntry} entry 
+	 */
+	canCrit(entry) {
+		if (!entry || entry.critRoll || this.getCritStatus(entry.group) || entry?.damageIndex === "other") {
+			return false;
+		}
+
+		const formula = entry.formula ?? entry.baseRoll?.formula;
+		return !!ItemUtils.getBaseCritFormula(formula);
+	}
 	
 	/**
 	 * Rolls crit dice if its not already rolled for the current card.

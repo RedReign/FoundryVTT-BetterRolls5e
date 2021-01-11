@@ -144,7 +144,7 @@ export class BetterRollsChatCard {
 				// Remove crit button if already rolled
 				const id = element.parents('.dice-roll').attr('data-id');
 				const entry = this.roll?.entries.find(m => m.id === id);
-				if (!entry || entry.critRoll || this.roll.getCritStatus(entry.group) || entry?.damageIndex === "other") {
+				if (!this.roll?.canCrit(entry)) {
 					element.find('.crit-button').remove();
 				}
 			});
