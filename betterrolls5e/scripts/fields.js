@@ -77,7 +77,21 @@ export class RollFields {
 			// Populate the roll entries
 			const entries = [];
 			for (let i = 0; i < numRolls; i++) {
-				entries.push({roll: baseRoll.reroll()});
+				entries.push(Utils.processRoll(baseRoll.reroll(), critThreshold, [20], bonusRoll));
+			}
+
+			// Mark ignored rolls if advantage/disadvantage
+			if (rollState) {
+				const rollTotals = entries.map(r => r.roll.total);
+				let chosenResult = rollTotals[0];
+				if (rollState == "highest") {
+					chosenResult = Math.max(...rollTotals);
+				} else if (rollState == "lowest") {
+					chosenResult = Math.min(...rollTotals);
+				}
+
+				// Mark the non-results as ignored
+				entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
 			}
 
 			return {

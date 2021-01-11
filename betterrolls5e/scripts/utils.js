@@ -708,7 +708,7 @@ export class ItemUtils {
 	 * @param {string} baseFormula
 	 * @param {number} baseTotal
 	 * @param {number?} param2.critDice extra crit dice
-	 * @returns {Roll | boolean} the crit result, or false if there is no dice
+	 * @returns {Roll | null} the crit result, or null if there is no dice
 	 */
 	static getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
@@ -716,7 +716,7 @@ export class ItemUtils {
 
 		// If the crit formula has no dice, return false
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
-			return false;
+			return null;
 		}
 
 		critRoll.alter(1, extraCritDice ?? 0);
