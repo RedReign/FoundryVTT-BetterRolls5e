@@ -30,7 +30,7 @@ import { i18n, Utils } from "./utils.js";
  * @property {string?} group Damage group used to identify what damage entries would be affected by a crit
  * @property {number} critThreshold
  * @property {boolean?} elvenAccuracy whether elven accuracy applies to this attack
- * @property {string} rollType
+ * @property {string} rollType If its an attack or custom
  * @property {string} formula The full roll formula to show. This is the entries + bonus
  * @property {boolean?} forceCrit was the crit status forced
  * @property {boolean} isCrit

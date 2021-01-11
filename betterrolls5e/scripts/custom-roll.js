@@ -150,16 +150,20 @@ export class CustomItemRoll {
 		// params.event is an available parameter for backwards compatibility reasons
 		// but really we're interested in the rollState. Replace it here.
 		// We don't want event to be serialized when flags are set
-		params.rollState = Utils.getRollState(params);
-		delete params.event;
-
 		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
-		this.fields = fields ?? [];	// Where requested roll fields are stored, in the order they should be rendered.
+		this.params.rollState = Utils.getRollState(this.params);
+		delete this.params.event;
 
+		// Where requested roll fields are stored, in the order they should be rendered.
+		// Fields represent "intents"
+		this.fields = fields ?? [];	
+
+		// Data results from fields, which get turned into templates
+		// Entries represent "results"
 		/** @type {Array<import("./renderer.js").RenderModelEntry>} */
-		this.entries = []; // Data results from fields, which get turned into templates
+		this.entries = []; 
+
 		this.properties = [];
-		
 		this.rolled = false;
 		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
 		this.dicePool = new DiceCollection();
@@ -167,7 +171,7 @@ export class CustomItemRoll {
 
 	static fromMessage(message) {
 		const data = message.data.flags.betterrolls5e;
-		const roll = new CustomItemRoll(null, data?.params ?? {}, []);
+		const roll = new CustomItemRoll(null, data?.params ?? {}, data?.fields ?? []);
 		roll.messageId = message.id;
 		roll.rolled = true;
 		if (data) {
@@ -363,14 +367,20 @@ export class CustomItemRoll {
 
 	/**
 	 * Like setCritStatus(), but sets the forceCrit flag, preventing the crit
-	 * from being unset.
+	 * from being unset by things like the attack roll being converted to disadvantage.
 	 * @param {*} group 
 	 */
 	async forceCrit(group) {
 		const updated = await this.updateCritStatus(group, true);
+
+		// Note: if there's no group or header then forceCrit can't be set,
+		// however currently the only way a crit could be unset is by converting to disadvantage
+		// If there's no attack roll...it can't be unset anyways, so no big deal
 		const header = this._getGroupHeader(group);
 		if (updated || (header.isCrit && !header.forceCrit)) {
-			header.forceCrit = true;
+			if (header) {
+				header.forceCrit = true;
+			}
 			return true;
 		}
 
@@ -529,19 +539,11 @@ export class CustomItemRoll {
 		await Hooks.callAll("rollItemBetterRolls", this);
 		await new Promise(r => setTimeout(r, 25));
 
-		// If damage buttons are enabled, enable prompts
-		if (this.settings.damagePromptEnabled) {
-			const groups = new Set(this.entries.map(e => e?.group));
-			for (const group of groups) {
-				this.params.prompt[group] = this.params.prompt[group] ?? true;
-			}
-		}
-		
-		// Add models (non-hidden) to dice pool
+		// Add models (non-hidden) to dice pool (for 3D Dice)
 		for (const entry of this.entries) {
 			if (entry.type === "multiroll") {
 				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
-			} else if (entry.group && !this.params.prompt[entry.group]) {
+			} else if (!entry.group || !this.params.prompt[entry.group]) {
 				if (entry.type === "damage" || (entry.type === "crit" && entry.revealed)) {
 					this.dicePool.push(entry.baseRoll, entry.critRoll);
 				}
@@ -569,7 +571,8 @@ export class CustomItemRoll {
 				isCrit: this.isCrit,
 				entries: this.entries,
 				properties: this.properties,
-				params: this.params
+				params: this.params,
+				fields: this.fields
 			}
 		}
 
@@ -653,12 +656,19 @@ export class CustomItemRoll {
 
 	/**
 	 * Adds to the list of fields, and if already rolled, processes it immediately
-	 * @param {[string, Object]} field
+	 * @param {string | [string, Object]} field 
+	 * @param {Object?} data
 	 */
-	addField(field) {
-		this.fields.push(field);
+	addField(field, data) {
+		// Backwards compatibility. String+data or an array of [name, data] are both supported
+		if (typeof field === "string") {
+			field = [field, data];
+		}
+
 		if (this.rolled) {
 			return this._processField(field);
+		} else {
+			this.fields.push(field);
 		}
 	}
 
@@ -680,15 +690,16 @@ export class CustomItemRoll {
 
 		// Add non-null entries
 		const newEntries = RollFields.constructModelsFromField(field, metadata, settings);
-		newEntries.forEach(this.addRenderEntry.bind(this));
+		newEntries.forEach(this._addRenderEntry.bind(this));
 	}
 
 	/**
 	 * Adds a render entry to the list. Does not add to dicepool, but does flag for crit.
-	 * If damage prompt is enabled, any damage entries will be hidden unless hiden has a value.
+	 * If damage prompt is enabled, any damage entries will be hidden unless hidden has a value.
 	 * @param {import("./renderer.js").RenderModelEntry} entry 
+	 * @private
 	 */
-	addRenderEntry(entry) {
+	_addRenderEntry(entry) {
 		if (!entry) return;
 
 		if (entry.type === "multiroll") {
@@ -703,15 +714,20 @@ export class CustomItemRoll {
 			entry.group = `br!${this._lastGroupIdx}`
 		}
 
-		// Assign roll groups for damage, and hide it if there is one and hiding is enabled
+		// Assign roll groups for damage
 		if (entry.type === "damage" || entry.type === "crit") {
 			const reversedEntries = [...this.entries].reverse();
 			const lastGroup = reversedEntries.find(e => e.group)?.group;
 			entry.group = entry.group ?? lastGroup;
 
-			// Hide if this was a crit entry, and the group didn't crit
-			if (entry.type === "crit" && this.getCritStatus(lastGroup)) {
+			// Reveal if this was a crit entry, and the group crit
+			if (entry.type === "crit" && this.getCritStatus(entry.group)) {
 				entry.revealed = true;
+			}
+
+			// If damage buttons are enabled, enable prompts
+			if (entry.group && this.settings.damagePromptEnabled) {
+				this.params.prompt[entry.group] = this.params.prompt[entry.group] ?? true;
 			}
 		}
 
