@@ -239,6 +239,27 @@ export class Utils {
 
 		return results;
 	}
+
+	/**
+	 * Returns all roll context labels used in roll terms.
+	 * Catches things like +1d8[Thunder] active effects
+	 * @param  {...any} rolls One or more rolls to extract roll flavors from
+	 */
+	static getRollFlavors(...rolls) {
+		const flavors = new Set();
+		for (const roll of rolls) {
+			for (const term of (roll?.terms ?? roll?.rolls ?? [])) {
+				if (term.options?.flavor) {
+					flavors.add(term.options.flavor);
+				}
+				if (term.terms || term.rolls) {
+					Utils.getRollFlavors(term).forEach(flavors.add.bind(flavors));
+				}
+			}
+		}
+
+		return Array.from(flavors);
+	}
 }
 
 export class ActorUtils {

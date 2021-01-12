@@ -212,8 +212,6 @@ export class Renderer {
 	 * @param {DamageDataProps} properties 
 	 */
 	static async renderDamage(properties, settings) {
-		if (properties.hidden) return "";
-
 		const { damageType, baseRoll, critRoll, context } = properties;
 		const isVersatile = properties.damageIndex === "versatile";
 		if (baseRoll?.terms.length === 0 && critRoll?.terms.length === 0) return;
@@ -255,12 +253,15 @@ export class Renderer {
 			pushedTitle = true;
 		}
 		
-		// Context
-		if (context) {
+		// Context (damage type and roll flavors)
+		const bonusContexts = Utils.getRollFlavors(baseRoll, critRoll).filter(c => c !== context);
+		if (context || bonusContexts.length > 0) {
+			const contextStr = [context, bonusContexts.join("/")].filter(c=>c).join(" + ");
 			if (contextPlacement === titlePlacement && pushedTitle) {
-				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + context + ")";
+				const title = labels[contextPlacement][0];
+				labels[contextPlacement][0] = (title ? title + " " : "") + `(${contextStr})`;
 			} else {
-				labels[contextPlacement].push(context);
+				labels[contextPlacement].push(contextStr);
 			}
 		}
 		
@@ -330,7 +331,7 @@ export class Renderer {
 	 * @param {*} param1 
 	 */
 	static async renderCard(data) {
-		const templates = [];  await Promise.all(data.entries.map(m => Renderer.renderModel(m, settings)));
+		const templates = [];
 		
 		const injectedGroups = new Set();
 		for (const entry of data.entries) {
