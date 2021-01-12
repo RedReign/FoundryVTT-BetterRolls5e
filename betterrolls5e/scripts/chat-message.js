@@ -96,15 +96,40 @@ export class BetterRollsChatCard {
 	}
 
 	/**
+	 * Adds right click menu options
+	 * @param {*} html 
+	 * @param {*} options 
+	 */
+	static addOptions(html, options) {
+		const getBinding = (li) => game.messages.get(li.data("messageId"))?.BetterRollsCardBinding;
+
+		options.push({
+			name: i18n("br5e.chatContext.repeat"),
+			icon: '<i class="fas fa-redo"></i>',
+			condition: li => {
+				const binding = getBinding(li);
+				return binding && binding.roll.canRepeat();
+			},
+			callback: li => getBinding(li)?.roll.repeat()
+		})
+	}
+
+	/**
 	 * Internal method to setup the temporary buttons used to update advantage or disadvantage,
 	 * as well as those that that affect damage
 	 * entries, like crit rolls and damage application.
 	 * @private
 	 */
 	async _setupOverlayButtons(html) {
+		// Add reroll button
+		if (this.roll?.canRepeat() && BRSettings.chatDamageButtonsEnabled) {
+			const templateHeader = await renderTemplate("modules/betterrolls5e/templates/red-overlay-header.html");
+			html.find(".card-header").append($(templateHeader));
+		}
+
 		// Multiroll buttons (perhaps introduce a new toggle property?)
 		if (this.roll && BRSettings.chatDamageButtonsEnabled) {
-			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-multiroll-overlay.html");
+			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-overlay-multiroll.html");
 			
 			// Add multiroll overlay buttons to the DOM.
 			for (const entry of this.roll.entries) {
@@ -133,10 +158,11 @@ export class BetterRollsChatCard {
 		// Setup augment crit and apply damage button
 		// Note: For backwards compatibility, these find on the HTML rather than use the roll models
 		if (BRSettings.chatDamageButtonsEnabled) {
-			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-damage-overlay.html");
+			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-overlay-damage.html");
 			const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray(); 
 			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 			
+			// Add chat damage buttons
 			[...dmgElements, ...customElements].forEach(element => {
 				element = $(element);
 				element.append($(templateDamage));
@@ -262,9 +288,11 @@ export class BetterRollsChatCard {
 	 */
 	_setupCardButtons(html) {
 		html.find(".card-buttons").off()
-		html.find(".card-buttons button").off().click(async event => {
+		html.off().click(async event => {
+			const button = event.target.closest("button");
+			if (!button) return;
+
 			event.preventDefault();
-			const button = event.currentTarget;
 			button.disabled = true;
 
 			const action = button.dataset.action;
@@ -281,6 +309,8 @@ export class BetterRollsChatCard {
 				if (await this.roll.rollDamage(group)) {	
 					await this.roll.update();
 				}
+			} else if (action === "repeat") {
+				await this.roll.repeat();
 			}
 
 			// Re-enable the button

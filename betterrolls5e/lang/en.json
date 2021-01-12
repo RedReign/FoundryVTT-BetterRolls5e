@@ -137,6 +137,8 @@
 	"br5e.chat.disadvantage": "Disadvantage",
 	"br5e.chat.normal": "Normal",
 
+	"br5e.chatContext.repeat": "Repeat the roll",
+
 	"br5e.querying.title": "What type of roll?",
 	"br5e.querying.disadvantage": "Disadvantage",
 	"br5e.querying.normal": "Normal",

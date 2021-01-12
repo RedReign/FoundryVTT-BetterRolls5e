@@ -30,11 +30,11 @@ export class CustomRoll {
 	 */
 	static async fullRollActor(actor, title, formula, rollType, params) {		
 		// Entries to show for the render
-		return new CustomItemRoll(actor, {}, [
+		const rollState = Utils.getRollState({ event, ...params });
+		return new CustomItemRoll(actor, { rollState }, [
 			['header', { title }],
 			['check', {
 				formula,
-				rollState: Utils.getRollState({ event, ...params }), 
 				critThreshold: params?.critThreshold,
 				rollType
 			}]
@@ -112,7 +112,8 @@ let defaultParams = {
 	event: null,
 	adv: 0,
 	disadv: 0,
-	prompt: {}
+	prompt: {},
+	consume: true
 };
 
 /*
@@ -491,6 +492,7 @@ export class CustomItemRoll {
 		Hooks.call("preRollItemBetterRolls", this);
 		
 		const { params, item } = this;
+		const consume = this.params.consume;
 		let placeTemplate = false;
 
 		// Pre-update item configurations
@@ -498,20 +500,21 @@ export class CustomItemRoll {
 			await ItemUtils.ensureFlags(item, { commit: true });
 			const itemData = item?.data.data;
 
-			if (Number.isInteger(params.preset)) {
+			// If there's a preset, set it up, but only if there aren't fields
+			if (Number.isInteger(params.preset) && (!this.fields || this.fields.length === 0)) {
 				this.updateForPreset();
 			}
 
 			// Set ammo (if needed)
 			if (this.params.useCharge.resource) {
-				const consume = itemData.consume;
-				if ( consume?.type === "ammo" ) {
-					this.ammo = this.actor.items.get(consume.target);
+				const consumed = itemData.consume;
+				if ( consumed?.type === "ammo" ) {
+					this.ammo = this.actor.items.get(consumed.target);
 				}
 			}
 
 			// Determine spell level and configuration settings
-			if (!params.slotLevel && item.data.type === "spell") {
+			if (consume && !params.slotLevel && item.data.type === "spell") {
 				const config = await this.configureSpell();
 				if (config === "error") { 
 					this.error = true;
@@ -530,10 +533,12 @@ export class CustomItemRoll {
 		// Post-build item updates
 		if (item) {
 			// Check to consume charges. Prevents the roll if charges are required and none are left.
-			let chargeCheck = await this.consume();
-			if (chargeCheck === "error") {
-				this.error = true;
-				return;
+			if (consume) {
+				let chargeCheck = await this.consume();
+				if (chargeCheck === "error") {
+					this.error = true;
+					return;
+				}
 			}
 
 			// Load Item Footer Properties if params.properties is true
@@ -587,6 +592,14 @@ export class CustomItemRoll {
 				params: this.params,
 				fields: this.fields
 			}
+		};
+
+		// Clear fields if any has an actor or item,
+		// its too complicated for rerolling
+		// We can probably handle it in the future somehow using FoundryProxy
+		if (this.fields?.some(f => f[1]?.actor || f[1]?.item)) {
+			console.log("BetterRolls5e | Roll fields are too complex for serialization, removing fields");
+			flags.betterrolls5e.fields = null;
 		}
 
 		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
@@ -638,6 +651,45 @@ export class CustomItemRoll {
 		// Send the chat message
 		await this.dicePool.flush();
 		return ChatMessage.create(chatData);
+	}
+
+	/**
+	 * Returns true if the item can be rerolled.
+	 * Items that only have text field types cannot be rerolled.
+	 */
+	canRepeat() {
+		if (!this.fields || this.fields.length === 0) {
+			return false;
+		}
+
+		const surplusTypes = new Set(["header", "flavor", "description", "desc"]);
+		for (const field of this.fields) {
+			if (!surplusTypes.has(field[0])) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Repeats the roll, sending out a new chat message.
+	 * This repeat does not consume uses, and overrides advantage/disadvantage / prompts
+	 * @returns {Promise<CustomItemRoll>}
+	 */
+	async repeat() {
+		if (!this.canRepeat()) return;
+
+		const invalidFields = ["description", "desc"];
+		const fields = duplicate(this.fields.filter(f => !invalidFields.includes(f[0])));
+		const params = duplicate(this.params);
+		params.consume = false;
+		params.rollState = Utils.getRollState({ event });
+		params.prompt = {};
+
+		const newRoll = new CustomItemRoll(this.item ?? this.actor, params, fields);
+		await newRoll.toMessage();
+		return newRoll;
 	}
 
 	/**
