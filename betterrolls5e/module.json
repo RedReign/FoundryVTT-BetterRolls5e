@@ -4,7 +4,7 @@
 	"description": "This module overhauls rolls for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
 	"minimumCoreVersion": "0.7.7",
 	"compatibleCoreVersion": "0.7.9",
-	"version": "1.2.alpha.14",
+	"version": "1.2.alpha.15",
 	"author": "Red Reign#5128",
 	"languages": [
 		{
@@ -50,5 +50,5 @@
 	"packs": [],
 	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/master/betterrolls5e",
 	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/development/betterrolls5e/module.json",
-	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.2.alpha.14/module.zip"
+	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.2.alpha.15/module.zip"
 }
