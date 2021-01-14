@@ -104,7 +104,7 @@ export class CustomRoll {
 let defaultParams = {
 	title: "",
 	forceCrit: false,
-	preset: false,
+	preset: null,
 	properties: true,
 	slotLevel: null,
 	useCharge: {},
@@ -162,7 +162,7 @@ export class CustomItemRoll {
 		// Data results from fields, which get turned into templates
 		// Entries represent "results"
 		/** @type {Array<import("./renderer.js").RenderModelEntry>} */
-		this.entries = []; 
+		this.entries = [];
 
 		this.properties = [];
 		this.rolled = false;
@@ -500,9 +500,12 @@ export class CustomItemRoll {
 			await ItemUtils.ensureFlags(item, { commit: true });
 			const itemData = item?.data.data;
 
-			// If there's a preset, set it up, but only if there aren't fields
-			if (Number.isInteger(params.preset) && (!this.fields || this.fields.length === 0)) {
-				this.updateForPreset();
+			// Set up preset but only if there aren't fields
+			if (!this.fields || this.fields.length === 0) {
+				params.preset = params.preset ?? 0;
+				if (Number.isInteger(params.preset)) {
+					this.updateForPreset();
+				}
 			}
 
 			// Set ammo (if needed)
@@ -850,7 +853,7 @@ export class CustomItemRoll {
 				fields.push(["ammo"]);
 			}
 
-			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
+			if (flagIsTrue("quickOther") && itemData?.formula) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
 
 			if (brFlags.quickCharges) {

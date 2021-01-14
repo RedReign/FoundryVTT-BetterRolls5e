@@ -168,7 +168,8 @@ export class Utils {
 
 	/**
 	 * Determines rollstate based on several parameters
-	 * @param {object} param0 
+	 * @param {object} param0
+	 * @returns {import("./fields.js").RollState}
 	 */
 	static getRollState({rollState=null, event=null, adv=null, disadv=null}={}) {
 		if (rollState) return rollState;

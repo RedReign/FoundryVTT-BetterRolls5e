@@ -624,6 +624,6 @@ export function BetterRolls() {
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
-		builder:RollFields
+		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})})
 	};
 }
