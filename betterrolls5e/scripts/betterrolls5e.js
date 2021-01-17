@@ -38,7 +38,7 @@ CONFIG.betterRolls5e = {
 			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
-			quickSave: { type: "Boolean", value: false, altValue: false },
+			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },

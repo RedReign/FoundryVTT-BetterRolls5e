@@ -305,7 +305,7 @@ export class CustomItemRoll {
 		}
 
 		const formula = entry.formula ?? entry.baseRoll?.formula;
-		return !!ItemUtils.getBaseCritFormula(formula);
+		return !!ItemUtils.getBaseCritRoll(formula);
 	}
 	
 	/**

@@ -730,7 +730,7 @@ export class ItemUtils {
 	 * @param {string} baseFormula 
 	 * @returns {Roll | null} the base crit formula, or null if there is no dice
 	 */
-	static getBaseCritFormula(baseFormula) {
+	static getBaseCritRoll(baseFormula) {
 		if (!baseFormula) return null;
 		
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
@@ -751,7 +751,7 @@ export class ItemUtils {
 	 * @returns {Roll | null} the crit result, or null if there is no dice
 	 */
 	static getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
-		const critRoll = ItemUtils.getBaseCritFormula(baseFormula);
+		let critRoll = ItemUtils.getBaseCritRoll(baseFormula);
 		if (!critRoll) return null;
 
 		critRoll.alter(1, extraCritDice ?? 0);
