@@ -86,7 +86,7 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			// Feats consume uses by default in vanilla 5e
 			quickCharges: { type: "Boolean", value: {use: true, resource: true, charge: false}, altValue: {use: true, resource: true, charge: false} },
-			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
