@@ -1,346 +1,110 @@
-import { i18n, isAttack, isSave, getSave, isCheck } from "./betterrolls5e.js";
-import { DiceCollection, ActorUtils, ItemUtils, Utils } from "./utils.js";
+import { isAttack, isSave, isCheck, BetterRolls } from "./betterrolls5e.js";
+import { dnd5e, i18n, DiceCollection, ActorUtils, ItemUtils, Utils, FoundryProxy } from "./utils.js";
+import { Renderer } from "./renderer.js";
+import { getSettings } from "./settings.js";
+import { RollFields } from "./fields.js";
 
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { BRSettings } from "./settings.js";
+/**
+ * Parameters used when full rolling an actor
+ * @typedef FullRollActorParams
+ * @type {object}
+ * @property {number?} adv 
+ * @property {number?} disadv 
+ * @property {number?} critThreshold
+ */
 
-let dnd5e = DND5E;
-let DEBUG = false;
-
-const blankRoll = new Roll("0").roll(); // Used for CHAT_MESSAGE_TYPES.ROLL, which requires a roll that Better Rolls otherwise does not need
-
-function debug() {
-	if (DEBUG) {
-		console.log.apply(console, arguments);
-	}
-}
-
-// General class for macro support, actor rolls, and most static rolls.
+/**
+ * General class for macro support, actor rolls, and most static rolls.
+ * It provides utility functions that can be used to create a new roll,
+ * as well as the most common Actor roll functions.
+ */
 export class CustomRoll {
 	/**
-	* A function for rolling multiple rolls. Returns the html code to inject into the chat message.
-	* @param {Integer} numRolls			The number of rolls to put in the template.
-	* @param {String} dice				The dice formula.
-	* @param {Array} parts				The array of additional parts to add to the dice formula.
-	* @param {Object} data				The actor's data to use as reference
-	* @param {String} title				The roll's title.
-	* @param {Boolean} critThreshold	The minimum roll on the dice to cause a critical roll.
-	* @param {String} rollState			null, "highest", or "lowest"
-	* @param {Boolean} triggersCrit		Whether this field marks the entire roll as critical
-	* @param {String} rollType			The type of roll, such as "attack" or "damage"
-	*/
-	static async rollMultiple(numRolls = 1, dice = "1d20", parts = [], data = {}, title = "", critThreshold, rollState, triggersCrit = false, rollType = "") {
-		const formula = [dice].concat(parts);
-		const rolls = [];
-		const tooltips = [];
-		
-		// Step 1 - Get all rolls
-		for (let i=0; i < numRolls; i++) {
-			rolls.push(await new Roll(formula.join("+"), data).roll());
-			tooltips.push(await rolls[i].getTooltip());
-		}
-		
-		// Step 2 - Setup chatData
-		const chatData = {
-			title,
-			tooltips,
-			rolls,
-			rollState,
-			rollType,
-			formula: rolls[0].formula
-		};
-		
-		function tagIgnored() {
-			const rollTotals = rolls.map(r => r.total);
-			let chosenResult = rollTotals[0];
-
-			if (rollState) {
-				if (rollState === "highest") {
-					chosenResult = Math.max(...rollTotals);
-				} else if (rollState === "lowest") {
-					chosenResult = Math.min(...rollTotals);
-				}
-			
-				rolls.forEach(roll => {
-					if (roll.total != chosenResult) {
-						roll.ignored = true;
-					}
-				});
-			}
-		}
-		
-		switch (rollState) {
-			case 'highest':
-				break;
-			case 'lowest':
-				break;
-		}
-		
-		tagIgnored();
-		
-		// Step 3 - Create HTML using custom template
-		const multiRoll = await renderTemplate("modules/betterrolls5e/templates/red-multiroll.html", chatData);
-		
-		const template = CustomItemRoll.tagCrits(multiRoll, rolls, ".dice-total.dice-row-item", critThreshold, [20]);
-		template.isCrit = template.isCrit && triggersCrit;
-		
-		return {
-			html: template.html,
-			isCrit: template.isCrit,
-			data: chatData
-		};
-	}
-	
-	static getRollState(args) {
-		let adv = args.adv || 0;
-		let disadv = args.disadv || 0;
-		if (adv > 0 || disadv > 0) {
-			if (adv > disadv) { return "highest"; }
-			else if (adv < disadv) { return "lowest"; }
-		} else { return null; }
-	}
-	
-	// Returns an {adv, disadv} object when given an event
-	static async eventToAdvantage(ev, itemType) {
-		if (ev.shiftKey) {
-			return {adv:1, disadv:0};
-		} else if ((keyboard.isCtrl(ev))) {
-			return {adv:0, disadv:1};
-		} else if (game.settings.get("betterrolls5e", "queryAdvantageEnabled")) {
-			// Don't show dialog for items that aren't tool or weapon.
-			if (itemType != null && !itemType.match(/^(tool|weapon)$/)) {
-				return {adv:0, disadv:0};
-			}
-			return new Promise(resolve => {
-				new Dialog({
-					title: i18n("br5e.querying.title"),
-					buttons: {
-						disadvantage: {
-							label: i18n("br5e.querying.disadvantage"),
-							callback: () => resolve({adv:0, disadv:1})
-						},
-						normal: {
-							label: i18n("br5e.querying.normal"),
-							callback: () => resolve({adv:0, disadv:0})
-						},
-						advantage: {
-							label: i18n("br5e.querying.advantage"),
-							callback: () => resolve({adv:1, disadv:0})
-						}
-					}
-				}).render(true);
-			});
-		} else {
-			return {adv:0, disadv:0};
-		}
-	}
-	
-	
-	// Creates a chat message with the requested skill check.
-	static async fullRollSkill(actor, skill, params) {
-		const skl = actor.data.data.skills[skill];
-		const label = dnd5e.skills[skill];
-		const multiRoll = await CustomRoll.rollSkillCheck(actor, skl, params);
-
-		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
-			item: {
-				img: ActorUtils.getImage(actor),
-				name: `${i18n(label)}`
-			}
-		});
-		
-		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
-			title: titleTemplate,
-			templates: [multiRoll]
-		});
-
-		const chatData = {
-			user: game.user._id,
-			content: content,
-			speaker: {
-				actor: actor._id,
-				token: actor.token,
-				alias: actor.token?.name || actor.name
-			},
-			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-			roll: blankRoll,
-			...Utils.getWhisperData(),
-			sound: Utils.getDiceSound()
-		};
-		
-		// Output the rolls to chat
-		await DiceCollection.createAndFlush(multiRoll.data.rolls);
-		return await ChatMessage.create(chatData);
-	}
-	
-	// Rolls a skill check through a character
-	static async rollSkillCheck(actor, skill, params = {}) {
-		let parts = ["@mod"],
-			data = {mod: skill.mod + skill.prof},
-			flavor = null;
-		
-		const skillBonus = getProperty(actor, "data.data.bonuses.abilities.skill");
-		if (skillBonus) {
-			parts.push("@skillBonus");
-			data["skillBonus"] = skillBonus;
-		}
-		
-		// Halfling Luck + Reliable Talent check
-		let d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		if (ActorUtils.hasReliableTalent(actor) && skill.value >= 1) {
-			d20String = `{${d20String},10}kh`;
-		}
-		
-		const rollState = params ? CustomRoll.getRollState(params) : null;
-		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
-		if (rollState && numRolls == 1) {
-			numRolls = 2;
-		}
-		
-		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState, params.triggersCrit, "skill");
-	}
-
-	static async rollCheck(actor, ability, params) {
-		return await CustomRoll.fullRollAttribute(actor, ability, "check", params);
-	}
-
-	static async rollSave(actor, ability, params) {
-		return await CustomRoll.fullRollAttribute(actor, ability, "save", params);
+	 * Internal method to perform a basic actor full roll of "something".
+	 * It creates and display a chat message on completion.
+	 * @param {Actor} actor The actor being rolled for 
+	 * @param {string} title The title to show on the header card
+	 * @param {string} formula The formula to multiroll
+	 * @param {string} rollType 
+	 * @param {FullRollActorParams} params 
+	 */
+	static async fullRollActor(actor, title, formula, rollType, params) {		
+		// Entries to show for the render
+		const rollState = Utils.getRollState({ event, ...params });
+		return new CustomItemRoll(actor, { rollState }, [
+			['header', { title }],
+			['check', {
+				formula,
+				critThreshold: params?.critThreshold,
+				rollType
+			}]
+		]).toMessage();
 	}
 	
 	/**
-	* Creates a chat message with the requested ability check or saving throw.
-	* @param {Actor5e} actor		The actor object to reference for the roll.
-	* @param {String} ability		The ability score to roll.
-	* @param {String} rollType		String of either "check" or "save" 
-	*/
-	static async fullRollAttribute(actor, ability, rollType, params) {
-		let multiRoll, titleString;
+	 * Creates and displays a chat message to show a full skill roll
+	 * @param {*} actor 
+	 * @param {string} skill shorthand referring to the skill name
+	 * @param {FullRollActorParams} params parameters
+	 */
+	static async rollSkill(actor, skill, params={}) {
+		const label = i18n(dnd5e.skills[skill]);
+		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
+		return CustomRoll.fullRollActor(actor, label, formula, "skill", params);
+	}
+
+	/**
+	 * Rolls a skill check for an actor
+	 * @param {*} actor 
+	 * @param {string} ability Ability shorthand 
+	 * @param {FullRollActorParams} params 
+	 */
+	static async rollCheck(actor, ability, params) {
+		return await CustomRoll.rollAttribute(actor, ability, "check", params);
+	}
+	
+	/**
+	 * Rolls a saving throw for an actor
+	 * @param {*} actor 
+	 * @param {string} ability Ability shorthand 
+	 * @param {FullRollActorParams} params 
+	 */
+	static async rollSave(actor, ability, params) {
+		return await CustomRoll.rollAttribute(actor, ability, "save", params);
+	}
+	
+	/**
+	 * Creates and displays a chat message with the requested ability check or saving throw.
+	 * @param {Actor5e} actor		The actor object to reference for the roll.
+	 * @param {String} ability		The ability score to roll.
+	 * @param {String} rollType		String of either "check" or "save"
+	 * @param {FullRollActorParams} params
+	 */
+	static async rollAttribute(actor, ability, rollType, params={}) {
 		const label = dnd5e.abilities[ability];
-		
+
+		let titleString;
+		let formula = "";
 		if (rollType === "check") {
-			multiRoll = await CustomRoll.rollAbilityCheck(actor, ability, params);
+			formula = (await ActorUtils.getAbilityCheckRoll(actor, ability)).formula;
 			titleString = `${i18n(label)} ${i18n("br5e.chat.check")}`;
 		} else if (rollType === "save") {
-			multiRoll = await CustomRoll.rollAbilitySave(actor, ability, params);
+			formula = (await ActorUtils.getAbilitySaveRoll(actor, ability)).formula;
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
-		
-		const titleTemplate = await renderTemplate("modules/betterrolls5e/templates/red-header.html", {
-			item: {
-				img: ActorUtils.getImage(actor),
-				name: titleString
-			}
-		});
-		
-		const content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
-			title: titleTemplate,
-			templates: [multiRoll]
-		});
 
-		const chatData = {
-			user: game.user._id,
-			content: content,
-			speaker: {
-				actor: actor._id,
-				token: actor.token,
-				alias: actor.token?.name || actor.name
-			},
-			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-			roll: blankRoll,
-			...Utils.getWhisperData(),
-			sound: Utils.getDiceSound()
-		};
-		
-		// Output the rolls to chat
-		await DiceCollection.createAndFlush(multiRoll.data.rolls);
-		return await ChatMessage.create(chatData);
+		return CustomRoll.fullRollActor(actor, titleString, formula, rollType, params);
 	}
 	
-	static async rollAbilityCheck(actor, abl, params = {}) {
-		let parts = ["@mod"],
-			data = duplicate(actor.data.data),
-			flavor = null;
-
-			data.mod = data.abilities[abl].mod;
-		
-		const checkBonus = getProperty(actor, "data.data.bonuses.abilityCheck");
-		const secondCheckBonus = getProperty(actor, "data.data.bonuses.abilities.check");
-		
-		if (checkBonus && parseInt(checkBonus) !== 0) {
-			parts.push("@checkBonus");
-			data["checkBonus"] = checkBonus;
-		} else if (secondCheckBonus && parseInt(secondCheckBonus) !== 0) {
-			parts.push("@secondCheckBonus");
-			data["secondCheckBonus"] = secondCheckBonus;
-		}
-
-		if (actor.getFlag("dnd5e", "jackOfAllTrades")) {
-			parts.push(`floor(@attributes.prof / 2)`);
-		}
-
-		// Halfling Luck check
-		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		
-		let rollState = params ? CustomRoll.getRollState(params) : null;
-		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
-		if (rollState && numRolls == 1) {
-			numRolls = 2;
-		}
-		
-		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
-	}
-	
-	static async rollAbilitySave(actor, abl, params = {}) {
-		//console.log(abl);
-		let actorData = actor.data.data;
-		let parts = [];
-		let data = {mod: []};
-		let flavor = null;
-		
-		// Support modifiers and global save bonus
-		const saveBonus = getProperty(actorData, "bonuses.abilities.save") || null;
-		let ablData = actor.data.data.abilities[abl];
-		let ablParts = {};
-		ablParts.mod = ablData.mod !== 0 ? ablData.mod.toString() : null;
-		ablParts.prof = ((ablData.proficient || 0) * actorData.attributes.prof).toString();
-		let mods = [ablParts.mod, ablParts.prof, saveBonus];
-		for (let i=0; i<mods.length; i++) {
-			if (mods[i] && mods[i] !== "0") {
-				data.mod.push(mods[i]);
-			}
-		}
-		data.mod = data.mod.join("+");
-		
-		// Halfling Luck check
-		const d20String = ActorUtils.isHalfling(actor) ? "1d20r<2" : "1d20";
-		
-		if (data.mod !== "") {
-			parts.push("@mod");
-		}
-		
-		let rollState = params ? CustomRoll.getRollState(params) : null;
-		
-		let numRolls = game.settings.get("betterrolls5e", "d20Mode");
-		if (rollState && numRolls == 1) {
-			numRolls = 2;
-		}
-		
-		return await CustomRoll.rollMultiple(numRolls, d20String, parts, data, flavor, params.critThreshold || null, rollState);
-	}
-	
-	static newItemRoll(item, params, fields) {
-		let roll = new CustomItemRoll(item, params, fields);
-		return roll;
+	static newItemRoll(itemOrActor, params, fields) {		
+		return new CustomItemRoll(itemOrActor, params, fields);
 	}
 }
 
 let defaultParams = {
 	title: "",
 	forceCrit: false,
-	preset: false,
+	preset: null,
 	properties: true,
 	slotLevel: null,
 	useCharge: {},
@@ -348,127 +112,10 @@ let defaultParams = {
 	event: null,
 	adv: 0,
 	disadv: 0,
+	prompt: {},
+	consume: true
 };
 
-// A custom roll with data corresponding to an item on a character's sheet.
-export class CustomItemRoll {
-	constructor(item, params, fields) {
-		this.item = item;
-		this.actor = item.actor;
-		this.itemFlags = item.data.flags;
-		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
-		this.fields = fields;			 									// Where requested roll fields are stored, in the order they should be rendered.
-		this.templates = [];			 									// Where finished templates are stored, in the order they should be rendered.
-		
-		this.rolled = false;
-		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
-		this.rollState = null;
-		
-		if (!this.params.event) { this.params.event = event; }
-		
-		this.checkEvent();
-		this.setRollState();
-		this.config = BRSettings.serialize();
-		this.dicePool = new DiceCollection();
-	}
-	
-	checkEvent(ev) {
-		let eventToCheck = ev || this.params.event;
-		if (!eventToCheck) { return; }
-		if (eventToCheck.shiftKey) {
-			this.params.adv = 1;
-		}
-		if (keyboard.isCtrl(eventToCheck)) {
-			this.params.disadv = 1;
-		}
-	}
-	
-	// Sets the roll's rollState to "highest" or "lowest" if the roll has advantage or disadvantage, respectively.
-	setRollState() {
-		this.rollState = null;
-		let adv = this.params.adv;
-		let disadv = this.params.disadv;
-		if (adv > 0 || disadv > 0) {
-			if (adv > disadv) { this.rollState = "highest"; }
-			else if (adv < disadv) { this.rollState = "lowest"; }
-		}
-	}
-	
-	async roll() {
-		const { params, item } = this;
-		
-		await ItemUtils.ensureFlags(item, { commit: true });
-		const actor = item.actor;
-		const itemData = item.data.data;
-		
-		Hooks.call("preRollItemBetterRolls", this);
-		
-		if (Number.isInteger(params.preset)) {
-			this.updateForPreset();
-		}
-
-		// Set ammo (if needed)
-		if (this.params.useCharge.resource) {
-			const consume = itemData.consume;
-			if ( consume?.type === "ammo" ) {
-				this.ammo = this.actor.items.get(consume.target);
-			}
-		}
-		
-		// Determine spell level and configuration settings
-		let lvl, consume, placeTemplate;
-		if (!params.slotLevel && item.data.type === "spell") {
-			const config = await this.configureSpell();
-			if (config === "error") { return "error"; }
-
-			({lvl, consume, placeTemplate } = config);
-			params.slotLevel = lvl;
-		}
-
-		// Convert all requested fields into templates to be entered into the chat message.
-		this.templates = await this.allFieldsToTemplates();
-		
-		// Check to consume charges. Prevents the roll if charges are required and none are left.
-		let chargeCheck = await this.consumeCharge();
-		if (chargeCheck === "error") { return "error"; }
-		
-		// Get title/properties/etc
-		let printedSlotLevel = (item.data.type === "spell" && this.params.slotLevel != item.data.data.level) ? dnd5e.spellLevels[this.params.slotLevel] : null;
-		let title = (this.params.title || await renderTemplate("modules/betterrolls5e/templates/red-header.html", {item, slotLevel:printedSlotLevel}));
-		this.properties = (params.properties) ? this.listProperties() : null;
-
-		// Add token's ID to chat roll, if valid
-		let tokenId;
-		if (actor.token) {
-			tokenId = [canvas.tokens.get(actor.token.id).scene.id, actor.token.id].join(".");
-		}
-		
-		if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
-			ItemUtils.placeTemplate(item);
-		}
-		
-		this.rolled = true;
-		
-		await Hooks.callAll("rollItemBetterRolls", this);
-		
-		await new Promise(r => setTimeout(r, 25));
-		
-		this.content = await renderTemplate("modules/betterrolls5e/templates/red-fullroll.html", {
-			item: item,
-			actor: actor,
-			tokenId: tokenId,
-			itemId: item.id,
-			isCritical: this.isCrit,
-			title: title,
-			templates: this.templates,
-			properties: this.properties
-		});
-		
-		if (chargeCheck === "destroy") { await actor.deleteOwnedItem(item.id); }
-
-		return this.content;
-	}
-	
 /*
 	CustomItemRoll(item,
 	{
@@ -488,166 +135,680 @@ export class CustomItemRoll {
 	]
 	).toMessage();
 */
-	async fieldToTemplate(field){
-		let item = this.item;
-		let fieldType = field[0].toLowerCase();
-		let fieldArgs = field.slice();
-		fieldArgs.splice(0,1);
-		switch (fieldType) {
-			case 'attack':
-				// {adv, disadv, bonus, triggersCrit, critThreshold}
-				this.templates.push(await this.rollAttack(fieldArgs[0]));
-				break;
-			case 'toolcheck':
-			case 'tool':
-			case 'check':
-				this.templates.push(await this.rollTool(fieldArgs[0]));
-				break;
-			case 'damage':
-				// {damageIndex: 0, forceVersatile: false, forceCrit: false}
-				let index, versatile, crit, context;
-				let damagesToPush = [];
-				if (typeof fieldArgs[0] === "object") {
-					index = fieldArgs[0].index;
-					versatile = fieldArgs[0].versatile;
-					crit = fieldArgs[0].crit;
-					context = fieldArgs[0].context;
-				}
-				let oldIndex = index;
-				if (index === "all") {
-					let newIndex = [];
-					for (let i=0;i<this.item.data.data.damage.parts.length;i++) {
-						newIndex.push(i);
-					}
-					index = newIndex;
-				} else if (Number.isInteger(index)) {
-					let newIndex = [index];
-					index = newIndex;
-				}
-				for (let i=0;i<index.length;i++) {
-					this.templates.push(await this.rollDamage({
-						damageIndex: index[i] || 0,
-						// versatile damage will only replace the first damage formula in an "all" damage request
-						forceVersatile: (i == 0 || oldIndex !== "all") ? versatile : false,
-						forceCrit: crit,
-						customContext: context
-					}));
-				}
-				if (this.ammo) {
-					this.item = this.ammo;
-					delete this.ammo;
-					await this.fieldToTemplate(['damage', {index: 'all', versatile: false, crit, context: `[${this.item.name}]`}]);
-					this.item = item;
-				}
-				break;
-			case 'savedc':
-				// {customAbl: null, customDC: null}
-				let abl, dc;
-				if (fieldArgs[0]) {
-					abl = fieldArgs[0].abl;
-					dc = fieldArgs[0].dc;
-				}
-				this.templates.push(await this.saveRollButton({customAbl:abl, customDC:dc}));
-				break;
-			case 'other':
-				if (item.data.data.formula) { this.templates.push(await this.rollOther()); }
-				break;
-			case 'custom':
-				/* args:
-						title			title of the roll
-						formula			the roll formula
-						rolls			number of rolls
-						rollState		"adv" or "disadv" converts to "highest" or "lowest"
-				*/
-				let rollStates = {
-					null: null,
-					"adv": "highest",
-					"disadv": "lowest"
-				};
-				if (!fieldArgs[0]) {
-					fieldArgs[0] = {rolls:1, formula:"1d20", rollState:null};
-				}
-				let rollData = duplicate(this.item.actor.data.data);
-				rollData.item = item.data.data;
-				this.addToRollData(rollData);
-				let output = await CustomRoll.rollMultiple(fieldArgs[0].rolls, fieldArgs[0].formula, ["0"], rollData, fieldArgs[0].title, null, rollStates[fieldArgs[0].rollState], false, "custom");
-				output.type = 'custom';
-				this.dicePool.push(...output.data.rolls);
-				this.templates.push(output);
-				break;
-			case 'description':
-			case 'desc':
-				// Display info from Components module
-				let componentField = "";
-				if (game.modules.get("components5e") && game.modules.get("components5e").active) {
-					componentField = window.ComponentsModule.getComponentHtml(item, 20);
-				}
-				fieldArgs[0] = {text: componentField + item.data.data.description.value};
-			case 'text':
-				if(fieldArgs[0].text) {
-					this.templates.push({
-						type:'text',
-						html:`<div class="card-content br-text">${fieldArgs[0].text}</div>`,
-					});
-				}
-				break;
-			case 'flavor':
-				this.templates.push(this.rollFlavor(fieldArgs[0]));
-				break;
-			case 'crit':
-				this.templates.push(await this.rollCritExtra());
-				break;
+
+// A custom roll with data corresponding to an item on a character's sheet.
+export class CustomItemRoll {
+	constructor(itemOrActor, params, fields) {
+		if (itemOrActor) {
+			const { item, actor } = Utils.resolveActorOrItem(itemOrActor);
+			if (item) {
+				this.item = item;
+			} else if (actor) {
+				this.actor = actor;
+			}
 		}
+
+		// params.event is an available parameter for backwards compatibility reasons
+		// but really we're interested in the rollState. Replace it here.
+		// We don't want event to be serialized when flags are set
+		this.params = mergeObject(duplicate(defaultParams), params || {});	// General parameters for the roll as a whole.
+		this.params.rollState = Utils.getRollState(this.params);
+		delete this.params.event;
+
+		// Where requested roll fields are stored, in the order they should be rendered.
+		// Fields represent "intents"
+		this.fields = fields ?? [];	
+
+		// Data results from fields, which get turned into templates
+		// Entries represent "results"
+		/** @type {Array<import("./renderer.js").RenderModelEntry>} */
+		this.entries = [];
+
+		this.properties = [];
+		this.rolled = false;
+		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
+		this.dicePool = new DiceCollection();
+	}
+
+	static fromMessage(message) {
+		const data = message.data.flags.betterrolls5e;
+		const roll = new CustomItemRoll(null, data?.params ?? {}, data?.fields ?? []);
+		roll.messageId = message.id;
+		roll.rolled = true;
+		if (data) {
+			roll.isCrit = data.isCrit;
+			roll.entries = FoundryProxy.create(data.entries);
+			roll.properties = data.properties;
+			roll.params = data.params;
+			
+			// Set these up so that lazy loading can be done
+			roll.actorId = data.actorId;
+			roll.itemId = data.itemId;
+			roll.tokenId = data.tokenId;
+		}
+
+		roll.storedItemData = message.getFlag("dnd5e", "itemData");
+
+		return roll;
+	}
+
+	set item(item) {
+		this._item = item;
+		this.itemId = item.id;
+		this.actor = item?.actor;
+	}
+
+	get item() {
+		if (this._item) return this._item;
+
+		let storedData = null;
+		if (this.messageId) {
+			const message = game.messages.get(this.messageId);
+			storedData = message.getFlag("dnd5e", "itemData");
+		}
+
+		if (!storedData && !this.itemId) {
+			return null;
+		}
+
+		const actor = this.actor;
+		const Item5e = game.dnd5e.entities.Item5e;
+		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.getOwnedItem(this.itemId);
+		if (!item) {
+			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			ui.notifications.error(message);
+			throw new Error(message);
+		}
+
+		this._item = item; // store a backup so we don't need to fetch again
+		return item;
+	}
+
+	set actor(actor) {
+		this._actor = actor;
+		this.actorId = actor.id;
+		this.tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
+	}
+
+	/**
+	 * Returns the actor associated 
+	 */
+	get actor() {
+		if (this._actor) return this._actor;
+
+		let actor = null;
+		if (this.tokenId) {
+			const [sceneId, tokenId] = this.tokenId.split(".");
+			
+			const scene = game.scenes.get(sceneId);
+			if (!scene) return null;
+
+			const tokenData = scene.getEmbeddedEntity("Token", tokenId);
+			if (!tokenData) return null;
+
+			actor = new Token(tokenData).actor;
+		} else {
+			actor = game.actors.get(this.actorId);
+		}
+		
+		this._actor = actor;
+		return actor;
+	}
+
+	get settings() {
+		return getSettings(this.params.settings);
+	}
+
+	/**
+	 * Getter to retrieve if the current user has advanced permissions over the chat card.
+	 */
+	get hasPermission() {
+		const message = game.messages.get(this.messageId);
+		return game.user.isGM || message?.isAuthor;
+	}
+
+	/**
+	 * Returns the group header.
+	 * Currently this is the multiroll/button-save junction.
+	 * In the future, maybe we want to exchange it for fields? Unsure.
+	 * @param {string} group
+	 * @private
+	 */
+	_getGroupHeader(group) {
+		return this.entries.find(e => 
+			e.group === group &&
+			["multiroll", "button-save"].includes(e.type));
+	}
+
+	/**
+	 * Returns the crit status, for a group if given or for the whole roll is no group is given
+	 * @param {string?} group optional filter to only check for crits within a group
+	 * @returns {boolean} true if the group crit, false otherwise
+	 */
+	getCritStatus(group) {
+		// Get crit status from 
+		if (group) {
+			const roll = this._getGroupHeader(group);
+			return roll?.isCrit ?? false;
+		}
+
+		return this.isCrit;
+	}
+
+	/**
+	 * Returns true if a roll entry can crit
+	 * @param {import("./renderer.js").RenderModelEntry} entry 
+	 */
+	canCrit(entry) {
+		if (!entry || entry.critRoll || this.getCritStatus(entry.group) || entry?.damageIndex === "other") {
+			return false;
+		}
+
+		const formula = entry.formula ?? entry.baseRoll?.formula;
+		return !!ItemUtils.getBaseCritFormula(formula);
+	}
+	
+	/**
+	 * Rolls crit dice if its not already rolled for the current card.
+	 * This is used when *augmenting* an existing roll to a crit.
+	 * @param {string | null} group If not null, limits the updates to the specified group
+	 * @param {boolean} isCrit Whether to enable or disable crits
+	 * @returns {Promise<boolean>} if the crit roll went through
+	 */
+	async updateCritStatus(group, isCrit) {
+		// If crits were forced on, can't turn them off
+		const header = this._getGroupHeader(group);
+		if (!isCrit && header.forceCrit) {
+			return false;
+		}
+		
+		// Do nothing if crits are disabled or if we don't have permission
+		const critBehavior = this.settings.critBehavior;
+		if ((isCrit && critBehavior === "0") || !this.hasPermission) {
+			return false;
+		}
+
+		const item = this.item;
+		let updated = false;
+
+		const entries = group ? this.entries.filter(e => e.group === group) : this.entries;
+
+		for (const entry of entries) {
+			// "Junction" types are used to keep track of crit state
+			if (["multiroll", "button-save"].includes(entry.type)) {
+				entry.isCrit = isCrit;
+			}
+
+			// "Other" damage entries never crit
+			if (entry.type === "damage" && entry.damageIndex !== "other") {
+				if (isCrit && entry.critRoll == null) {
+					// Enable Crit (from backup if available)
+					if (entry._critBackup) {
+						entry.critRoll = entry._critBackup;
+					} else {
+						const { formula, total } = entry.baseRoll;
+						const extraCritDice = entry.extraCritDice ?? ItemUtils.getExtraCritDice(item);
+						entry.extraCritDice = extraCritDice;
+						entry.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
+						entry._critBackup = entry.critRoll; // prevent undoing the crit
+						this.dicePool.push(entry.critRoll);	
+					}
+
+					updated = true;
+				} else if (!isCrit && entry.critRoll && !entry._critBackup) {
+					// Disable crit but keep a backup (so we don't re-roll the crit)
+					entry._critBackup = entry.critRoll;
+					entry.critRoll = undefined;
+					updated = true;
+				}
+			}
+
+			// If crit extra, show/hide depending on setting
+			if (entry.type === "crit") {
+				entry.revealed = entry._diceRolled ? true : isCrit;
+				if (!entry._diceRolled && entry.revealed) {
+					this.dicePool.push(entry.critRoll);
+				}
+
+				// Always set to true. If hidden > revealed, we just rolled it.
+				// If revealed > hidden, it was rolled before, so set to true anyways
+				entry._diceRolled = true;
+			}
+		}
+
+		return updated;
+	}
+
+	/**
+	 * Like setCritStatus(), but sets the forceCrit flag, preventing the crit
+	 * from being unset by things like the attack roll being converted to disadvantage.
+	 * @param {*} group 
+	 */
+	async forceCrit(group) {
+		const updated = await this.updateCritStatus(group, true);
+
+		// Note: if there's no group or header then forceCrit can't be set,
+		// however currently the only way a crit could be unset is by converting to disadvantage
+		// If there's no attack roll...it can't be unset anyways, so no big deal
+		const header = this._getGroupHeader(group);
+		if (updated || (header.isCrit && !header.forceCrit)) {
+			if (header) {
+				header.forceCrit = true;
+			}
+			return true;
+		}
+
+		return updated;
+	}
+
+	/**
+	 * Rolls damage for a damage group. Returns true if successful.
+	 * This works by revealing all relevant hidden damage data, and visually rolling dice
+	 * @param {string} group
+	 */
+	async rollDamage(group) {
+		const wasHidden = this.params.prompt[group];
+		if (!this.hasPermission || !this.entries?.length || !wasHidden) {
+			return false;
+		}
+
+		// Get whether this was a crit or not
+		const isCrit = this.getCritStatus(group);
+
+		// Disable the prompt for this group
+		this.params.prompt[group] = false;
+
+		// Add to dicepool for dice so nice
+		for (const entry of this.entries.filter(e => e.group === group)) {
+			if (entry.type === "damage" || (entry.type === "crit" && isCrit)) {
+				this.dicePool.push(entry.baseRoll, entry.critRoll);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
+	 * @param {string} id The id of the rollstate entry to update
+	 * @param {import("./fields.js").RollState} rollState 
+	 */
+	async updateRollState(id, rollState) {
+		if (!this.hasPermission || !this.entries?.length || !rollState) {
+			return false;
+		}
+
+		const multiroll = this.entries.find(m => m.id === id);
+		if (multiroll?.type !== 'multiroll' || multiroll.rollState) {
+			return false;
+		}
+
+		// Calculate required number of rolls
+		let numRolls = Math.max(multiroll.entries?.length, 2);
+		if (numRolls == 2 && multiroll.elvenAccuracy && rollState !== "lowest") {
+			numRolls = 3;
+		}
+
+		// Add more rolls if necessary
+		while (multiroll.entries?.length < numRolls) {
+			const roll = multiroll.entries[0].roll.reroll();
+			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20], multiroll.bonus));
+			this.dicePool.push(roll);
+		}
+
+		// Determine roll result
+		const rollTotals = multiroll.entries.map(r => r.roll.total);
+		let chosenResult = rollTotals[0];
+		if (rollState == "highest") {
+			chosenResult = Math.max(...rollTotals);
+		} else if (rollState == "lowest") {
+			chosenResult = Math.min(...rollTotals);
+		}
+
+		// Mark the non-results as ignored
+		multiroll.entries.filter(r => r.roll.total != chosenResult).forEach(r => r.ignored = true);
+		
+		// Update remaining properties
+		// Update crit status if not forcing crit
+		multiroll.rollState = rollState;
+		if (!multiroll.forceCrit) {
+			multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
+			this.updateCritStatus(multiroll.group, multiroll.isCrit);
+		}
+
 		return true;
 	}
 	
-	async allFieldsToTemplates() {
-		return new Promise(async (resolve, reject) => {
-			
-			for (let i=0;i<this.fields.length;i++) {
-				await this.fieldToTemplate(this.fields[i]);
-			}
-
-			if (this.isCrit && this.hasDamage && this.item.data.flags.betterRolls5e?.critDamage?.value) {
-				await this.fieldToTemplate(["crit"]);
-			}
-			
-			resolve(this.templates);
-		});
-	}
-	
-	async toMessage() {
+	/**
+	 * Internal function to process fields and populate the internal data.
+	 * Call toMessage() to create the final chat message and show the result
+	 */
+	async roll() {
 		if (this.rolled) {
 			console.log("Already rolled!", this);
 			return;
 		}
+		
+		Hooks.call("preRollItemBetterRolls", this);
+		
+		const { params, item } = this;
+		const consume = this.params.consume;
+		let placeTemplate = false;
 
-		const content = await this.roll();
-		if (content === "error") return;
+		// Pre-update item configurations
+		if (item) {
+			await ItemUtils.ensureFlags(item, { commit: true });
+			const itemData = item?.data.data;
 
-		this.chatData = {
+			// Set up preset but only if there aren't fields
+			if (!this.fields || this.fields.length === 0) {
+				params.preset = params.preset ?? 0;
+				if (Number.isInteger(params.preset)) {
+					this.updateForPreset();
+				}
+			}
+
+			// Set ammo (if needed)
+			if (this.params.useCharge.resource) {
+				const consumed = itemData.consume;
+				if ( consumed?.type === "ammo" ) {
+					this.ammo = this.actor.items.get(consumed.target);
+				}
+			}
+
+			// Determine spell level and configuration settings
+			if (consume && !params.slotLevel && item.data.type === "spell") {
+				const config = await this.configureSpell();
+				if (config === "error") { 
+					this.error = true;
+					return;
+				}
+
+				placeTemplate = config.placeTemplate;
+			}
+		}
+
+		// Process all fields (this builds the data entries)
+		for (const field of this.fields) {
+			this._processField(field);
+		}
+
+		// Post-build item updates
+		if (item) {
+			// Check to consume charges. Prevents the roll if charges are required and none are left.
+			if (consume) {
+				let chargeCheck = await this.consume();
+				if (chargeCheck === "error") {
+					this.error = true;
+					return;
+				}
+			}
+
+			// Load Item Footer Properties if params.properties is true
+			if (params.properties) {
+				this.properties = ItemUtils.getPropertyList(item);
+			}
+
+			// Place the template if applicable
+			if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
+				ItemUtils.placeTemplate(item);
+			}
+		}
+		
+		this.rolled = true;
+		this.error = false;
+		await Hooks.callAll("rollItemBetterRolls", this);
+		await new Promise(r => setTimeout(r, 25));
+
+		// Add models (non-hidden) to dice pool (for 3D Dice)
+		for (const entry of this.entries) {
+			if (entry.type === "multiroll") {
+				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
+			} else if (!entry.group || !this.params.prompt[entry.group]) {
+				if (entry.type === "damage" || (entry.type === "crit" && entry.revealed)) {
+					this.dicePool.push(entry.baseRoll, entry.critRoll);
+				}
+			}
+		}
+	}
+
+	async render() {
+		this.content = Renderer.renderCard(this);
+		await Hooks.callAll("renderBetterRolls", this);
+		return this.content;
+	}
+
+	/**
+	 * Allows this roll to be serialized into message flags.
+	 * @private
+	 */
+	_getFlags() {
+		const flags = {
+			betterrolls5e: {
+				version: Utils.getVersion(),
+				actorId: this.actorId,
+				itemId: this.itemId,
+				tokenId: this.tokenId,
+				isCrit: this.isCrit,
+				entries: this.entries,
+				properties: this.properties,
+				params: this.params,
+				fields: this.fields
+			}
+		};
+
+		// Clear fields if any has an actor or item,
+		// its too complicated for rerolling
+		// We can probably handle it in the future somehow using FoundryProxy
+		if (this.fields?.some(f => f[1]?.actor || f[1]?.item)) {
+			console.log("BetterRolls5e | Roll fields are too complex for serialization, removing fields");
+			flags.betterrolls5e.fields = null;
+		}
+
+		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
+		const { actor, item } = this;
+		if ((item?.data.type === "consumable") && !actor.items.has(item.id) ) {
+			flags["dnd5e.itemData"] = item.data;
+		}
+
+		// Allow the roll to popout
+		flags["core.canPopout"] = true;
+
+		return flags;
+	}
+
+	/**
+	 * Creates and sends a chat message to all players (based on whisper config).
+	 * If not already rolled and rendered, roll() is called first.
+	 * @returns {Promise<ChatMessage>} the created chat message
+	 */
+	async toMessage() {
+		if (!this.rolled) {
+			await this.roll();
+		}
+
+		if (this.error) return;
+		
+		const item = this.item;
+		const actor = this.actor ?? item?.actor;
+		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
+
+		// Create the chat message
+		const chatData = {
 			user: game.user._id,
-			content: this.content,
+			content: await this.render(),
 			speaker: {
-				actor: this.actor._id,
-				token: this.actor.token,
-				alias: this.actor.token?.name || this.actor.name
+				actor: actor?._id,
+				token: actor?.token,
+				alias: actor?.token?.name || actor?.name
 			},
+			flags: this._getFlags(),
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-			roll: blankRoll,
+			roll: new Roll("0").roll(),
 			...Utils.getWhisperData(),
-			sound: Utils.getDiceSound(ItemUtils.hasMaestroSound(this.item))
+			sound: Utils.getDiceSound(hasMaestroSound)
 		};
 		
-		await Hooks.callAll("messageBetterRolls", this, this.chatData);
+		await Hooks.callAll("messageBetterRolls", this, chatData);
+
+		// Send the chat message
 		await this.dicePool.flush();
-		return await ChatMessage.create(this.chatData);
+		return ChatMessage.create(chatData);
+	}
+
+	/**
+	 * Returns true if the item can be rerolled.
+	 * Items that only have text field types cannot be rerolled.
+	 */
+	canRepeat() {
+		if (!this.fields || this.fields.length === 0) {
+			return false;
+		}
+
+		const surplusTypes = new Set(["header", "flavor", "description", "desc"]);
+		for (const field of this.fields) {
+			if (!surplusTypes.has(field[0])) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Repeats the roll, sending out a new chat message.
+	 * This repeat does not consume uses, and overrides advantage/disadvantage / prompts
+	 * @returns {Promise<CustomItemRoll>}
+	 */
+	async repeat() {
+		if (!this.canRepeat()) return;
+
+		const invalidFields = ["description", "desc"];
+		const fields = duplicate(this.fields.filter(f => !invalidFields.includes(f[0])));
+		const params = duplicate(this.params);
+		params.consume = false;
+		params.rollState = Utils.getRollState({ event });
+		params.prompt = {};
+
+		const newRoll = new CustomItemRoll(this.item ?? this.actor, params, fields);
+		await newRoll.toMessage();
+		return newRoll;
+	}
+
+	/**
+	 * Updates the associated chat message to have this HTML as its content.
+	 * Nothing updates until this method is called.
+	 * Requires the chat message to already exist.
+	 */
+	async update() {
+		const chatMessage = game.messages.get(this.messageId);
+		if (chatMessage) {
+			const content = await this.render();
+			await Hooks.callAll("updateBetterRolls", this, content);
+			await this.dicePool.flush();
+			await chatMessage.update({
+				...flattenObject({ flags: duplicate(this._getFlags()) }),
+				content
+			}, { diff: true });
+		}
+	}
+
+	/**
+	 * Equivalent to addField()
+	 * @param {*} field
+	 * @deprecated
+	 */
+	fieldToTemplate(field) {
+		return this.addField(field);
+	}
+
+	/**
+	 * Adds to the list of fields, and if already rolled, processes it immediately
+	 * @param {string | [string, Object]} field 
+	 * @param {Object?} data
+	 */
+	addField(field, data) {
+		// Backwards compatibility. String+data or an array of [name, data] are both supported
+		if (typeof field === "string") {
+			field = [field, data];
+		}
+
+		if (this.rolled) {
+			return this._processField(field);
+		} else {
+			this.fields.push(field);
+		}
+	}
+
+	/**
+	 * Function that immediately processes the field and adds the result to data
+	 * @param {[string, Object]} field
+	 * @private
+	 */
+	_processField(field) {
+		const metadata = {
+			item: this.item,
+			actor: this.actor,
+			rollState: this.params.rollState,
+			ammo: this.ammo,
+			slotLevel: this.params.slotLevel,
+			isCrit: this.isCrit,
+			settings: this.settings
+		};
+
+		// Add non-null entries
+		const newEntries = RollFields.constructModelsFromField(field, metadata, settings);
+		newEntries.forEach(this._addRenderEntry.bind(this));
+	}
+
+	/**
+	 * Adds a render entry to the list. Does not add to dicepool, but does flag for crit.
+	 * If damage prompt is enabled, any damage entries will be hidden unless hidden has a value.
+	 * @param {import("./renderer.js").RenderModelEntry} entry 
+	 * @private
+	 */
+	_addRenderEntry(entry) {
+		if (!entry) return;
+
+		if (entry.type === "multiroll") {
+			if (!this.params.forceCrit && (entry.triggersCrit ?? true)) {
+				this.isCrit = entry.isCrit;
+			}
+		}
+
+		// Assign roll groups for multirolls
+		if (entry.type === "multiroll" || entry.type === "button-save") {
+			this._lastGroupIdx = (this._lastGroupIdx ?? -1) + 1;
+			entry.group = `br!${this._lastGroupIdx}`
+		}
+
+		// Assign roll groups for damage
+		if (entry.type === "damage" || entry.type === "crit") {
+			const reversedEntries = [...this.entries].reverse();
+			const lastGroup = reversedEntries.find(e => e.group)?.group;
+			entry.group = entry.group ?? lastGroup;
+
+			// Reveal if this was a crit entry, and the group crit
+			if (entry.type === "crit" && this.getCritStatus(entry.group)) {
+				entry.revealed = true;
+			}
+
+			// If damage buttons are enabled, enable prompts
+			if (entry.group && this.settings.damagePromptEnabled) {
+				this.params.prompt[entry.group] = this.params.prompt[entry.group] ?? true;
+			}
+		}
+
+		this.entries.push(entry);
 	}
 	
 	/**
 	 * Updates the rollRequests based on the br5e flags.
+	 * This creates the default set of fields to process.
 	 */
 	updateForPreset() {
+		if (!this.item) return;
+		
 		let item = this.item,
 			itemData = item.data.data,
 			flags = item.data.flags,
@@ -658,7 +819,8 @@ export class CustomItemRoll {
 			useTemplate = false,
 			fields = [],
 			val = (preset === 1) ? "altValue" : "value";
-			
+		
+		fields.push(["header"]);
 		
 		if (brFlags) {
 			// Assume new action of the button based on which fields are enabled for Quick Rolls
@@ -666,6 +828,7 @@ export class CustomItemRoll {
 				return (brFlags[flag] && (brFlags[flag][val] == true));
 			}
 
+			// Returns the flag or alt-flag depending on setting
 			function getFlag(flag) {
 				return (brFlags[flag] ? (brFlags[flag][val]) : null);
 			}
@@ -676,21 +839,31 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
 			
-			if (brFlags.quickDamage && (brFlags.quickDamage[val].length > 0)) {
-				for (let i = 0; i < brFlags.quickDamage[val].length; i++) {
-					let isVersatile = (i == 0) && flagIsTrue("quickVersatile");
-					if (brFlags.quickDamage[val][i]) { fields.push(["damage", {index:i, versatile:isVersatile}]); }
+			const quickDamage = Object.entries(getFlag("quickDamage") ?? []);
+			if (quickDamage.length > 0) {
+				for (let [i, damage] of quickDamage) {
+					const index = Number(i);
+					const versatile = (index == 0) && flagIsTrue("quickVersatile");
+					if (damage) { 
+						fields.push(["damage", { index, versatile }]);
+					}
 				}
+
+				// Roll ammo after damage (if any)
+				fields.push(["ammo"]);
 			}
 
-
-			if (flagIsTrue("quickOther")) { fields.push(["other"]); }
+			if (flagIsTrue("quickOther") && itemData?.formula) { fields.push(["other"]); }
 			if (flagIsTrue("quickProperties")) { properties = true; }
 
 			if (brFlags.quickCharges) {
 				useCharge = duplicate(getFlag("quickCharges"));
 			}
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
+
+			if (quickDamage.length > 0 && brFlags.critDamage?.value) {
+				fields.push(["crit"]);
+			}
 		} else { 
 			//console.log("Request made to Quick Roll item without flags!");
 			fields.push(["desc"]);
@@ -705,686 +878,21 @@ export class CustomItemRoll {
 		
 		this.fields = fields.concat((this.fields || []).slice());
 	}
-	
-	/**
-	* A function for returning the properties of an item, which can then be printed as the footer of a chat card.
-	*/
-	listProperties() {
-		const item = this.item;
-		const data = item.data.data;
-		let properties = [];
-		
-		const range = ItemUtils.getRange(item);
-		const target = ItemUtils.getTarget(item);
-		const activation = ItemUtils.getActivationData(item)
-		const duration = ItemUtils.getDuration(item);
 
-		switch(item.data.type) {
-			case "weapon":
-				properties = [
-					dnd5e.weaponTypes[data.weaponType],
-					range,
-					target,
-					data.proficient ? "" : i18n("Not Proficient"),
-					data.weight ? data.weight + " " + i18n("lbs.") : null
-				];
-				for (const prop in data.properties) {
-					if (data.properties[prop] === true) {
-						properties.push(dnd5e.weaponProperties[prop]);
-					}
-				}
-				break;
-			case "spell":
-				// Spell attack labels
-				data.damageLabel = data.actionType === "heal" ? i18n("br5e.chat.healing") : i18n("br5e.chat.damage");
-				data.isAttack = data.actionType === "attack";
-
-				properties = [
-					dnd5e.spellSchools[data.school],
-					dnd5e.spellLevels[data.level],
-					data.components.ritual ? i18n("Ritual") : null,
-					activation,
-					duration,
-					data.components.concentration ? i18n("Concentration") : null,
-					ItemUtils.getSpellComponents(item),
-					range,
-					target
-				];
-				break;
-			case "feat":
-				properties = [
-					data.requirements,
-					activation,
-					duration,
-					range,
-					target,
-				];
-				break;
-			case "consumable":
-				properties = [
-					data.weight ? data.weight + " " + i18n("lbs.") : null,
-					activation,
-					duration,
-					range,
-					target,
-				];
-				break;
-			case "equipment":
-				properties = [
-					dnd5e.equipmentTypes[data.armor.type],
-					data.equipped ? i18n("Equipped") : null,
-					data.armor.value ? data.armor.value + " " + i18n("AC") : null,
-					data.stealth ? i18n("Stealth Disadv.") : null,
-					data.weight ? data.weight + " lbs." : null,
-				];
-				break;
-			case "tool":
-				properties = [
-					dnd5e.proficiencyLevels[data.proficient],
-					data.ability ? dnd5e.abilities[data.ability] : null,
-					data.weight ? data.weight + " lbs." : null,
-				];
-				break;
-			case "loot":
-				properties = [data.weight ? item.data.totalWeight + " lbs." : null]
-				break;
-		}
-		let output = properties.filter(p => (p) && (p.length !== 0) && (p !== " "));
-		return output;
-	}
-	
-	addToRollData(data) {
-		data.classes = this.item.actor.items.reduce((obj, i) => {
-			if ( i.type === "class" ) {
-				obj[i.name.slugify({strict: true})] = i.data.data;
-			}
-			return obj;
-		}, {});
-		data.prof = this.item.actor.data.data.attributes.prof;
-	}
-	
 	/**
-	 * A function for returning a roll template with crits and fumbles appropriately colored.
-	 * @param {Object} args					Object containing the html for the roll and whether or not the roll is a crit
-	 * @param {Roll} rolls						The desired roll to check for crits or fumbles
-	 * @param {String} selector			The CSS class selection to add the colors to
-	 * @param {Number} critThreshold	The minimum number required for a critical success (defaults to max roll on the die)
+	 * Determine the spell level and spell slot consumption if this is an item,
+	 * and returns the spell configuration, or "error" on forced close.
 	 */
-	static tagCrits(args, rolls, selector, critThreshold, critChecks=true) {
-		if (typeof args !== "object") { args = {
-			html: args,
-			isCrit: false
-		}; }
-		if (!rolls) {return args;}
-		if (!Array.isArray(rolls)) {rolls = [rolls];}
-		let $html = $(args.html);
-		let rollHtml = $html.find(selector);
-		let isCrit = false;
-		for (let i=0; i<rollHtml.length; i++) {
-			let high = 0,
-				low = 0;
-			rolls[i].dice.forEach( function(d) {
-				// Add crit for improved crit threshold
-				let threshold = critThreshold || d.faces;
-				debug("SIZE " + d.faces);
-				debug("VALUE " + d.total);
-				if (d.faces > 1 && (critChecks == true || critChecks.includes(d.faces))) {
-					d.results.forEach( function(result) {
-						if (result.result >= threshold) { high += 1; }
-						else if (result.result == 1) { low += 1; }
-					});
-				}
-			});
-			debug("CRITS", high);
-			debug("FUMBLES", low);
-			
-			if ((high > 0) && (low == 0)) $($html.find(selector)[i]).addClass("success");
-			else if ((high == 0) && (low > 0)) $($html.find(selector)[i]).addClass("failure");
-			else if ((high > 0) && (low > 0)) $($html.find(selector)[i]).addClass("mixed");
-			if ((high > 0) || (args.isCrit == true)) isCrit = true;
-		}
-		return {
-			html: $html[0].outerHTML,
-			isCrit: isCrit
-		};
-	}
-	
-	/**
-	 * Rolls an attack roll for the item.
-	 * @param {Object} args				Object containing all named parameters
-	 * @param {Number} adv				1 for advantage
-	 * @param {Number} disadv			1 for disadvantage
-	 * @param {String} bonus			Additional situational bonus
-	 * @param {Boolean} triggersCrit	Whether a crit for this triggers future damage rolls to be critical
-	 * @param {Number} critThreshold	Minimum roll for a d20 is considered a crit 
-	 */
-	async rollAttack(preArgs) {
-		let args = mergeObject({
-			adv: this.params.adv,
-			disadv: this.params.disadv,
-			bonus: null,
-			triggersCrit: true,
-			critThreshold: null
-		}, preArgs || {});
-		let itm = this.item;
-		// Prepare roll data
-		let itemData = itm.data.data,
-			actorData = itm.actor.data.data,
-			title = (this.config.rollTitlePlacement !== "0") ? i18n("br5e.chat.attack") : null,
-			parts = [],
-			rollData = duplicate(actorData);
-
-		
-		this.addToRollData(rollData);
-		this.hasAttack = true;
-		
-		// Add critical threshold
-		let critThreshold = 20;
-		let characterCrit = 20;
-		try { characterCrit = Number(getProperty(itm, "actor.data.flags.dnd5e.weaponCriticalThreshold")) || 20;  }
-		catch(error) { characterCrit = itm.actor.data.flags.dnd5e.weaponCriticalThreshold || 20; }
-		
-		let itemCrit = Number(getProperty(itm, "data.flags.betterRolls5e.critRange.value")) || 20;
-		//	console.log(critThreshold, characterCrit, itemCrit);
-		
-		// If a specific critThreshold is set, use that
-		if (args.critThreshold) {
-			critThreshold = args.critThreshold;
-		// Otherwise, determine it from character & item data
-		} else {
-			if (['mwak', 'rwak'].includes(itemData.actionType)) {
-				critThreshold = Math.min(critThreshold, characterCrit, itemCrit);
-			} else {
-				critThreshold = Math.min(critThreshold, itemCrit);
-			}
-		}
-		
-		// Add ability modifier bonus
-		let abl = "";
-		if (itm.data.type == "spell") {
-			abl = itemData.ability || actorData.attributes.spellcasting;
-		} else if (itm.data.type == "weapon") {
-			if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
-				if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) { abl = "str"; }
-				else { abl = "dex"; }
-			} else { abl = itemData.ability || (itemData.actionType === "mwak" ? "str" : itemData.actionType === "rwak" ? "dex" : "") }
-		} else {
-			abl = itemData.ability || "";
-		}
-		
-		if (abl.length) {
-			parts.push(`@abl`);
-			rollData.abl = actorData.abilities[abl]?.mod;
-			//console.log("Adding Ability mod", abl);
-		}
-		
-		// Add proficiency, expertise, or Jack of all Trades
-		if (itm.data.type == "spell" || itm.data.type == "feat" || itemData.proficient ) {
-			parts.push(`@prof`);
-			rollData.prof = Math.floor(actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
-		}
-		
-		// Add item's bonus
-		if (itemData.attackBonus) {
-			parts.push(`@bonus`);
-			rollData.bonus = itemData.attackBonus;
-			//console.log("Adding Bonus mod!", itemData);
-		}
-
-		if (this.ammo?.data) {
-			const ammoBonus = this.ammo.data.data.attackBonus;
-			if (ammoBonus) {
-				parts.push("@ammo");
-				rollData["ammo"] = ammoBonus;
-				title += ` [${this.ammo.name}]`;
-			}
-		}
-		
-		// Add custom situational bonus
-		if (args.bonus) {
-			parts.push(args.bonus);
-		}
-		
-		if (actorData.bonuses && isAttack(itm)) {
-			let actionType = `${itemData.actionType}`;
-			if (actorData?.bonuses[actionType]?.attack) {
-				parts.push("@" + actionType);
-				rollData[actionType] = actorData.bonuses[actionType].attack;
-			}
-		}	
-		
-		// Establish number of rolls using advantage/disadvantage and elven accuracy
-		const rollState = CustomRoll.getRollState({adv:args.adv, disadv:args.disadv});
-		let numRolls = rollState ? 2 : this.config.d20Mode;
-		if (numRolls == 2 && ActorUtils.testElvenAccuracy(itm.actor, abl) && rollState !== "lowest") {
-			numRolls = 3;
-		}
-		
-		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
-		const rolls = await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, critThreshold, rollState, args.triggersCrit);
-		const output = { ...rolls, type: "attack" };
-		if (output.isCrit) {
-			this.isCrit = true;
-		}
-
-		this.dicePool.push(...output.data.rolls);
-
-		return output;
-	}
-	
-	async damageTemplate ({baseRoll, critRoll, labels, type}) {
-		let baseTooltip = await baseRoll.getTooltip(),
-			templateTooltip;
-		
-		if (baseRoll.terms.length === 0) return;
-		
-		if (critRoll) {
-			let critTooltip = await critRoll.getTooltip();
-			templateTooltip = await renderTemplate("modules/betterrolls5e/templates/red-dualtooltip.html", {lefttooltip: baseTooltip, righttooltip: critTooltip});
-		} else { templateTooltip = baseTooltip; }
-		
-		
-		let chatData = {
-			tooltip: templateTooltip,
-			lefttotal: baseRoll.total,
-			righttotal: (critRoll ? critRoll.total : null),
-			damagetop: labels[1],
-			damagemid: labels[2],
-			damagebottom: labels[3],
-			formula: baseRoll.formula,
-			crittext: this.config.critString,
-			damageType:type,
-			maxRoll: await new Roll(baseRoll.formula).evaluate({maximize:true}).total,
-			maxCrit: critRoll ? await new Roll(critRoll.formula).evaluate({maximize:true}).total : null
-		};
-		
-		let html = {
-			html: await renderTemplate("modules/betterrolls5e/templates/red-damageroll.html", chatData)
-		};
-		html = CustomItemRoll.tagCrits(html, baseRoll, ".red-base-die");
-		html = CustomItemRoll.tagCrits(html, critRoll, ".red-extra-die");
-		
-		let output = {
-			type: "damage",
-			html: html["html"],
-			data: chatData
-		}
-
-		return output;
-	}
-	
-	async rollDamage({damageIndex = 0, forceVersatile = false, forceCrit = false, bonus = 0, customContext = null}) {
-		let itm = this.item;
-		let itemData = itm.data.data,
-			rollData = duplicate(itm.actor.data.data),
-			abl = itemData.ability,
-			flags = itm.data.flags.betterRolls5e,
-			damageFormula,
-			damageType = itemData.damage.parts[damageIndex][1],
-			isVersatile = false,
-			slotLevel = this.params.slotLevel;
-		
-		rollData.item = duplicate(itemData);
-		rollData.item.level = slotLevel;
-		this.addToRollData(rollData);
-
-		// Makes the custom roll flagged as having a damage roll.
-		this.hasDamage = true;
-		
-		// Change first damage formula if versatile
-		if (((this.params.versatile && damageIndex === 0) || forceVersatile) && itemData.damage.versatile.length > 0) {
-			damageFormula = itemData.damage.versatile;
-			isVersatile = true;
-		} else {
-			damageFormula = itemData.damage.parts[damageIndex][0];
-		}
-
-		if (!damageFormula) { return null; }
-		
-		let type = itm.data.type,
-			parts = [],
-			dtype = CONFIG.betterRolls5e.combinedDamageTypes[damageType];
-		
-		let generalMod = rollData.attributes.spellcasting;
-		
-		// Spells don't push their ability modifier to damage by default. This is here so the user can add "+ @mod" to their damage roll if they wish.
-		if (type === "spell") {
-			abl = itemData.ability ? itemData.ability : generalMod;
-		}
-		
-
-		// Applies ability modifier on weapon and feat damage rolls, but only for the first damage roll listed on the item.
-		if (!abl && (type === "weapon" || type === "feat") && damageIndex === 0) {
-			if (type === "weapon") {
-				if (itemData.properties.fin && (itemData.ability === "str" || itemData.ability === "dex" || itemData.ability === "")) {
-					if (rollData.abilities.str.mod >= rollData.abilities.dex.mod) { abl = "str"; }
-					else { abl = "dex"; }
-				} else if (itemData.actionType == "mwak") {
-					abl = "str";
-				} else if (itemData.actionType == "rwak") {
-					abl = "dex";
-				}
-			}
-		}
-		
-		// Users may add "+ @mod" to their rolls to manually add the ability modifier to their rolls.
-		rollData.mod = (abl !== "") ? rollData.abilities[abl]?.mod : 0;
-		
-		// Prepare roll label
-		let titlePlacement = this.config.damageTitlePlacement.toString(),
-			damagePlacement = this.config.damageRollPlacement.toString(),
-			contextPlacement = this.config.damageContextPlacement.toString(),
-			replaceTitle = this.config.contextReplacesTitle,
-			replaceDamage = this.config.contextReplacesDamage,
-			labels = {
-				"1": [],
-				"2": [],
-				"3": []
-			};
-		
-		let titleString = "",
-			damageString = [],
-			contextString = customContext || (flags.quickDamage.context && flags.quickDamage.context[damageIndex]);
-		
-		// Show "Healing" prefix only if it's not inherently a heal action
-		if (dnd5e.healingTypes[damageType]) { titleString = ""; }
-		// Show "Damage" prefix if it's a damage roll
-		else if (dnd5e.damageTypes[damageType]) { titleString += i18n("br5e.chat.damage"); }
-		
-		// Title
-		let pushedTitle = false;
-		if (titlePlacement !== "0" && titleString && !(replaceTitle && contextString && titlePlacement == contextPlacement)) {
-			labels[titlePlacement].push(titleString);
-			pushedTitle = true;
-		}
-		
-		// Context
-		if (contextString) {
-			if (contextPlacement === titlePlacement && pushedTitle) {
-				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + contextString + ")";
-			} else {
-				labels[contextPlacement].push(contextString);
-			}
-		}
-		
-		// Damage type
-		if (dtype) { damageString.push(dtype); }
-		if (isVersatile) { damageString.push("(" + dnd5e.weaponProperties.ver + ")"); }
-		damageString = damageString.join(" ");
-		if (damagePlacement !== "0" && damageString.length > 0 && !(replaceDamage && contextString && damagePlacement == contextPlacement)) {
-			labels[damagePlacement].push(damageString);
-		}
-		
-		for (let p in labels) {
-			labels[p] = labels[p].join(" - ");
-		};
-
-		if (damageIndex === 0) { damageFormula = this.scaleDamage(damageIndex, isVersatile, rollData) || damageFormula; }
-		
-		let bonusAdd = "";
-		if (damageIndex == 0 && rollData.bonuses && isAttack(itm)) {
-			let actionType = `${itemData.actionType}`;
-			if (rollData.bonuses[actionType].damage) {
-				bonusAdd = "+" + rollData.bonuses[actionType].damage;
-			}
-		}
-		
-		let baseDice = damageFormula + bonusAdd;
-		let baseWithParts = [baseDice];
-		if (parts) {baseWithParts = [baseDice].concat(parts);}
-		
-		let rollFormula = baseWithParts.join("+");
-		
-		const baseRoll = await new Roll(rollFormula, rollData).roll();
-		this.dicePool.push(baseRoll);
-
-		let critRoll = null;
-		const critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-
-		if ((forceCrit == true || (this.isCrit && forceCrit !== "never")) && critBehavior !== "0") {
-			critRoll = await this.critRoll(rollFormula, rollData, baseRoll);
-		}
-		
-		let damageRoll = await this.damageTemplate({baseRoll: baseRoll, critRoll: critRoll, labels: labels, type:damageType});
-
-		return damageRoll;
-	}
-	
-	/*
-	* Rolls critical damage based on a damage roll's formula and output.
-	* This critical damage should not overwrite the base damage - it should be seen as "additional damage dealt on a crit", as crit damage may not be used even if it was rolled.
-	*/
-
-	async critRoll(rollFormula, rollData, baseRoll) {
-		let itm = this.item;
-		let critBehavior = this.params.critBehavior ? this.params.critBehavior : this.config.critBehavior;
-		let critFormula = rollFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
-		let critRollData = duplicate(rollData);
-		critRollData.mod = 0;
-		let critRoll = await new Roll(critFormula);
-		let savage;
-
-		// If the crit formula has no dice, return null
-		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") { return null; }
-
-		if (itm.data.type === "weapon") {
-			try { savage = itm.actor.getFlag("dnd5e", "savageAttacks"); }
-			catch(error) { savage = itm.actor.getFlag("dnd5eJP", "savageAttacks"); }
-		}
-		let add = (itm.actor && savage) ? 1 : 0;
-		critRoll.alter(1, add);
-		critRoll.roll();
-		
-		// If critBehavior = 2, maximize base dice
-		if (critBehavior === "2") {
-			critRoll = await new Roll(critRoll.formula).evaluate({maximize:true});
-		}
-		
-		// If critBehavior = 3, maximize base and crit dice
-		else if (critBehavior === "3") {
-			let maxDifference = Roll.maximize(baseRoll.formula).total - baseRoll.total;
-			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = await new Roll(newFormula).evaluate({maximize:true});
-		}
-
-		this.dicePool.push(critRoll);
-
-		return critRoll;
-	}
-	
-	scaleDamage(damageIndex, versatile, rollData) {
-		let item = this.item;
-		let itemData = item.data.data;
-		let actorData = item.actor.data.data;
-		let spellLevel = this.params.slotLevel;
-		
-		// Scaling for cantrip damage by level. Affects only the first damage roll of the spell.
-		if (item.data.type === "spell" && itemData.scaling.mode === "cantrip") {
-			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = item.actor.data.type === "character" ? ActorUtils.getCharacterLevel(item.actor) : actorData.details.cr;
-			let scale = itemData.scaling.formula;
-			let formula = parts[damageIndex];
-			const add = Math.floor((level + 1) / 6);
-			if ( add === 0 ) {}
-			else {
-				formula = item._scaleDamage([formula], scale || formula, add, rollData);
-				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData); }
-			}
-			return formula;
-		}
-		
-		// Scaling for spell damage by spell slot used. Affects only the first damage roll of the spell.
-		if (item.data.type === "spell" && itemData.scaling.mode === "level" && spellLevel) {
-			let parts = itemData.damage.parts.map(d => d[0]);
-			let level = itemData.level;
-			let scale = itemData.scaling.formula;
-			let formula = parts[damageIndex];
-			const add = Math.floor(spellLevel - level);
-			if (add > 0) {
-				formula = item._scaleDamage([formula], scale || formula, add, rollData);
-				if (versatile) { formula = item._scaleDamage([itemData.damage.versatile], itemData.damage.versatile, add, rollData); }
-			}
-			
-			return formula;
-		}
-		
-		return null;
-	}
-
-	async rollCritExtra(index) {
-		let damageIndex = (index ? toString(index) : null) || this.item.data.flags.betterRolls5e?.critDamage?.value || "";
-		let asdf;
-		if (damageIndex) {
-			return await this.rollDamage({damageIndex:Number(damageIndex), forceCrit:"never"});
-		}
-	}
-	
-	/*
-	Rolls the Other Formula field. Is subject to crits.
-	*/
-	async rollOther() {
-		let item = this.item;
-		let formula = item.data.data.formula,
-			rollData = duplicate(item.actor.data.data),
-			flags = item.data.flags.betterRolls5e;
-		
-		this.addToRollData(rollData);
-		
-		let titlePlacement = this.config.damageTitlePlacement,
-			contextPlacement = this.config.damageContextPlacement,
-			replaceTitle = this.config.contextReplacesTitle,
-			labels = {
-				"1": [],
-				"2": [],
-				"3": []
-			};
-			
-		// Title
-		let titleString = i18n("br5e.chat.other"),
-			contextString = flags.quickOther.context;
-		
-		let pushedTitle = false;
-		if (titlePlacement !== "0" && !(replaceTitle && contextString && titlePlacement == contextPlacement)) {
-			labels[titlePlacement].push(titleString);
-			pushedTitle = true;
-		}
-		
-		// Context
-		if (contextString) {
-			if (contextPlacement === titlePlacement && pushedTitle) {
-				labels[contextPlacement][0] = (labels[contextPlacement][0] ? labels[contextPlacement][0] + " " : "") + "(" + contextString + ")";
-			} else {
-				labels[contextPlacement].push(contextString);
-			}
-		}
-		
-		const baseRoll = await new Roll(formula, rollData).roll();
-		this.dicePool.push(baseRoll);
-		return this.damageTemplate({baseRoll, labels});
-	}
-	
-	/* 	Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
-	*/
-	async saveRollButton({customAbl = null, customDC = null}) {
-		let item = this.item;
-		let itemData = item.data.data;
-		let actor = item.actor;
-		let actorData = actor.data.data;
-		let saveData = getSave(item);
-		if (customAbl) { saveData.ability = saveArgs.customAbl; }
-		if (customDC) { saveData.dc = saveArgs.customDC; }
-		
-		let hideDC = (this.config.hideDC == "2" || (this.config.hideDC == "1" && actor.data.type == "npc")); // Determine whether the DC should be hidden
-
-		let divHTML = `<span ${hideDC ? 'class="hideSave"' : null} style="display:inline;line-height:inherit;">${saveData.dc}</span>`;
-		
-		let saveLabel = `${i18n("br5e.buttons.saveDC")} ` + divHTML + ` ${dnd5e.abilities[saveData.ability]}`;
-		let button = {
-			type: "saveDC",
-			html: await renderTemplate("modules/betterrolls5e/templates/red-save-button.html", {data: saveData, saveLabel: saveLabel})
-		}
-		
-		return button;
-	}
-	
-	async rollTool(preArgs) {
-		let args = mergeObject({adv: 0, disadv: 0, bonus: null, triggersCrit: true, critThreshold: null, rollState: this.rollState}, preArgs || {});
-		let itm = this.item;
-		// Prepare roll data
-		let itemData = itm.data.data,
-			actorData = itm.actor.data.data,
-			title = args.title || ((this.config.rollTitlePlacement != "0") ? i18n("br5e.chat.check") : null),
-			parts = [],
-			rollData = duplicate(actorData);
-		rollData.item = itemData;
-		this.addToRollData(rollData);
-		
-		// Add ability modifier bonus
-		if ( itemData.ability ) {
-			let abl = (itemData.ability),
-				mod = abl ? actorData.abilities[abl].mod : 0;
-			if (mod !== 0) {
-				parts.push("@mod");
-				rollData.mod = mod;
-			}
-		}
-		
-		// Add proficiency, expertise, or Jack of all Trades
-		if ( itemData.proficient ) {
-			parts.push("@prof");
-			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-			//console.log("Adding Proficiency mod!");
-		}
-		
-		// Add item's bonus
-		if ( itemData.bonus ) {
-			parts.push("@bonus");
-			rollData.bonus = itemData.bonus.value;
-			//console.log("Adding Bonus mod!");
-		}
-		
-		if (args.bonus) {
-			parts.push(bonus);
-		}
-		
-		// Establish number of rolls using advantage/disadvantage and elven accuracy
-		const rollState = args.rollState ?? CustomRoll.getRollState({adv:args.adv, disadv:args.disadv});
-		let numRolls = rollState ? 2 : this.config.d20Mode;
-
-		// Halfling Luck check
-		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
-		const output = await CustomRoll.rollMultiple(numRolls, d20String, parts, rollData, title, args.critThreshold, args.rollState, args.triggersCrit);
-		if (output.isCrit) {
-			this.isCrit = true;
-		}
-
-		this.dicePool.push(...output.data.rolls);
-
-		return output;
-	}
-	
-	// Rolls the flavor text of the item, or custom text if any was entered.
-	rollFlavor(preArgs) {
-		let args = mergeObject({text: this.item.data.data.chatFlavor}, preArgs || {});
-		
-		return {
-			type: "flavor",
-			html: `<div class="br5e-roll-label br-flavor">${args.text}</div>`
-		};
-	}
-	
 	async configureSpell() {
-		let item = this.item;
-		let actor = item.actor;
+		let { item, actor } = this;
 		let lvl = null;
 		let consume = false;
 		let placeTemplate = false;
-		let isPact = false;
 		
 		// Only run the dialog if the spell is not a cantrip
 		if (item.data.data.level > 0) {
 			try {
+				console.log("level > 0")
 				window.PH = {};
 				window.PH.actor = actor;
 				window.PH.item = item;
@@ -1397,7 +905,6 @@ export class CustomItemRoll {
 		}
 		
 		if (lvl == "pact") {
-			isPact = true;
 			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
 		}
 		
@@ -1405,21 +912,8 @@ export class CustomItemRoll {
 			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": lvl}, {inplace: false}), actor);
 		}
 		
-		// Update Actor data to deduct spell slots
-		// Will eventually be removed once all consumptions move to use the new Item._getUsageUpdates() in a later release
-		if (consume && (lvl !== 0)) {
-			let spellSlot = isPact ? "pact" : "spell"+lvl;
-			const slots = parseInt(actor.data.data.spells[spellSlot].value);
-			if (slots === 0 || Number.isNaN(slots)) {
-				const label = game.i18n.localize(spellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${lvl}`);
-				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
-				return "error";
-			}
-			await actor.update({
-				[`data.spells.${spellSlot}.value`]: Math.max(parseInt(actor.data.data.spells[spellSlot].value) - 1, 0)
-			});
-		}
-		
+		this.params.slotLevel = lvl;
+		this.params.consumeSlot = consume;
 		return { lvl, consume, placeTemplate };
 	}
 	
@@ -1428,11 +922,34 @@ export class CustomItemRoll {
 	 * NOTE: As of D&D System 1.2, all of this can now be handled internally by Item._handleConsumeResource.
 	 * This was tweaked to support 1.2, but we are waiting and seeing before moving everything over.
 	 * We might no longer need specialized use/consume code.
-	 * That function also handles spell slot updates, so we will need slot consumption from configureSpell()
+	 * @private
 	 */
-	async consumeCharge() {
+	async consume() {
 		const { item, actor } = this;
 		if (!item) return;
+
+		const actorUpdates = {};
+		const itemUpdates = {};
+		const resourceUpdates = {};
+
+		// Determine spell slot to consume (this can eventually be fed into _getUsageUpdates())
+		const spellLevel = this.params.slotLevel;
+		let consumeSpellSlot = false;
+		if (this.params.consumeSlot) {
+			consumeSpellSlot = spellLevel === "pact" ? "pack" : `spell${spellLevel}`;
+		}
+
+		// Update Actor data to deduct spell slots
+		if (consumeSpellSlot) {
+			const slots = parseInt(actor.data.data.spells[consumeSpellSlot].value);
+			if (slots === 0 || Number.isNaN(slots)) {
+				const label = game.i18n.localize(consumeSpellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${spellLevel}`);
+				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
+				return "error";
+			}
+
+			actorUpdates[`data.spells.${consumeSpellSlot}.value`] = Math.max(slots - 1, 0);
+		}
 
 		const itemData = item.data.data;
 		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
@@ -1441,14 +958,10 @@ export class CustomItemRoll {
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
 		const uses = itemData.uses || {};
-		const autoDestroy = uses.autoDestroy;
 		const current = uses.value || 0;
-		const remaining = request.use ? Math.max(current - 1, 0) : current;
-		const q = itemData.quantity;
-
-		const actorUpdates = {};
-		const itemUpdates = {};
-		const resourceUpdates = {};
+		const quantity = itemData.quantity;
+		
+		const autoDestroy = uses.autoDestroy || request.quantity;
 
 		let output = "success";
 
@@ -1459,12 +972,12 @@ export class CustomItemRoll {
 
 		// Check for consuming quantity, but not uses
 		if (request.quantity && !request.use) {
-			if (!q) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+			if (!quantity) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming quantity and uses
 		if (hasUses && request.use && request.quantity) {
-			if (!current && q <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+			if (!current && quantity <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming charge ("Action Recharge")
@@ -1478,35 +991,41 @@ export class CustomItemRoll {
 			if (allowed === false) { return "error"; }
 		}
 
-		// Handle uses, but not quantity
-		if (hasUses && request.use && !request.quantity) {
-			itemUpdates["data.uses.value"] = remaining;
-		}
-		
-		// Handle quantity, but not uses
-		else if (request.quantity && !request.use) {
-			if (q <= 1 && autoDestroy) {
+		// Handle quantity when uses are not consumed
+		// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
+		// We are waiting and seeing what the DND system uses before moving everything over
+		if (request.quantity && !request.use) {
+			if (quantity <= 1 && autoDestroy) {
 				output = "destroy";
 			}
-			itemUpdates["data.quantity"] = q - 1;
+			itemUpdates["data.quantity"] = quantity - 1;
 		}
 
-		// Handle quantity and uses
-		else if (hasUses && request.use && request.quantity) {
-			let remainingU = remaining;
-			let remainingQ = q;
-			console.log(remainingQ, remainingU);
-			if (remainingU < 1) {
-				remainingQ -= 1;
-				ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
-				if (remainingQ >= 1) {
-					remainingU = itemData.uses.max || 0;
-				} else { remainingU = 0; }
-				if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
-			}
+		// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)
+		// This can be handled by Item._getUsageUpdates() in DND 1.2.0, but leaving it here just in case
+		if (request.use && hasUses) {
+			const remaining = request.use ? Math.max(current - 1, 0) : current;
+			
+			if (!autoDestroy) {
+				// Handle uses if quantity is not affected
+				itemUpdates["data.uses.value"] = remaining;
+			} else {
+				// Handle quantity and uses
+				let remainingU = remaining;
+				let remainingQ = quantity;
+				console.log(remainingQ, remainingU);
+				if (remainingU < 1) {
+					remainingQ -= 1;
+					ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
+					if (remainingQ >= 1) {
+						remainingU = itemData.uses.max || 0;
+					} else { remainingU = 0; }
+					if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
+				}
 
-			itemUpdates["data.quantity"] = Math.max(remainingQ,0);
-			itemUpdates["data.uses.value"] = Math.max(remainingU,0);
+				itemUpdates["data.quantity"] = Math.max(remainingQ,0);
+				itemUpdates["data.uses.value"] = Math.max(remainingU,0);
+			}
 		}
 
 		// Handle charge ("Action Recharge")
@@ -1520,6 +1039,11 @@ export class CustomItemRoll {
 		if (!isObjectEmpty(resourceUpdates)) {
 			const resource = actor.items.get(itemData.consume?.target);
 			if (resource) await resource.update(resourceUpdates);
+		}
+
+		// Destroy item if it gets consumed
+		if (output === "destroy") {
+			await actor.deleteOwnedItem(item.id);
 		}
 
 		return output;

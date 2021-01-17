@@ -46,6 +46,10 @@ Clicking with/without the Alt key:
 
 ![](https://i.imgur.com/Od15JXz.png)
 
+Upgrading rolls after they're made, as well as a damage button:
+
+![](https://user-images.githubusercontent.com/1286721/103615288-529fea80-4ef8-11eb-95cf-490e86084c5e.gif)
+
 - Alt Quick Rolls, which can be used by holding Alt when clicking the item's icon in the character sheet. These can be configured separately from normal Quick Rolls.
 ![](https://i.imgur.com/yPzgzEe.png)
 - Need for clicking through prompts in order to get a single roll is removed, allowing for ease of use.
@@ -91,3 +95,4 @@ Clicking with/without the Alt key:
 
 ## License
 The source code is licensed under GPL-3.0.
+Some icons are from Game-icons.net under CC-BY

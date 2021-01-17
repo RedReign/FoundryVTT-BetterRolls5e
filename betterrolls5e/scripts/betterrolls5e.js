@@ -1,11 +1,9 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
 import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
-import { ItemUtils } from "./utils.js";
-
-export function i18n(key) {
-	return game.i18n.localize(key);
-}
+import { i18n, Utils, ItemUtils } from "./utils.js";
+import { getSettings } from "./settings.js";
+import { RollFields } from "./fields.js";
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
@@ -22,44 +20,14 @@ export function isSave(item) {
 	return isTypeSave || hasSaveDC;
 }
 
-// Returns an array with the save DC of the item. If no save is written in, one is calculated.
-export function getSave(item) {
-	if (isSave(item)) {
-		let itemData = item.data.data,
-			output = {};
-		output.ability = getProperty(itemData, "save.ability");
-		// If a DC is written in, use that by default
-		if (itemData.save.dc && itemData.save.dc != 0 && itemData.save.scaling !== "spell") { output.dc = itemData.save.dc }
-		// Otherwise, calculate one
-		else {
-			// If spell DC is calculated with normal spellcasting DC, use that
-			if (item.data.type === "spell" && itemData.save.scaling == "spell") {
-				output.dc = getProperty(item.actor,"data.data.attributes.spelldc");
-			}
-			// Otherwise, calculate one
-			else {
-				let mod = null,
-					abl = null,
-					prof = item.actor.data.data.attributes.prof;
-				
-				abl = itemData.ability;
-				if (abl) { mod = item.actor.data.data.abilities[abl].mod; }
-				else { mod = 0; }
-				output.dc = 8 + prof + mod;
-			}
-		}
-		return output;
-	} else { return null; }
-}
-
 export function isCheck(item) {
 	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
 }
 
-let dnd5e = DND5E;
+const dnd5e = DND5E;
 
 function getQuickDescriptionDefault() {
-	return game.settings.get("betterrolls5e", "quickDefaultDescriptionEnabled");
+	return getSettings().quickDefaultDescriptionEnabled;
 }
 
 CONFIG.betterRolls5e = {
@@ -116,9 +84,9 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			// Feats consume uses by default in vanilla 5e, so this is the one place that defaults to use: true
+			// Feats consume uses by default in vanilla 5e
 			quickCharges: { type: "Boolean", value: {use: true, resource: true, charge: false}, altValue: {use: true, resource: true, charge: false} },
-			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
@@ -139,7 +107,8 @@ CONFIG.betterRolls5e = {
 			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: true}, altValue: {quantity: false, use: false, resource: true} },
+			// Consumables consume uses by default in vanilla 5e
+			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: false, altValue: false },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
@@ -147,23 +116,6 @@ CONFIG.betterRolls5e = {
 		}
 	}
 };
-
-Hooks.on(`ready`, () => {
-	// Make a combined damage type array that includes healing
-	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
-	
-	// Updates crit text from the dropdown.
-	let critText = game.settings.get("betterrolls5e", "critString")
-	if (critText.includes("br5e.critString")) {
-		critText = i18n(critText);
-		game.settings.set("betterrolls5e", "critString", critText);
-	}
-});
-
-// Create flags for the item when it's first created
-Hooks.on(`preCreateOwnedItem`, (actor, itemData) => {
-	ItemUtils.ensureDataFlags(itemData);
-});
 
 /**
  * Adds buttons and assign their functionality to the sheet
@@ -216,7 +168,9 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	const flags = item.data.flags.betterRolls5e;
 
 	// Check settings
-	let diceEnabled = game.settings.get("betterrolls5e", "diceEnabled");
+	const settings = getSettings();
+	const diceEnabled = settings.diceEnabled;
+	const contextEnabled = settings.damageContextPlacement !== "0" ? true : false;
 
 	if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
 
@@ -224,7 +178,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 	// Create the buttons
 	let buttons = $(`<div class="item-buttons"></div>`);
 	let buttonsWereAdded = false;
-	let contextEnabled = (game.settings.get("betterrolls5e", "damageContextPlacement") !== "0") ? true : false;
 
 	// TODO: Make the logic in this switch statement simpler.
 	switch (item.data.type) {
@@ -248,7 +201,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			}
 
 			if (isSave(item)) {
-				const  saveData = getSave(item);
+				const saveData = ItemUtils.getSave(item);
 
 				buttons.append(
 					createButton({
@@ -361,7 +314,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			if (params.forceCrit) {
 				fields.push([
 					"flavor",
-					{ text: `${game.settings.get("betterrolls5e", "critString")}` }
+					{ text: `${getSettings().critString}` }
 				]);
 			}
 			
@@ -461,9 +414,9 @@ export function changeRollsToDual (actor, html, data, params) {
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability];
 			if ( keyboard.isCtrl(event) ) {
-				CustomRoll.fullRollAttribute(actor, ability, "check");
+				CustomRoll.rollAttribute(actor, ability, "check");
 			} else if ( event.shiftKey ) {
-				CustomRoll.fullRollAttribute(actor, ability, "save");
+				CustomRoll.rollAttribute(actor, ability, "save");
 			} else {
 				new Dialog({
 					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
@@ -471,11 +424,11 @@ export function changeRollsToDual (actor, html, data, params) {
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
-							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "check"); }
+							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "check"); }
 						},
 						save: {
 							label: i18n("Saving Throw"),
-							callback: async () => { params = await CustomRoll.eventToAdvantage(event); CustomRoll.fullRollAttribute(actor, ability, "save"); }
+							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "save"); }
 						}
 					}
 				}).render(true);
@@ -492,8 +445,8 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await CustomRoll.eventToAdvantage(event);
-			CustomRoll.fullRollAttribute(actor, ability, "check", params);
+				params = await Utils.eventToAdvantage(event);
+			CustomRoll.rollAttribute(actor, ability, "check", params);
 		});
 	}
 	
@@ -506,8 +459,8 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await CustomRoll.eventToAdvantage(event);
-			CustomRoll.fullRollAttribute(actor, ability, "save", params);
+				params = await Utils.eventToAdvantage(event);
+			CustomRoll.rollAttribute(actor, ability, "save", params);
 		});
 	}
 	
@@ -517,22 +470,25 @@ export function changeRollsToDual (actor, html, data, params) {
 		skillName.off();
 		skillName.click(async event => {
 			event.preventDefault();
-			let params = await CustomRoll.eventToAdvantage(event);
+			let params = await Utils.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
-			CustomRoll.fullRollSkill(actor, skill, params);
+			CustomRoll.rollSkill(actor, skill, params);
 		});
 	}
 	
 	// Assign new action to item image button
 	let itemImage = html.find(paramRequests.itemButton);
 	if (itemImage.length > 0) {
+
 		itemImage.off();
 		itemImage.click(async event => {
+			const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
+
 			let li = $(event.currentTarget).parents(".item"),
 				actorID = actor.id,
 				itemID = String(li.attr("data-item-id")),
 				item = actor.getOwnedItem(itemID),
-				params = await CustomRoll.eventToAdvantage(event);
+				params = await Utils.eventToAdvantage(event);
 
 			// Case 1 - If the image button should roll an "Item Macro" macro
 			if (window.ItemMacro?.hasMacro(item)) {
@@ -540,12 +496,12 @@ export function changeRollsToDual (actor, html, data, params) {
 				window.ItemMacro.runMacro(actorID, itemID);
 
 			// Case 2 - If the image button should roll a vanilla roll
-			} else if (!game.settings.get("betterrolls5e", "imageButtonEnabled")) {
+			} else if (!imageButtonEnabled) {
 				item.actor.sheet._onItemRoll(event);
 
 			// Case 3 - If Alt is pressed
 			} else if (event.altKey) {
-				if (game.settings.get("betterrolls5e", "altSecondaryEnabled")) {
+				if (altSecondaryEnabled) {
 					event.preventDefault();
 					CustomRoll.newItemRoll(item, mergeObject(params, {preset:1})).toMessage();
 				} else {
@@ -560,7 +516,7 @@ export function changeRollsToDual (actor, html, data, params) {
 	}
 }
 
-// Frontend for macros
+/** Frontend for macros */
 export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
@@ -625,8 +581,8 @@ export function BetterRolls() {
 	
 	// Returns if an event should have its corresponding Quick Roll be an Alt Roll.
 	function isAlt(event) {
-		if (event && event.altKey && game.settings.get("betterrolls5e", "altSecondaryEnabled")) { return true; }
-		else { return false; }
+		const { altSecondaryEnabled } = getSettings();
+		return event && event.altKey && altSecondaryEnabled;
 	};
 
 	// Prefer synthetic actors over game.actors to avoid consumables and spells being missdepleted.
@@ -654,6 +610,7 @@ export function BetterRolls() {
 	}].concat(Hooks._hooks.hotbarDrop || []);
 	
 	return {
+		version: Utils.getVersion(),
 		assignMacro:assignMacro,
 		vanillaRoll:vanillaRoll,
 		quickRoll:quickRoll,
@@ -665,12 +622,8 @@ export function BetterRolls() {
 		rollSave:CustomRoll.rollSave,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
 		rollSavingThrow:CustomRoll.rollAbilitySave,
-		rollSkill:CustomRoll.fullRollSkill,
+		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
+		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})})
 	};
 }
-
-Hooks.on(`ready`, () => {
-	window.BetterRolls = BetterRolls();
-	Hooks.call("readyBetterRolls");
-});

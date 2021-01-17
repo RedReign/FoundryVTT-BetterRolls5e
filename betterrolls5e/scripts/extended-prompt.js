@@ -1,4 +1,4 @@
-import { i18n } from "./betterrolls5e.js";
+import { i18n } from "./utils.js";
 
 /**
  * A specialized Dialog subclass for an extended prompt for Better Rolls

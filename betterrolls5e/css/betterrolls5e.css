@@ -9,11 +9,16 @@
 }
 
 .dnd5e.chat-card .card-header img {
-    flex: 0 0 36px;
-    margin-right: 5px;
+	flex: 0 0 36px;
+	margin-right: 5px;
+}
+
+.dnd5e.chat-card.red-full .card-header {
+	position: relative;
 }
 
 .red-dual .dice-row {
+	position: relative;
 	clear: both;
 	display: flex;
 	justify-content: space-between;
@@ -37,7 +42,7 @@
 
 .red-full .dice-roll .dice-row .dice-row-item.ignored {
 	opacity: .4;
-    border: 1px solid #888888;
+	border: 1px solid #888888;
 }
 
 .dnd5e.red-full.chat-card .dice-tooltip {
@@ -46,6 +51,32 @@
 
 .red-dual .mixed {
 	color: #11257f;
+}
+
+.red-dual .die-icon {
+	background-image: url(/icons/svg/d20-grey.svg);
+	width: 22px;
+	line-height: 22px;
+	background-size: 22px;
+	background-repeat: no-repeat;
+	float: left;
+	font-weight: bold;
+	font-size: 13px;
+	text-align: center;
+	opacity: 0.95;
+	
+	position: absolute;
+	top: 50%;
+	right: 5px;
+	transform: translate(0, -50%);
+}
+
+.red-dual .success .die-icon {
+	filter: sepia(0.5) hue-rotate(60deg);
+}
+
+.red-dual .failure .die-icon {
+	filter: sepia(0.5) hue-rotate(-60deg);
 }
 
 .br5e-roll-label {
@@ -91,7 +122,7 @@
 }
 
 .dnd5e.red-full.chat-card footer.card-footer {
-    margin-top:2px;
+	margin-top:2px;
 }
 
 .dnd5e.item form .item-betterRolls {
@@ -102,8 +133,8 @@
 .dnd5e.sheet.item .item-betterRolls input[type="text"],
 .dnd5e.sheet.item .item-betterRolls input[type="number"],
 .dnd5e.sheet.item .item-betterRolls select {
-    border: 1px solid #7a7971;
-    background: rgba(0, 0, 0, 0.05);
+	border: 1px solid #7a7971;
+	background: rgba(0, 0, 0, 0.05);
 }
 
 .dnd5e.sheet.item .item-betterRolls label.checkbox {
@@ -112,33 +143,70 @@
 }
 
 .card-buttons .adice5e.dmg.rolled {
-    display:inline-flex;
-    width:100%;
-    align-items:baseline;
+	display:inline-flex;
+	width:100%;
+	align-items:baseline;
 }
 
-.dmgBtn-container-br {
-    align-self: flex-end;
-    text-align: right!important;
-    flex-grow: 1;
-    position: absolute;
-    bottom: 1px;
-    right: 0;
+.die-result-overlay-br {
+	text-align: right!important;
+	flex-grow: 1;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	padding: 0 2px;
+
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	z-index: 1;
 }
 
-.dmgBtn-container-br button {
-    width: 22px; 
-    height: 22px; 
-    font-size: 10px; 
-    line-height: 1px;
+.die-result-overlay-br span {
+	display: flex;
+}
+
+.die-result-overlay-br button {
+	width: 22px; 
+	height: 22px; 
+	font-size: 10px; 
+	line-height: 1px;
 	background-color: white;
 	border: 1px solid #999;
+	padding: 0;
 }
 
-.dmgBtn-container-br button i {
-    margin-left: -2.5px;
+.die-result-overlay-br button.icon {
+	background-size: 14px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.header-overlay-br {
+	left: auto;
+	justify-content: right;
+}
+
+.header-overlay-br button {
+	width: 30px;
+	height: 30px;
+	font-size: 14px;
+}
+
+.icon.heart-plus {
+	background-image: url("/modules/betterrolls5e/css/heart-plus.svg");
+}
+
+.die-result-overlay-br button i {
+	margin: 0;
 }
 
 .better-npc-sheet .item.expanded .item-summary .item-buttons {
-    line-height: 22px;
+	line-height: 22px;
+}
+
+.br5e-hidden {
+	display: none;
 }

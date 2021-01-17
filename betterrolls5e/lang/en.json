@@ -44,7 +44,11 @@
 	"br5e.hideDC.choices.0": "Never",
 	"br5e.hideDC.choices.1": "NPCs Only",
 	"br5e.hideDC.choices.2": "Always",
-	
+	"br5e.damagePromptEnabled.name": "Damage Prompt In Chat Card",
+	"br5e.damagePromptEnabled.hint": "Do not autoroll damage, instead show a damage button if there is an attack roll or saving throw.",
+	"br5e.d20RollIconsEnabled.name": "Show D20 die icon for multi rolls",
+	"br5e.d20RollIconsEnabled.hint": "If enabled, attacks, checks, and saves show natural die roll",
+
 	"br5e.d20Mode.name": "d20 Mode",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown.",
 	"br5e.d20Mode.choices.1": "Single Roll (Shift Advantage, Ctrl Disadvantage)",
@@ -75,6 +79,7 @@
 	"br5e.error.noItemWithId": "No item is known with that ID on actor",
 	"br5e.error.noChargesLeft": "This item has run out of charges!",
 	"br5e.error.autoDestroy": "The {name} disappears as its last charge is consumed.",
+	"br5e.error.rollEvaluation": "Dice roll evaluation failed: {msg}",
 	
 	"br5e.settings.critThreshold": "Critical Threshold",
 	"br5e.settings.critDamage": "Extra Critical Damage",
@@ -132,15 +137,21 @@
 	"br5e.chat.disadvantage": "Disadvantage",
 	"br5e.chat.normal": "Normal",
 
+	"br5e.chatContext.repeat": "Repeat the roll",
+
 	"br5e.querying.title": "What type of roll?",
 	"br5e.querying.disadvantage": "Disadvantage",
 	"br5e.querying.normal": "Normal",
 	"br5e.querying.advantage": "Advantage",
 	
+	"br5e.chat.multiRollButtons.advantage.hint": "Roll with Advantage (Shift)",
+	"br5e.chat.multiRollButtons.disadvantage.hint": "Roll with Disadvantage (Ctrl)",
+
 	"br5e.chat.damageButtons.fullDamage.hint": "Click to apply full damage to selected token(s).",
 	"br5e.chat.damageButtons.halfDamage.hint": "Click to apply half damage to selected token(s).",
 	"br5e.chat.damageButtons.doubleDamage.hint": "Click to apply double damage to selected token(s).",
 	"br5e.chat.damageButtons.healing.hint": "Click to apply full healing to selected token(s).",
+	"br5e.chat.damageButtons.crit.hint": "Click to roll crit damage.",
 	"br5e.chat.damageButtons.critPrompt.title": "Use Crit Damage?",
 	"br5e.chat.damageButtons.critPrompt.yes": "Yes",
 	"br5e.chat.damageButtons.critPrompt.no": "No",
