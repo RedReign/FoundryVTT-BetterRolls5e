@@ -960,8 +960,7 @@ export class CustomItemRoll {
 		const uses = itemData.uses || {};
 		const current = uses.value || 0;
 		const quantity = itemData.quantity;
-		
-		const autoDestroy = uses.autoDestroy || request.quantity;
+		const autoDestroy = uses.autoDestroy;
 
 		let output = "success";
 
@@ -971,7 +970,7 @@ export class CustomItemRoll {
 		}
 
 		// Check for consuming quantity, but not uses
-		if (request.quantity && !request.use) {
+		if (request.quantity && !(request.use && hasUses)) {
 			if (!quantity) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
@@ -994,11 +993,11 @@ export class CustomItemRoll {
 		// Handle quantity when uses are not consumed
 		// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
 		// We are waiting and seeing what the DND system uses before moving everything over
-		if (request.quantity && !request.use) {
+		if (request.quantity && !hasUses) {
+			itemUpdates["data.quantity"] = Math.max(0, quantity - 1);
 			if (quantity <= 1 && autoDestroy) {
 				output = "destroy";
 			}
-			itemUpdates["data.quantity"] = quantity - 1;
 		}
 
 		// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)

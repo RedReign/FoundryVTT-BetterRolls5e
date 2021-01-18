@@ -517,6 +517,7 @@ export class ItemUtils {
 		if (!itemData || CONFIG.betterRolls5e.validItemTypes.indexOf(itemData.type) == -1) { return; }
 		
 		// Initialize flags
+		itemData.flags = itemData.flags ?? {};
 		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[itemData.type.concat("Flags")]);
 		let flags = duplicate(itemData.flags.betterRolls5e ?? {});
 		flags = mergeObject(baseFlags, flags ?? {});
@@ -531,7 +532,7 @@ export class ItemUtils {
 				flags.quickDamage = {type: "Array", value: [], altValue: []};
 			}
 			
-			for (let i = 0; i < itemData.data.damage.parts.length; i++) {
+			for (let i = 0; i < itemData.data.damage?.parts.length; i++) {
 				newQuickDamageValues[i] = flags.quickDamage.value[i] ?? true;
 				newQuickDamageAltValues[i] = flags.quickDamage.altValue[i] ?? true;
 			}

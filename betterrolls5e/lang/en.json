@@ -26,6 +26,8 @@
 	"br5e.rollTitlePlacement.hint": "Determines if a non-damage roll's title, such as \"Attack\", appear.",
 	"br5e.damageTitlePlacement.name": "Show Damage Title Labels",
 	"br5e.damageTitlePlacement.hint": "Determines if a damage roll's title, such as \"Damage\", appears.",
+	"br5e.damageContextPlacement.name": "Show Damage Context Labels",
+	"br5e.damageContextPlacement.hint": "Determines if and where a damage roll's context label appears.",
 	"br5e.damageRollPlacement.name": "Show Damage Type Labels",
 	"br5e.damageRollPlacement.hint": "Determines where the damage type label is placed, relative to a damage roll.",
 	"br5e.damageRollPlacement.choices.0": "Don't Show",

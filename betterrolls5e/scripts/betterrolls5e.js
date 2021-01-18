@@ -109,7 +109,7 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			// Consumables consume uses by default in vanilla 5e
 			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
-			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
