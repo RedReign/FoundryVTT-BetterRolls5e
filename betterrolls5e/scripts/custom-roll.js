@@ -885,7 +885,7 @@ export class CustomItemRoll {
 	 */
 	async configureSpell() {
 		let { item, actor } = this;
-		let lvl = null;
+		let spellLevel = null;
 		let consume = false;
 		let placeTemplate = false;
 		
@@ -897,24 +897,29 @@ export class CustomItemRoll {
 				window.PH.actor = actor;
 				window.PH.item = item;
 				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
-				lvl = spellFormData.level;
+				spellLevel = spellFormData.level;
 				consume = Boolean(spellFormData.consumeSlot);
 				placeTemplate = Boolean(spellFormData.placeTemplate);
 			}
 			catch(error) { return "error"; }
 		}
-		
-		if (lvl == "pact") {
-			lvl = getProperty(actor, `data.data.spells.pact.level`) || lvl;
+
+		// If consume is enabled, mark which slot is getting consumed
+		if (consume) {
+			consume = spellLevel === "pact" ? "pact" : `spell${spellLevel}`;
 		}
 		
-		if (lvl !== item.data.data.level) {
-			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": lvl}, {inplace: false}), actor);
+		if (spellLevel == "pact") {
+			spellLevel = getProperty(actor, `data.data.spells.pact.level`) || spellLevel;
 		}
 		
-		this.params.slotLevel = lvl;
-		this.params.consumeSlot = consume;
-		return { lvl, consume, placeTemplate };
+		if (spellLevel !== item.data.data.level) {
+			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": spellLevel}, {inplace: false}), actor);
+		}
+		
+		this.params.slotLevel = spellLevel;
+		this.params.consumeSpellSlot = consume;
+		return { lvl: spellLevel, consume, placeTemplate };
 	}
 	
 	/**
@@ -932,23 +937,19 @@ export class CustomItemRoll {
 		const itemUpdates = {};
 		const resourceUpdates = {};
 
-		// Determine spell slot to consume (this can eventually be fed into _getUsageUpdates())
-		const spellLevel = this.params.slotLevel;
-		let consumeSpellSlot = false;
-		if (this.params.consumeSlot) {
-			consumeSpellSlot = spellLevel === "pact" ? "pack" : `spell${spellLevel}`;
+		// Merges update data from _getUsageUpdates() into the result dictionaries
+		function mergeUpdates(updates) {
+			mergeObject(actorUpdates, updates.actorUpdates ?? {});
+			mergeObject(itemUpdates, updates.itemUpdates ?? {});
+			mergeObject(resourceUpdates, updates.resourceUpdates ?? {});
 		}
 
 		// Update Actor data to deduct spell slots
+		const consumeSpellSlot = this.params.consumeSpellSlot;
 		if (consumeSpellSlot) {
-			const slots = parseInt(actor.data.data.spells[consumeSpellSlot].value);
-			if (slots === 0 || Number.isNaN(slots)) {
-				const label = game.i18n.localize(consumeSpellSlot === "pact" ? "DND5E.SpellProgPact" : `DND5E.SpellLevel${spellLevel}`);
-				ui.notifications.warn(game.i18n.format("DND5E.SpellCastNoSlots", {name: item.name, level: label}));
-				return "error";
-			}
-
-			actorUpdates[`data.spells.${consumeSpellSlot}.value`] = Math.max(slots - 1, 0);
+			const updates = item._getUsageUpdates({ consumeSpellSlot });
+			if (!updates) return "error";
+			mergeUpdates(updates);
 		}
 
 		const itemData = item.data.data;
