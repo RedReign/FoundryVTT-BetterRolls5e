@@ -261,6 +261,7 @@ export class CustomItemRoll {
 
 	/**
 	 * Getter to retrieve if the current user has advanced permissions over the chat card.
+	 * @returns {boolean}
 	 */
 	get hasPermission() {
 		const message = game.messages.get(this.messageId);
@@ -661,7 +662,7 @@ export class CustomItemRoll {
 	 * Items that only have text field types cannot be rerolled.
 	 */
 	canRepeat() {
-		if (!this.fields || this.fields.length === 0) {
+		if (!this.hasPermission || !this.fields || this.fields.length === 0) {
 			return false;
 		}
 

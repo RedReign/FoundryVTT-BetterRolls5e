@@ -102,4 +102,4 @@ export async function addBetterRollsContent(app, protoHtml) {
 	newSection.find("input[type=number]").change((evt) => activate = true);
 	newSection.find("input[type=checkbox]").change((evt) => activate = true);
 	newSection.find("select").change((evt) => activate = true);
-} 
+}

@@ -773,10 +773,9 @@ export class ItemUtils {
 	 */
 	static scaleDamage(item, spellLevel, damageIndex, rollData) {
 		if (item?.data.type === "spell") {
-			let versatile = false;
-			if (damageIndex === "versatile") {
+			const versatile = (damageIndex === "versatile");
+			if (versatile) {
 				damageIndex = 0;
-				versatile = true;
 			}
 
 			let itemData = item.data.data;
