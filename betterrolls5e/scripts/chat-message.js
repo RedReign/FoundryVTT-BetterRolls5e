@@ -1,7 +1,9 @@
 import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
 import { BRSettings } from "./settings.js";
 import { i18n, Utils } from "./utils.js";
-import { gsap } from "/scripts/greensock/esm/all.js";
+
+// Relative import to work on hosted servers
+import { gsap } from "../../../scripts/greensock/esm/all.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.
