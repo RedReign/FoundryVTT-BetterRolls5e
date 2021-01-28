@@ -2,9 +2,6 @@ import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
 import { BRSettings } from "./settings.js";
 import { i18n, Utils } from "./utils.js";
 
-// Relative import to work on hosted servers
-import { gsap } from "../../../scripts/greensock/esm/all.js";
-
 /**
  * Class that encapsulates a better rolls card at runtime.
  * When a chat message enters the chat it should be binded 
@@ -77,7 +74,7 @@ export class BetterRollsChatCard {
 			// Wait for the event queue before doing so to allow CSS calculations to work,
 			// otherwise the border color will be incorrectly transparent
 			window.setTimeout(() => {
-				gsap.from(html.get(), {
+				gsap?.from(html.get(), {
 					"border-color": "red", 
 					"box-shadow": "0 0 6px inset #ff6400",
 					duration: 2});
