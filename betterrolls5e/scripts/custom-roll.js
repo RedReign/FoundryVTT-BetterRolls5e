@@ -499,7 +499,6 @@ export class CustomItemRoll {
 		// Pre-update item configurations
 		if (item) {
 			await ItemUtils.ensureFlags(item, { commit: true });
-			const itemData = item?.data.data;
 
 			// Set up preset but only if there aren't fields
 			if (!this.fields || this.fields.length === 0) {
@@ -509,12 +508,11 @@ export class CustomItemRoll {
 				}
 			}
 
-			// Set ammo (if needed)
-			if (this.params.useCharge.resource) {
-				const consumed = itemData.consume;
-				if ( consumed?.type === "ammo" ) {
-					this.ammo = this.actor.items.get(consumed.target);
-				}
+			// Set ammo, and then consume it if so
+			// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
+			if (await this.identifyAndConsumeAmmo() === "error") {
+				this.error = true;
+				return;
 			}
 
 			// Determine spell level and configuration settings
@@ -531,7 +529,7 @@ export class CustomItemRoll {
 
 		// Process all fields (this builds the data entries)
 		for (const field of this.fields) {
-			this._processField(field);
+			await this._processField(field);
 		}
 
 		// Post-build item updates
@@ -728,14 +726,14 @@ export class CustomItemRoll {
 	 * @param {string | [string, Object]} field 
 	 * @param {Object?} data
 	 */
-	addField(field, data) {
+	async addField(field, data) {
 		// Backwards compatibility. String+data or an array of [name, data] are both supported
 		if (typeof field === "string") {
 			field = [field, data];
 		}
 
 		if (this.rolled) {
-			return this._processField(field);
+			await this._processField(field);
 		} else {
 			this.fields.push(field);
 		}
@@ -746,7 +744,7 @@ export class CustomItemRoll {
 	 * @param {[string, Object]} field
 	 * @private
 	 */
-	_processField(field) {
+	async _processField(field) {
 		const metadata = {
 			item: this.item,
 			actor: this.actor,
@@ -758,7 +756,7 @@ export class CustomItemRoll {
 		};
 
 		// Add non-null entries
-		const newEntries = RollFields.constructModelsFromField(field, metadata, settings);
+		const newEntries = await RollFields.constructModelsFromField(field, metadata, settings);
 		newEntries.forEach(this._addRenderEntry.bind(this));
 	}
 
@@ -922,6 +920,35 @@ export class CustomItemRoll {
 		this.params.consumeSpellSlot = consume;
 		return { lvl: spellLevel, consume, placeTemplate };
 	}
+
+	/**
+	 * Consumes resources assigned on an item, if that resource is ammo.
+	 * Also sets the this.ammo property
+	 */
+	async identifyAndConsumeAmmo() {
+		const { item, actor } = this;
+		if (!item) return;
+
+		const request = this.params.useCharge;
+		const consume = item.data.data.consume;
+
+		if (consume?.type === "ammo") {
+			// Identify ammo
+			this.ammo = actor.items.get(consume.target);
+	
+			// Consume Ammo (if configured to do so)
+			if (request.resource) {
+				const usage = item._getUsageUpdates({consumeResource: true});
+				if (usage === false) return "error";
+				const ammoUpdate = usage.resourceUpdates || {};
+				if (this.ammo && !isObjectEmpty(ammoUpdate)) {
+					await this.ammo.update(ammoUpdate);
+				}
+			}
+		}
+
+		return "success";
+	}
 	
 	/**
 	 * Consumes charges & resources assigned on an item.
@@ -945,14 +972,6 @@ export class CustomItemRoll {
 			mergeObject(resourceUpdates, updates.resourceUpdates ?? {});
 		}
 
-		// Update Actor data to deduct spell slots
-		const consumeSpellSlot = this.params.consumeSpellSlot;
-		if (consumeSpellSlot) {
-			const updates = item._getUsageUpdates({ consumeSpellSlot });
-			if (!updates) return "error";
-			mergeUpdates(updates);
-		}
-
 		const itemData = item.data.data;
 		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
@@ -966,18 +985,23 @@ export class CustomItemRoll {
 
 		let output = "success";
 
+		// Identify what's being consumed. Note that ammo is consumed elsewhere
+		const consumeSpellSlot = this.params.consumeSpellSlot;
+		const consumeResource = hasResource && request.resource && itemData.consume.type !== "ammo";
+		const consumeUses = request.use && hasUses;
+
 		// Check for consuming uses, but not quantity
-		if (hasUses && request.use && !request.quantity) {
+		if (consumeUses && !request.quantity) {
 			if (!current) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming quantity, but not uses
-		if (request.quantity && !(request.use && hasUses)) {
+		if (request.quantity && !consumeUses) {
 			if (!quantity) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming quantity and uses
-		if (hasUses && request.use && request.quantity) {
+		if (consumeUses && request.quantity) {
 			if (!current && quantity <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
@@ -986,10 +1010,11 @@ export class CustomItemRoll {
 			if (!recharge.charged) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
-		// Check for consuming resource. The results are in resourceUpdates
-		if (hasResource && request.resource) {
-			const allowed = await item._handleConsumeResource(itemUpdates, actorUpdates, resourceUpdates);
-			if (allowed === false) { return "error"; }
+		// Consume resources and spell slots
+		if (consumeResource || consumeSpellSlot) {
+			const updates = item._getUsageUpdates({ consumeResource, consumeSpellSlot });
+			if (!updates) return "error";
+			mergeUpdates(updates);
 		}
 
 		// Handle quantity when uses are not consumed
@@ -1004,7 +1029,7 @@ export class CustomItemRoll {
 
 		// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)
 		// This can be handled by Item._getUsageUpdates() in DND 1.2.0, but leaving it here just in case
-		if (request.use && hasUses) {
+		if (consumeUses) {
 			const remaining = request.use ? Math.max(current - 1, 0) : current;
 			
 			if (!autoDestroy) {

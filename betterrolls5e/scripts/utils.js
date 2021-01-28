@@ -631,41 +631,12 @@ export class ItemUtils {
 		return rollData;
 	}
 
-	static getAttackRoll(item, { abilityMod, ammoBonus=null, bonus=null }={}) {	
-		const itemData = item.data.data;
-		const actorData = item.actor.data.data;
-		const parts = ["@mod"];
-		const rollData = ItemUtils.getRollData(item, { abilityMod });
-		
-		// Add proficiency, expertise, or Jack of all Trades
-		if (item.data.type == "spell" || item.data.type == "feat" || itemData.proficient ) {
-			parts.push(`@prof`);
-			rollData.prof = Math.floor(actorData.attributes.prof);
-		}
-		
-		// Add item's bonus
-		if (itemData.attackBonus) {
-			parts.push(`@bonus`);
-			rollData.bonus = itemData.attackBonus;
-		}
-
-		if (ammoBonus) {
-			parts.push("@ammo");
-			rollData["ammo"] = ammoBonus;
-		}
-		
-		// Add custom situational bonus
-		if (bonus) {
-			parts.push(bonus);
-		}
-		
-		if (actorData.bonuses && isAttack(item)) {
-			let actionType = `${itemData.actionType}`;
-			if (actorData?.bonuses[actionType]?.attack) {
-				parts.push("@" + actionType);
-				rollData[actionType] = actorData.bonuses[actionType].attack;
-			}
-		}
+	/**
+	 * Returns a roll object that is used to roll the item attack roll.
+	 * @param {*} item 
+	 */
+	static getAttackRoll(item) {	
+		const { rollData, parts } = item.getAttackToHit();
 
 		// Halfling Luck check and final result
 		const d20String = ActorUtils.isHalfling(item.actor) ? "1d20r<2" : "1d20";

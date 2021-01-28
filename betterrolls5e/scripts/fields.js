@@ -124,13 +124,11 @@ export class RollFields {
 	 * @param {string?} options.title Alternative title to use
 	 * @param {number?} options.critThreshold override
 	 * @param {string?} options.abilityMod override for the default item abilty mod
-	 * @param {Item?} options.ammo
 	 * @param {RollState} options.rollState
-	 * @param {number} options.bonus Extra bonus value
 	 * @param {number} options.slotLevel 
 	 */
 	static constructAttackRoll(options={}) {
-		const { formula, item, ammo, bonus, rollState, slotLevel } = options;
+		const { formula, item, rollState, slotLevel } = options;
 		const actor = options.actor ?? item?.actor;
 
 		// Get critical threshold
@@ -141,14 +139,16 @@ export class RollFields {
 
 		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
 		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
-		const ammoBonus = ammo?.data.data.attackBonus;
+		
+		let title = options.title;
 
 		// Get ammo bonus and add to title if title not given
 		// Note that "null" is a valid title, so we can't override that
-		let title = options.title;
 		if (typeof title === 'undefined') {
 			title = i18n("br5e.chat.attack");
-			if (ammoBonus) {
+			const consume = item?.data.data.consume;
+			if ((consume?.type === 'ammo') && !!actor.items) {
+				const ammo = actor.items.get(consume.target);
 				title += ` [${ammo.name}]`;
 			}
 		}
@@ -159,7 +159,7 @@ export class RollFields {
 			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
 			roll = new Roll(formula, rollData);
 		} else if (item) {
-			roll = ItemUtils.getAttackRoll(item, { abilityMod, ammoBonus, bonus });
+			roll = ItemUtils.getAttackRoll(item);
 		} else {
 			return null;
 		}
@@ -413,9 +413,9 @@ export class RollFields {
 	 * @param {} field 
 	 * @param {*} metadata
 	 * @param {object} settings BetterRoll settings overrides
-	 * @returns {Array<import("./renderer.js").RenderModelEntry>}
+	 * @returns {Promise<Array<import("./renderer.js").RenderModelEntry>>}
 	 */
-	static constructModelsFromField(field, metadata, settings={}) {
+	static async constructModelsFromField(field, metadata, settings={}) {
 		let [fieldType, data] = field;
 		data = mergeObject(metadata, data ?? {}, { recursive: false });
 		
