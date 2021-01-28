@@ -869,32 +869,10 @@ export class ItemUtils {
 			return null;
 		}
 
-		let itemData = item.data.data,
-			output = {};
-		output.ability = getProperty(itemData, "save.ability");
-		
-		// If a DC is written in, use that by default
-		// Otherwise, calculate one
-		if (itemData.save.dc && itemData.save.dc != 0 && itemData.save.scaling !== "spell") {
-			output.dc = itemData.save.dc
-		} else {
-			// If spell DC is calculated with normal spellcasting DC, use that
-			// Otherwise, calculate one
-			if (item.data.type === "spell" && itemData.save.scaling == "spell") {
-				output.dc = getProperty(item.actor,"data.data.attributes.spelldc");
-			} else {
-				let mod = null,
-					abl = null,
-					prof = item.actor.data.data.attributes.prof;
-				
-				abl = itemData.ability;
-				if (abl) { mod = item.actor.data.data.abilities[abl].mod; }
-				else { mod = 0; }
-				output.dc = 8 + prof + mod;
-			}
-		}
-
-		return output;
+		return {
+			ability: item.data.data?.save?.ability,
+			dc: item.getSaveDC()
+		};
 	}
 }
 
