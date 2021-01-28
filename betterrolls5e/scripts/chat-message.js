@@ -130,7 +130,7 @@ export class BetterRollsChatCard {
 		}
 
 		// Multiroll buttons (perhaps introduce a new toggle property?)
-		if (this.roll && BRSettings.chatDamageButtonsEnabled) {
+		if (this.roll) {
 			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-overlay-multiroll.html");
 			
 			// Add multiroll overlay buttons to the DOM.
