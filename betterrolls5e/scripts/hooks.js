@@ -32,8 +32,11 @@ export class BetterRollsHooks {
 		params = {}) {
 		let sheetString = "render" + sheetName;
 		Hooks.on(sheetString, (app, html, data) => {
-			game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
-			game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data, params) : null;
+			// this timeout allows other modules to modify the sheet before we do
+			setTimeout(() => {
+				game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
+				game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data, params) : null;
+			}, 0);
 		});
 	}
 	
