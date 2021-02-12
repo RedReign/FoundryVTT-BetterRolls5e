@@ -114,7 +114,7 @@ export class RollFields {
 	}
 
 	/**
-	 * 
+	 * Constructs multiroll (attack) data to be used for data.
 	 * @param {object} options
 	 * @param {string?} options.formula optional formula to use instead of the attack formula
 	 * @param {Actor?} options.actor Actor to derive roll data from if item is not given
@@ -441,11 +441,17 @@ export class RollFields {
 			case 'ammo':
 				if (!data.ammo) return [];
 
+				// Only add ammo damage if the ammunication is a consumable with type ammo
+				const ammo = data.ammo;
+				if (ammo.data.type !== "consumable" || ammo.data.data.consumableType !== "ammo") {
+					return [];
+				}
+
 				return RollFields.constructItemDamageRange({
 					...data,
-					item: data.ammo,
+					item: ammo,
 					index: "all",
-					context: `[${data.ammo.name}]`
+					context: `[${ammo.name}}]`
 				});
 			case 'savedc':
 				// {customAbl: null, customDC: null}
