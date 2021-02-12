@@ -54,7 +54,7 @@
 }
 
 .red-dual .die-icon {
-	background-image: url(/icons/svg/d20-grey.svg);
+	background-image: url(../../../icons/svg/d20-grey.svg);
 	width: 22px;
 	line-height: 22px;
 	background-size: 22px;
@@ -196,7 +196,7 @@
 }
 
 .icon.heart-plus {
-	background-image: url("/modules/betterrolls5e/css/heart-plus.svg");
+	background-image: url("../../../modules/betterrolls5e/css/heart-plus.svg");
 }
 
 .die-result-overlay-br button i {
