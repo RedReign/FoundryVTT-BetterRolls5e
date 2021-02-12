@@ -499,7 +499,6 @@ export function changeRollsToDual (actor, html, data, params) {
 				}
 			} catch (ex) {}
 
-
 			// Case 2 - If the image button should roll a vanilla roll
 			if (!imageButtonEnabled) {
 				item.actor.sheet._onItemRoll(event);
