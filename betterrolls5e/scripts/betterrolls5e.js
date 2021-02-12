@@ -491,12 +491,17 @@ export function changeRollsToDual (actor, html, data, params) {
 				params = await Utils.eventToAdvantage(event);
 
 			// Case 1 - If the image button should roll an "Item Macro" macro
-			if (window.ItemMacro?.hasMacro(item)) {
-				event.preventDefault();
-				window.ItemMacro.runMacro(actorID, itemID);
+			try {
+				if (window.ItemMacro?.hasMacro(item) && game.settings.get('itemacro','charsheet')) {
+					event.preventDefault();
+					window.ItemMacro.runMacro(actorID, itemID);
+					return;
+				}
+			} catch (ex) {}
+
 
 			// Case 2 - If the image button should roll a vanilla roll
-			} else if (!imageButtonEnabled) {
+			if (!imageButtonEnabled) {
 				item.actor.sheet._onItemRoll(event);
 
 			// Case 3 - If Alt is pressed
