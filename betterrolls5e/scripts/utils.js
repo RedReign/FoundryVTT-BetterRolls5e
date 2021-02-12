@@ -758,7 +758,9 @@ export class ItemUtils {
 			
 			// Scale damage from up-casting spells
 			if (itemData.scaling.mode === "cantrip") {
-				const level = item.actor.data.type === "character" ? actorData.details.level : actorData.details.spellLevel;
+				const level = item.actor.data.type === "character" ? 
+					actorData.details.level :
+					(actorData.details.spellLevel || actorData.details.cr);
 				item._scaleCantripDamage(parts, scale, level, rollData);
 			} else if (spellLevel && (itemData.scaling.mode === "level") && itemData.scaling.formula) {
 				item._scaleSpellDamage(parts, itemData.level, spellLevel, scale, rollData);
