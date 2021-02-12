@@ -441,7 +441,7 @@ export class RollFields {
 			case 'ammo':
 				if (!data.ammo) return [];
 
-				// Only add ammo damage if the ammunication is a consumable with type ammo
+				// Only add ammo damage if the ammunition is a consumable with type ammo
 				const ammo = data.ammo;
 				if (ammo.data.type !== "consumable" || ammo.data.data.consumableType !== "ammo") {
 					return [];
