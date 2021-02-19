@@ -333,8 +333,12 @@ export class Renderer {
 	static async renderCard(data) {
 		const templates = [];
 		
+		let previous = null;
 		const injectedGroups = new Set();
 		for (const entry of data.entries) {
+			if (!entry) continue;
+			
+			// If damage prompt is enabled, replace for damage button
 			const hidden = data.params.prompt[entry.group];
 			if (["damage", "crit"].includes(entry.type) && hidden) {
 				if (!injectedGroups.has(entry.group)) {
@@ -344,9 +348,23 @@ export class Renderer {
 						group: entry.group
 					}));
 				}
-			} else if (entry.revealed || entry.type !== "crit") {	
+
+				previous = entry;
+				continue;
+			}
+
+			// If its a new attack/damage group, add a divider
+			const previousIsDamage = ["damage", "crit"].includes(previous?.type);
+			if (previousIsDamage && ["multiroll", "button-save"].includes(entry.type)) {
+				templates.push("<hr/>");
+			}
+			
+			// Create the template, only do so if not of type crit unless crit is revealed
+			if (entry.type !== "crit" || entry.revealed) {	
 				templates.push(await Renderer.renderModel(entry));
 			}
+
+			previous = entry;
 		}
 		
 		return renderModuleTemplate("red-fullroll.html", {
