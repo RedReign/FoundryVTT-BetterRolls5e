@@ -176,6 +176,7 @@ class Settings {
 				"1": i18n("br5e.critBehavior.choices.1"), // Roll Critical Damage Dice
 				"2": i18n("br5e.critBehavior.choices.2"), // Roll Base Damage, Max Critical
 				"3": i18n("br5e.critBehavior.choices.3"), // Max Base & Critical Damage
+				"4": i18n("br5e.critBehavior.choices.4"), // Max Base Damage, Roll Critical Damage
 			}
 		});
 		
