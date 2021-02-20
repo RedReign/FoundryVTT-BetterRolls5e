@@ -508,13 +508,6 @@ export class CustomItemRoll {
 				}
 			}
 
-			// Set ammo, and then consume it if so
-			// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
-			if (await this.identifyAndConsumeAmmo() === "error") {
-				this.error = true;
-				return;
-			}
-
 			// Determine spell level and configuration settings
 			if (consume && !params.slotLevel && item.data.type === "spell") {
 				const config = await this.configureSpell();
@@ -525,6 +518,46 @@ export class CustomItemRoll {
 
 				placeTemplate = config.placeTemplate;
 			}
+		}
+
+		// Show Advantage/Normal/Disadvantage dialog if enabled
+		const hasAttack = this.fields.some(
+			(f) => ["attack", "check", "custom", "tool", "toolcheck"].includes(f[0]) && !f[1]?.rollState);
+		if (!this.params.rollState && getSettings().queryAdvantageEnabled && hasAttack) {
+			const rollState = await new Promise(resolve => {
+				new Dialog({
+					title: i18n("br5e.querying.title"),
+					buttons: {
+						disadvantage: {
+							label: i18n("br5e.querying.disadvantage"),
+							callback: () => resolve("lowest")
+						},
+						normal: {
+							label: i18n("br5e.querying.normal"),
+							callback: () => resolve("first")
+						},
+						advantage: {
+							label: i18n("br5e.querying.advantage"),
+							callback: () => resolve("highest")
+						}
+					},
+					close: () => resolve("cancel")
+				}).render(true);
+			});
+
+			if (rollState === "cancel") {
+				this.error = true;
+				return;
+			}
+
+			this.params.rollState = rollState;
+		}
+
+		// Set ammo, and then consume it if so
+		// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
+		if (item && await this.identifyAndConsumeAmmo() === "error") {
+			this.error = true;
+			return;
 		}
 
 		// Process all fields (this builds the data entries)
