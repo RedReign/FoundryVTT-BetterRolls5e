@@ -1,7 +1,25 @@
 import { BRSettings } from "./settings.js";
 import { BetterRollsChatCard } from "./chat-message.js";
-import { BetterRolls } from "./betterrolls5e.js";
+import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
 import { ItemUtils } from "./utils.js";
+import { addBetterRollsContent } from "./item-tab.js";
+
+// Attaches BetterRolls to actor sheet
+Hooks.on("renderActorSheet5e", (app, html, data) => {
+	const triggeringElement = ".item .item-name h4";
+	const buttonContainer = ".item-properties";
+	
+	// this timeout allows other modules to modify the sheet before we do
+	setTimeout(() => {
+		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
+		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data) : null;
+	}, 0);
+});
+
+// Attaches BetterRolls to item sheet
+Hooks.on("renderItemSheet5e", (app, html, data) => {
+	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
+});
 
 Hooks.once("init", () => {
 	BRSettings.init();

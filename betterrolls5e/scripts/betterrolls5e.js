@@ -1,9 +1,7 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 import { i18n, Utils, ItemUtils } from "./utils.js";
 import { getSettings } from "./settings.js";
-import { RollFields } from "./fields.js";
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
@@ -22,6 +20,22 @@ export function isSave(item) {
 
 export function isCheck(item) {
 	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
+}
+
+/**
+ * Function for adding Better Rolls content to html data made after a sheet is rendered.
+ * actor				The actor object
+ * html					The target html to add content to
+ * triggeringElement	Container for the element that must be clicked for the extra buttons to be shown.
+ * buttonContainer		Container for the element the extra buttons will display in.
+ * itemButton			Selector for the item button.
+ */
+export function addItemContent(actor, html, 
+	triggeringElement = ".item .item-name h4", 
+	buttonContainer = ".item-properties",
+	itemButton = ".item .rollable") {
+	(game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
+	(game.settings.get("betterrolls5e", "diceEnabled") && itemButton) ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
 }
 
 const dnd5e = DND5E;
@@ -127,7 +141,7 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	if (actor.permission < 3) { return; }
 	
 	// Setting default element selectors
-	if (triggeringElement === '') triggeringElement = '.item .item-name h4';
+	if (triggeringElement === '') triggeringElement = '.item:not(.magic-item) .item-name h4';
 	if (buttonContainer === '') buttonContainer = '.item-properties';
 	
 	// adding an event for when the description is shown
@@ -137,7 +151,7 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	});
 
 	for (let element of html.find(triggeringElement)) {
-		let li = $(element).parents('.item');
+		let li = $(element).parents('.item:not(.magic-item)');
 		addButtonsToItemLi(li, actor, buttonContainer);
 	}
 }
@@ -381,7 +395,6 @@ export function getTotalDamage(html) {
  * Also replaces the default button on items with a "standard" roll.
  */
 export function changeRollsToDual (actor, html, data, params) {
-
 	if (actor && actor.permission < 3) { return; }
 	
 	let paramRequests = mergeObject({
@@ -389,7 +402,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			checkButton: '.ability-mod',
 			saveButton: '.ability-save',
 			skillButton: '.skill-name',
-			itemButton: '.item .item-image',
+			itemButton: '.item:not(.magic-item) .item-image',
 			singleAbilityButton: true
 		},params || {});
 	
@@ -479,7 +492,6 @@ export function changeRollsToDual (actor, html, data, params) {
 	// Assign new action to item image button
 	let itemImage = html.find(paramRequests.itemButton);
 	if (itemImage.length > 0) {
-
 		itemImage.off();
 		itemImage.click(async event => {
 			const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
@@ -620,14 +632,23 @@ export function BetterRolls() {
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,
-		addItemContent:BetterRollsHooks.addItemContent,
-		hooks:BetterRollsHooks,
+		addItemContent:addItemContent,
 		rollCheck:CustomRoll.rollCheck,
 		rollSave:CustomRoll.rollSave,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
-		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})})
+		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})}),
+
+		// These are still here for compatibility, but will be removed in future versions
+		hooks:{
+			addActorSheet: () => { 
+				console.error("WARNING: BetterRolls.hooks.addActorSheet() is deprecated");
+			},
+			addItemSheet: () => {
+				console.error("WARNING: BetterRolls.hooks.addItemSheet() is deprecated");
+			},
+		},
 	};
 }
