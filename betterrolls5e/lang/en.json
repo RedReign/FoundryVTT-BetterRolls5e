@@ -6,8 +6,6 @@
 	
 	"br5e.diceEnabled.name": "Enable Better Rolls",
 	"br5e.diceEnabled.hint": "Enables the improved dice outputs for DnD5e. Affects all ability checks, saving throws, items, spells, and features on the sheet. Requires reopening the sheet.",
-	"br5e.queryAdvantageEnabled.name": "Query for (Dis)Advantage",
-	"br5e.queryAdvantageEnabled.hint": "UNSUPPORTED, here for backwards compatibility. Use Single Roll Mode instead. Adds a Query for Advantage/Normal/Disadvantage roll types. Ctrl / Shift may still be used.",
 	"br5e.rollButtonsEnabled.name": "Add Roll Buttons to Sheet",
 	"br5e.rollButtonsEnabled.hint": "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
 	"br5e.imageButtonEnabled.name": "Make Item Image Auto-roll",
@@ -56,6 +54,7 @@
 	"br5e.d20Mode.choices.1": "Single Roll (Shift Advantage, Ctrl Disadvantage)",
 	"br5e.d20Mode.choices.2": "Dual Rolls",
 	"br5e.d20Mode.choices.3": "ゴゴ Triple Threat ゴゴ",
+	"br5e.d20Mode.choices.4": "Query for (Dis)Advantage",
 	
 	"br5e.critBehavior.name": "Critical Damage",
 	"br5e.critBehavior.hint": "Determines how critical damage is calculated.",

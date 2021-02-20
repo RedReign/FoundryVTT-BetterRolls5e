@@ -6,8 +6,6 @@
 	
 	"br5e.diceEnabled.name": "拡張ロールを使用する",
 	"br5e.diceEnabled.hint": "DnD5e用に拡張されたクイックロールを使用します。シートから出力される能力値判定、セーヴィング・スロー、アイテム、呪文、特徴などに適用されます。すでにシートを開いている場合は、一度閉じてから開き直してください。",
-	"br5e.queryAdvantageEnabled.name": "有利 / 不利を確認する",
-	"br5e.queryAdvantageEnabled.hint": "【後方互換のため、これは非サポートとなりました。代替としてシングルロールモードを使用してください。】ダイスロール時に、有利 / 通常 / 不利のどれで振るかの確認ダイアログを表示します。クリック時にShift（有利）、Ctrl（不利）、Shift＋Ctrl（通常）でスキップできます。",
 	"br5e.rollButtonsEnabled.name": "シートにロールボタンを追加する",
 	"br5e.rollButtonsEnabled.hint": "アイテム、呪文、特徴などの内容を確認するとき、チャットに出力するためのボタンを追加します。この機能は同様の機能を提供するモジュールと競合する可能性があります。変更時はシートを開き直してください。",
 	"br5e.imageButtonEnabled.name": "アイテム画像からロールする",
@@ -63,6 +61,7 @@
 	"br5e.critBehavior.choices.1": "追加のダメージダイスを振る（5eの標準）",
 	"br5e.critBehavior.choices.2": "元の出目＋追加の最大値",
 	"br5e.critBehavior.choices.3": "元の最大値＋追加の最大値",
+	"br5e.critBehavior.choices.4": "有利 / 不利を確認する",
 	
 	"br5e.critString.name": "クリティカルの表示",
 	"br5e.critString.hint": "クリティカル時に表示するテキストを設定します。このテキストはダメージの右側に表示されます（クイックロール時のみ）。",

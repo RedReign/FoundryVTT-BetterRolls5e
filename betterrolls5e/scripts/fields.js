@@ -54,7 +54,8 @@ export class RollFields {
 			return;
 		}
 
-		let numRolls = options.numRolls || getSettings(options.settings).d20Mode;
+		const d20Mode = getSettings(options.settings).d20Mode;
+		let numRolls = d20Mode === 4 ? 1 : (options.numRolls || d20Mode);
 		if (!options.numRolls) {
 			if (rollState === "first" && !options.numRolls) {
 				numRolls = 1;

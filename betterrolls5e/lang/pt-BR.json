@@ -6,8 +6,6 @@
 	
 	"br5e.diceEnabled.name": "Habilitar Rolagens Melhores",
 	"br5e.diceEnabled.hint": "Ativa as saídas aprimoradas de dados para o DnD5e. Afeta todos os testes de atributo, salvaguardas, itens, magias e recursos na ficha. Necessário reabrir a ficha. ",
-	"br5e.queryAdvantageEnabled.name": "Consultar para (Des)Vantagens",
-	"br5e.queryAdvantageEnabled.hint": "Adiciona uma consulta para rolagens do tipo Vantagem/Normal/Desvantagem. Ctrl / Shift ainda pode ser usado.",
 	"br5e.rollButtonsEnabled.name": "Adicionar Botões de Rolagem na Ficha",
 	"br5e.rollButtonsEnabled.hint": "Adiciona botões aos itens, magias e recursos da ficha, exibidos quando o item é expandido. Pode ser incompatível com o mod Item Sheet Buttons. Necessário reabrir a ficha.",
 	"br5e.imageButtonEnabled.name": "Fazer Imagem do Item Rolar Automaticamente",
@@ -56,6 +54,7 @@
 	"br5e.d20Mode.choices.1": "Jogada Simples (Shift p/ Vantagem, Ctrl p/ Desvantagem)",
 	"br5e.d20Mode.choices.2": "Jogadas Duplas",
 	"br5e.d20Mode.choices.3": "ゴゴ Ameaça Tripla ゴゴ",
+	"br5e.d20Mode.choices.4": "Consultar para (Des)Vantagens",
 	
 	"br5e.critBehavior.name": "Dano Crítico",
 	"br5e.critBehavior.hint": "Determina como o dano crítico é calculado.",

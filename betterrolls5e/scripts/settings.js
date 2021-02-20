@@ -30,7 +30,8 @@ class Settings {
 			choices: {
 				1: i18n("br5e.d20Mode.choices.1"),
 				2: i18n("br5e.d20Mode.choices.2"),
-				3: i18n("br5e.d20Mode.choices.3")
+				3: i18n("br5e.d20Mode.choices.3"),
+				4: i18n("br5e.d20Mode.choices.4")
 			}
 		});
 
@@ -43,18 +44,6 @@ class Settings {
 			scope: "world",
 			config: true,
 			default: true,
-			type: Boolean
-		});
-
-		/**
-		* Query roll type in Roll20 style
-		*/
-		game.settings.register("betterrolls5e", "queryAdvantageEnabled", {
-			name: i18n("br5e.queryAdvantageEnabled.name"),
-			hint: i18n("br5e.queryAdvantageEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: false,
 			type: Boolean
 		});
 		
@@ -310,27 +299,7 @@ class Settings {
 	}
 
 	get queryAdvantageEnabled() {
-		return getBRSetting("queryAdvantageEnabled");
-	}
-
-	/**
-	 * Returns all config config as an object with all data retrieved.
-	 * Internally this resolves all getters, returning their results.
-	 * @returns {BRSettings}
-	 */
-	serialize() {
-		const result = {};
-
-		const proto = Object.getPrototypeOf(this);
-		const descriptors = Object.getOwnPropertyDescriptors(proto);
-		for (const [name, descriptor] of Object.entries(descriptors)) {
-			const { get } = descriptor;
-			if (get) {
-				result[name] = get.call(this);
-			}
-		}
-
-		return result;
+		return this.d20Mode === 4;
 	}
 }
 
