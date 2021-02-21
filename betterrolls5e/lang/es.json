@@ -2,8 +2,7 @@
     "I18N.MAINTAINERS": ["Cosmo Corban"],
     "Better Rolls": "Better Rolls",
     "Better Rolls for 5e": "Better Rolls para 5e",
-    "br5e.diceEnabled.name": "Habilitar Better Rolls",
-    "br5e.diceEnabled.hint": "Mejora como se muestran las tiradas en DnD5e. Afecta a todas las pruebas de característica, tiradas de salvación, elementos, conjuros y características en la hoja. Requiere reabrir la hoja.",
+    
     "br5e.rollButtonsEnabled.name": "Añadir Botones de Tiradas a la Hoja",
     "br5e.rollButtonsEnabled.hint": "Añade botones a los elementos, conjuros y rasgos en la hoja de personaje, estos se muestran al expandir el elemento. Puede que no sea compatible con el mod 'Item Sheet Buttons'. Requiere reabrir la hoja.",
     "br5e.imageButtonEnabled.name": "Convertir Imágen en Auto-Tirada",

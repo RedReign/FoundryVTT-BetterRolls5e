@@ -12,13 +12,13 @@ Hooks.on("renderActorSheet5e", (app, html, data) => {
 	// this timeout allows other modules to modify the sheet before we do
 	setTimeout(() => {
 		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
-		game.settings.get("betterrolls5e", "diceEnabled") ? changeRollsToDual(app.object, html, data) : null;
+		changeRollsToDual(app.object, html, data);
 	}, 0);
 });
 
 // Attaches BetterRolls to item sheet
 Hooks.on("renderItemSheet5e", (app, html, data) => {
-	game.settings.get("betterrolls5e", "diceEnabled") ? addBetterRollsContent(app, html, data) : null;
+	addBetterRollsContent(app, html, data);
 });
 
 Hooks.once("init", () => {

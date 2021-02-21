@@ -4,8 +4,6 @@
 	"Better Rolls": "Besser Würfeln",
 	"Better Rolls for 5e": "Besser Würfeln für 5e",
 	
-	"br5e.diceEnabled.name": "Aktiviere besseres Würfeln",
-	"br5e.diceEnabled.hint": "Aktiviert die verbesserten Würfelausgaben für DnD5e. Betrifft alle Würfe für Attributsproben, Rettungswürfe, Gegenstände, Zauber und Merkmale auf dem Charakterblatt Erfordert das erneute Öffnen des Charakterblattes.",
 	"br5e.rollButtonsEnabled.name": "Würfelbuttons zum Blatt hinzufügen",
 	"br5e.rollButtonsEnabled.hint": "Fügt Buttons zu Gegenständen, Zaubern und Merkmalen auf dem Blatt hinzu, die angezeigt werden, wenn der Gegenstand erweitert wird. Möglicherweise inkompatibel mit den Buttons des Modules \"Item Sheet Buttons\". Erfordert ein erneutes Öffnen des Blattes.",
 	"br5e.imageButtonEnabled.name": "Element-Bild automatisch würfeln lassen",

@@ -4,8 +4,6 @@
 	"Better Rolls": "Rolagens Melhores",
 	"Better Rolls for 5e": "Better Rolls for 5e",
 	
-	"br5e.diceEnabled.name": "Habilitar Rolagens Melhores",
-	"br5e.diceEnabled.hint": "Ativa as saídas aprimoradas de dados para o DnD5e. Afeta todos os testes de atributo, salvaguardas, itens, magias e recursos na ficha. Necessário reabrir a ficha. ",
 	"br5e.rollButtonsEnabled.name": "Adicionar Botões de Rolagem na Ficha",
 	"br5e.rollButtonsEnabled.hint": "Adiciona botões aos itens, magias e recursos da ficha, exibidos quando o item é expandido. Pode ser incompatível com o mod Item Sheet Buttons. Necessário reabrir a ficha.",
 	"br5e.imageButtonEnabled.name": "Fazer Imagem do Item Rolar Automaticamente",

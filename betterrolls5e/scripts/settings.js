@@ -11,15 +11,6 @@ class Settings {
 	 * This should only be called once, at initialization.
 	 */
 	init() {
-		game.settings.register("betterrolls5e", "diceEnabled", {
-			name: i18n("br5e.diceEnabled.name"),
-			hint: i18n("br5e.diceEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: true,
-			type: Boolean
-		});
-		
 		game.settings.register("betterrolls5e", "d20Mode", {
 			name: i18n("br5e.d20Mode.name"),
 			hint: i18n("br5e.d20Mode.hint"),
@@ -33,6 +24,18 @@ class Settings {
 				3: i18n("br5e.d20Mode.choices.3"),
 				4: i18n("br5e.d20Mode.choices.4")
 			}
+		});
+
+		/**
+		 * Enables damage buttons
+		 */
+		game.settings.register("betterrolls5e", "damagePromptEnabled", {
+			name: i18n("br5e.damagePromptEnabled.name"),
+			hint: i18n("br5e.damagePromptEnabled.hint"),
+			scope: "world",
+			config: true,
+			default: false,
+			type: Boolean
 		});
 
 		/**
@@ -209,19 +212,6 @@ class Settings {
 				"2": i18n("br5e.hideDC.choices.2"),
 			}
 		});
-
-		game.settings.register("betterrolls5e", "damagePromptEnabled", {
-			name: i18n("br5e.damagePromptEnabled.name"),
-			hint: i18n("br5e.damagePromptEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: false,
-			type: Boolean
-		});
-	}
-
-	get diceEnabled() {
-		return getBRSetting("diceEnabled");
 	}
 
 	get playRollSounds() {

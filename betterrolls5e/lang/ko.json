@@ -4,8 +4,6 @@
 	"Better Rolls": "Better Rolls",
 	"Better Rolls for 5e": "D&D 5판을 위한 개선된 굴림 모듈",
 	
-	"br5e.diceEnabled.name": "Better Rolls 활성화",
-	"br5e.diceEnabled.hint": "D&D 5판에 대해 개선된 주사위 굴림을 활성화한다. 모든 능력 판정, 내성 굴림, 아이템, 주문 및 기능에 영향을 미친다. 시트를 다시 열어야 한다.",
 	"br5e.rollButtonsEnabled.name": "시트에 굴림 버튼 추가",
 	"br5e.rollButtonsEnabled.hint": "시트 내 아이템, 주문, 기능에 버튼을 추가한다. 아이템이 열렸을 시 표시된다. 아이템 시트 버튼 모듈과 충돌할 수 있다. 시트를 다시 열어야 한다. ",
 	"br5e.imageButtonEnabled.name": "아이템 이미지 자동 굴림",

@@ -4,8 +4,6 @@
 	"Better Rolls": "Better Rolls",
 	"Better Rolls for 5e": "Better Rolls for 5e",
 	
-	"br5e.diceEnabled.name": "Enable Better Rolls",
-	"br5e.diceEnabled.hint": "Enables the improved dice outputs for DnD5e. Affects all ability checks, saving throws, items, spells, and features on the sheet. Requires reopening the sheet.",
 	"br5e.rollButtonsEnabled.name": "Add Roll Buttons to Sheet",
 	"br5e.rollButtonsEnabled.hint": "Adds buttons to items, spells, and features in the sheet, which display when the item is expanded. May be incompatible with the Item Sheet Buttons mod. Requires reopening the sheet.",
 	"br5e.imageButtonEnabled.name": "Make Item Image Auto-roll",
@@ -61,7 +59,7 @@
 	"br5e.critBehavior.choices.0": "No Extra Damage",
 	"br5e.critBehavior.choices.1": "Roll Critical Damage Dice",
 	"br5e.critBehavior.choices.2": "Roll Base Damage, Max Critical",
-	"br5e.critBehavior.choices.3": "Max Base & Critical Damage",
+	"br5e.critBehavior.choices.3": "Max Base & Max Critical Damage",
 	"br5e.critBehavior.choices.4": "Max Base Damage, Roll Critical Damage",
 	
 	"br5e.critString.name": "Critical Indicator",
