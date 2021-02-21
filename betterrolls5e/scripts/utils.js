@@ -703,7 +703,7 @@ export class ItemUtils {
 			critRoll = new Roll(critRoll.formula).evaluate({maximize:true});
 		}
 		
-		// If critBehavior = 3, maximize base and crit dice
+		// If critBehavior = 3, maximize base and maximize crit dice
 		else if (critBehavior === "3") {
 			let maxDifference = Roll.maximize(baseFormula).total - baseTotal;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
