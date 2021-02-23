@@ -26,26 +26,27 @@ Custom d20 roll modes includes Single, Dual, Triple, and Query Dialog rolls. Sin
 
 Details of the roll are based on the fields present in the item clicked.
 
-![](https://i.imgur.com/Pq5HK73.png)
-![](https://i.imgur.com/6YzQWG9.png)
-![](https://i.imgur.com/pME8Tsz.png)
+![](https://i.imgur.com/fMBq6Sb.png)
+![](https://i.imgur.com/GTzn3t3.png)
 ![](https://i.imgur.com/XO2JUjB.png)
 
 ### Roll Editing
-Chat messages are condensed and are edited live. Single rolls can be updated to advantage or disadvantage, and damage is rolled within the same chat message. Damage is either rolled automatically, or a damage button can be shown instead.
+Chat messages are condensed and are edited live. Attack is grouped together with damage. Single rolls can be updated to advantage or disadvantage, and damage can either be auto-rolled or prompted with a button.
 
 ![](https://user-images.githubusercontent.com/1286721/103615288-529fea80-4ef8-11eb-95cf-490e86084c5e.gif)
 
 ### Sheet Buttons
 For additional control, sheet buttons are displayed in the character sheet's item summary, allowing the sheet to quickly output whatever is needed (Attack & damage rolls combined, attack & alternate damage, just attack, just damage...)
-![](https://i.imgur.com/uFvpDPw.png)
 
+![](https://i.imgur.com/uFvpDPw.png)
 ![](https://i.imgur.com/2kNCHdZ.png)
 
-### Alt Rolls and Roll Configuration:
-Alt Quick Rolls, which can be used by holding Alt when clicking the item's icon in the character sheet. These can be configured separately from normal Quick Rolls.
-![](https://i.imgur.com/Od15JXz.png)
+### Alt Rolls and Roll Configuration
+Damage rolls have an additional context field to convey what the damage comes from, or when it occurs.
+![](https://i.imgur.com/L9NTE7G.png)
 
+Rolls can also be configured in the Better Rolls item tab while editing an item. Items have two roll modes: normal and alt quick rolls. Alt Quick Rolls, can be used by holding Alt when clicking the item's icon in the character sheet.
+![](https://i.imgur.com/Od15JXz.png)
 ![](https://i.imgur.com/yPzgzEe.png)
 
 Extended support for thrown items, consumables, ammunition, and items with otherwise limited uses.
@@ -65,9 +66,9 @@ Extended support for thrown items, consumables, ammunition, and items with other
 - Macro support! Try dragging and dropping an item, spell, or feat from your character sheet onto the macro hotbar!
 - Script macros are also intuitive enough to be entered manually.
 - Try `BetterRolls.quickRoll("Shortbow");` on a creature with an item named "Shortbow", or `BetterRolls.quickRollByName("Sharon", "Shortbow");` to fire Sharon's shortbow.
+- Check out the samples folder for some example macros.
+
 ![](https://i.imgur.com/fMMWz3m.gif)
-- Custom damage labels. Add written context to damage rolls to convey what the damage comes from, or when it occurs.
-![](https://i.imgur.com/L9NTE7G.png)
 
 ## Planned Features
 - Additional macro support
