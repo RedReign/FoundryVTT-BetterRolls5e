@@ -41,13 +41,16 @@ For additional control, sheet buttons are displayed in the character sheet's ite
 
 ### Alt Rolls and Roll Configuration
 Damage rolls have an additional context field to convey what the damage comes from, or when it occurs.
+
 ![](https://i.imgur.com/L9NTE7G.png)
 
 Rolls can also be configured in the Better Rolls item tab while editing an item. Items have two roll modes: normal and alt quick rolls. Alt Quick Rolls, can be used by holding Alt when clicking the item's icon in the character sheet.
+
 ![](https://i.imgur.com/Od15JXz.png)
 ![](https://i.imgur.com/yPzgzEe.png)
 
 Extended support for thrown items, consumables, ammunition, and items with otherwise limited uses.
+
 ![](https://i.imgur.com/yQpSJgb.png)
 
 ### Additional Features
