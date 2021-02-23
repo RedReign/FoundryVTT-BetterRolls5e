@@ -26,9 +26,7 @@ Custom d20 roll modes includes Single, Dual, Triple, and Query Dialog rolls. Sin
 
 Details of the roll are based on the fields present in the item clicked.
 
-![](https://i.imgur.com/fMBq6Sb.png)
-![](https://i.imgur.com/GTzn3t3.png)
-![](https://i.imgur.com/XO2JUjB.png)
+![](https://i.imgur.com/DyzMi2A.png)
 
 ### Roll Editing
 Chat messages are condensed and are edited live. Attack is grouped together with damage. Single rolls can be updated to advantage or disadvantage, and damage can either be auto-rolled or prompted with a button.
