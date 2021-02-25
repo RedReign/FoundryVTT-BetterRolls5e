@@ -7,6 +7,8 @@ import { i18n, Utils } from "./utils.js";
  * Not part of the entry list
  * @typedef HeaderDataProps
  * @type {object}
+ * @property {string} id
+ * @property {"header"} type
  * @property {string} img image path to show in the box
  * @property {string} title header title text
  */
@@ -15,6 +17,7 @@ import { i18n, Utils } from "./utils.js";
  * Model data for rendering description or flavor text
  * @typedef DescriptionDataProps
  * @type {object}
+ * @property {string} id
  * @property {"description"} type
  * @property {boolean} isFlavor
  * @property {string} content
@@ -24,6 +27,7 @@ import { i18n, Utils } from "./utils.js";
  * Model data for rendering a multi roll.
  * @typedef MultiRollDataProps
  * @type {object}
+ * @property {string} id
  * @property {"multiroll"} type
  * @property {string} title
  * @property {"highest" | "lowest" | "first" | null} rollState advantage/disadvantage/normal/none
@@ -42,6 +46,7 @@ import { i18n, Utils } from "./utils.js";
  * Model data for rendering damage information.
  * @typedef DamageDataProps
  * @type {object}
+ * @property {string} id
  * @property {"damage"} type
  * @property {number | "versatile" | "other"} damageIndex
  * @property {string?} group Damage group used to identify damage entries as related
@@ -57,6 +62,7 @@ import { i18n, Utils } from "./utils.js";
  * Model data for rendering bonus crit information.
  * @typedef CritDataProps
  * @type {object}
+ * @property {string} id
  * @property {"crit"} type
  * @property {string?} group Damage group used to identify damage entries as related
  * @property {string} title
@@ -69,24 +75,34 @@ import { i18n, Utils } from "./utils.js";
 /**
  * Model data for save buttons
  * @typedef ButtonSaveProps
+ * @property {string} id
  * @property {"button-save"} type
  * @property {string} ability
  * @property {boolean} hideDC
  * @property {number} dc
  */
 
- /**
- * Model data for damage buttons
- * @typedef ButtonDamageProps
- * @property {"button-damage"} type
- * @property {string} group
+/**
+ * @typedef DamageGroup
+ * @property {string} id
+ * @property {"group"} type
+ * @property {number} attackId id of the associated attack roll
+ * @property {boolean} prompt
+ * @property {boolean} isCrit
+ * @property {boolean?} forceCrit whether crit can be unset or not
+ * @property {DamageEntry[]} entries
  */
 
 /**
  * Union type of all possible render model types, separatable by the type property.
  * @typedef { HeaderDataProps | DescriptionDataProps | MultiRollDataProps |
- * 		DamageDataProps | CritDataProps | ButtonSaveProps | ButtonDamageProps
+ * 		ButtonSaveProps | DamageGroup | DamageEntry
  * } RenderModelEntry
+ */
+
+/**
+ * Union type of all fields that relate to damage
+ * @typedef {DamageDataProps | CritDataProps} DamageEntry
  */
 
 /**
@@ -104,14 +120,6 @@ function renderModuleTemplate(path, props) {
  */
 export class Renderer {
 	/**
-	 * Current id that is auto-incremented.
-	 * IDs need to be unique within a render, but between runs it is unimportant,
-	 * therefore this does not need to be persisted.
-	 * @private
-	 */
-	static _currentId = 1;
-
-	/**
 	 * Renders a model by checking the type. Calls the other render functions depending on what it is
 	 * @param {RenderModel} model
 	 * @returns {Promise<string>}
@@ -119,11 +127,6 @@ export class Renderer {
 	static async renderModel(model, settings=null) {
 		if (typeof model === "string" || !model) {
 			return model;
-		}
-
-		// Assign an id if we need to
-		if (!model.id) {
-			model.id = `${Renderer._currentId++}`;
 		}
 
 		switch (model.type) {
@@ -136,10 +139,10 @@ export class Renderer {
 			case "damage":
 			case "crit":
 				return Renderer.renderDamage(model, settings);
+			case "group":
+				return Renderer.renderDamageGroup(model, settings);
 			case "button-save":
 				return Renderer.renderSaveButton(model, settings);
-			case "button-damage":
-				return Renderer.renderDamageButton(model, settings);
 			case "raw":
 				// todo: print a warning, this means its unconverted
 				return model.content?.html ?? model.content;
@@ -316,13 +319,32 @@ export class Renderer {
 
 	/**
 	 * Renders an html damage button
-	 * @param {ButtonDamageProps} properties 
+	 * @param {DamageGroup} properties 
 	 */
-	static async renderDamageButton(properties) {
-		return renderModuleTemplate("red-damage-button.html", {
-			id: properties.id,
-			group: encodeURIComponent(properties.group)
-		})
+	static async renderDamageGroup(properties, settings) {
+		const results = [];
+		for (const entry of properties.entries) {
+			if (["damage", "crit"].includes(entry.type) && properties.prompt) {
+				continue;
+			}
+						
+			// Create the template, only do so if not of type crit unless crit is revealed
+			if (entry.type !== "crit" || entry.revealed) {	
+				results.push(this.renderModel(
+					{...entry, group: properties.id },
+					settings
+				));
+			}
+		}
+
+		if (properties.prompt) {
+			const { id } = properties;
+			const button = renderModuleTemplate("red-damage-button.html", { id });
+			results.push(button);
+		}
+
+		const renderedResults = await Promise.all(results);
+		return renderedResults.join("");
 	}
 
 	/**
@@ -334,36 +356,16 @@ export class Renderer {
 		const templates = [];
 		
 		let previous = null;
-		const injectedGroups = new Set();
 		for (const entry of data.entries) {
 			if (!entry) continue;
-			
-			// If damage prompt is enabled, replace for damage button
-			const hidden = data.params.prompt[entry.group];
-			if (["damage", "crit"].includes(entry.type) && hidden) {
-				if (!injectedGroups.has(entry.group)) {
-					injectedGroups.add(entry.group);
-					templates.push(await this.renderDamageButton({
-						type: "button-damage",
-						group: entry.group
-					}));
-				}
-
-				previous = entry;
-				continue;
-			}
 
 			// If its a new attack/damage group, add a divider
-			const previousIsDamage = ["damage", "crit"].includes(previous?.type);
-			if (previousIsDamage && ["multiroll", "button-save"].includes(entry.type)) {
+			const previousIsDamage = ["damage", "crit", "group"].includes(previous?.type);
+			if (previousIsDamage && ["multiroll", "button-save", "group"].includes(entry.type)) {
 				templates.push("<hr/>");
 			}
-			
-			// Create the template, only do so if not of type crit unless crit is revealed
-			if (entry.type !== "crit" || entry.revealed) {	
-				templates.push(await Renderer.renderModel(entry));
-			}
 
+			templates.push(await Renderer.renderModel(entry));
 			previous = entry;
 		}
 		

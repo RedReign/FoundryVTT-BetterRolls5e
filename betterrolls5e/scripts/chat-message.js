@@ -167,10 +167,8 @@ export class BetterRollsChatCard {
 				element.append($(templateDamage));
 
 				// Remove crit button if already rolled
-				// TODO: Move this elsewhere. There's a known bug when crit settings are changed suddenly
-				// If Crit (setting) is disabled, then re-enabled, crit buttons don't get re-added
 				const id = element.parents('.dice-roll').attr('data-id');
-				const entry = this.roll?.entries.find(m => m.id === id);
+				const entry = this.roll?.getEntry(id);
 				if (!this.roll?.canCrit(entry)) {
 					element.find('.crit-button').remove();
 				}
