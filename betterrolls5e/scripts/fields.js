@@ -452,7 +452,7 @@ export class RollFields {
 					...data,
 					item: ammo,
 					index: "all",
-					context: `[${ammo.name}}]`
+					context: `${ammo.name}`
 				});
 			case 'savedc':
 				// {customAbl: null, customDC: null}
