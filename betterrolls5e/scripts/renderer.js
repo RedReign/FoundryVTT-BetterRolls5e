@@ -1,6 +1,6 @@
 import { CustomItemRoll } from "./custom-roll.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { i18n, Utils } from "./utils.js";
+import { i18n, Utils } from "./utils/index.js";
 
 /**
  * Model data for rendering the header template.

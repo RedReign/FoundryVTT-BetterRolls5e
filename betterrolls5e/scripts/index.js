@@ -1,7 +1,7 @@
 import { BRSettings } from "./settings.js";
 import { BetterRollsChatCard } from "./chat-message.js";
 import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
-import { ItemUtils } from "./utils.js";
+import { ItemUtils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
 
 // Attaches BetterRolls to actor sheet

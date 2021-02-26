@@ -1,6 +1,6 @@
 import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
 import { BRSettings } from "./settings.js";
-import { i18n, Utils } from "./utils.js";
+import { i18n, Utils } from "./utils/index.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.

@@ -1,5 +1,5 @@
-import { isAttack, isSave, isCheck, BetterRolls } from "./betterrolls5e.js";
-import { dnd5e, i18n, DiceCollection, ActorUtils, ItemUtils, Utils, FoundryProxy } from "./utils.js";
+import { isAttack, isSave, isCheck } from "./betterrolls5e.js";
+import { dnd5e, i18n, DiceCollection, ActorUtils, ItemUtils, Utils, FoundryProxy } from "./utils/index.js";
 import { Renderer } from "./renderer.js";
 import { getSettings } from "./settings.js";
 import { RollFields } from "./fields.js";
