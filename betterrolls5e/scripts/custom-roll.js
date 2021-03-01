@@ -233,7 +233,7 @@ export class CustomItemRoll {
 
 	set actor(actor) {
 		this._actor = actor;
-		this.actorId = actor.id;
+		this.actorId = actor?.id;
 		this.tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
 	}
 

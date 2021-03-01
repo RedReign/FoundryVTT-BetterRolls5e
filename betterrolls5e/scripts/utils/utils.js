@@ -528,52 +528,6 @@ export class ItemUtils {
 	}
 
 	/**
-	 * Returns the ability mod the item uses for the attack.
-	 * If no item is given, returns null.
-	 * This does not use the built in Item.abilityMod because that one doesn't handle feats
-	 * @param {*} itm 
-	 */
-	static getAbilityMod(itm) {
-		if (!itm) return null;
-
-		const itemData = itm.data.data;
-		const actorData = itm.actor.data.data;
-
-		// If there is already an ability configured, use it
-		if (itemData.ability) return itemData.ability;
-	
-		// If the item is a finesse weapon, and abl is "str", or "dex", or default
-		if ((itm.data.type == "weapon") && itemData.properties.fin) {
-			if (actorData.abilities.str.mod >= actorData.abilities.dex.mod) {
-				return "str";
-			} else {
-				return "dex";
-			}
-		} 
-		
-		// Spells
-		if (itm.data.type == "spell") {
-			return actorData.attributes.spellcasting || "int";
-		} 
-		
-		// Weapons or feats
-		if (["weapon", "feat"].includes(itm.data.type)) {
-			// Weapons / Feats, based on the "Action Type" field
-			switch (itemData.actionType) {
-				case "mwak":
-					return "str";
-				case "rwak":
-					return "dex";
-				case "msak":
-				case "rsak":
-					return actorData.attributes.spellcasting;
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * Checks if the item applies savage attacks (bonus crit).
 	 * Returns false if the actor doesn't have savage attacks, if the item
 	 * is not a weapon, or if there is no item.
@@ -589,19 +543,18 @@ export class ItemUtils {
 
 	/**
 	 * Gets the item's roll data.
-	 * This uses item.getRollData(), but with a different
-	 * ability mod formula that handles feat weapon types.
-	 * If core ever swaps supports feat weapon types / levels, swap back.
+	 * This uses item.getRollData(), but allows overriding with additional properties
 	 * @param {*} item 
 	 */
 	static getRollData(item, { abilityMod, slotLevel=undefined } = {}) {
 		const rollData = item.getRollData();
-
-		const abl = abilityMod ?? this.getAbilityMod(item);
+		if (rollData) {
+			const abl = abilityMod ?? item?.abilityMod;
 		rollData.mod = rollData.abilities[abl]?.mod || 0;
 
 		if (slotLevel) {
 			rollData.item.level = slotLevel;
+		}
 		}
 
 		return rollData;

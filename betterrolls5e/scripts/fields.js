@@ -73,7 +73,7 @@ export class RollFields {
 			// Split the D20 and bonuses. We assume the first is a d20 roll always...
 			const fullRoll = new Roll(formula);
 			const baseRoll = new Roll(fullRoll.terms[0].formula ?? fullRoll.terms[0]);
-			const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ')).roll();
+			const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ') || "0").roll();
 
 			// Populate the roll entries
 			const entries = [];
@@ -138,7 +138,7 @@ export class RollFields {
 			ActorUtils.getCritThreshold(actor, options.itemType) ??
 			20;
 
-		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
+		const abilityMod = options.abilityMod ?? item?.abilityMod;
 		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
 		
 		let title = options.title;
