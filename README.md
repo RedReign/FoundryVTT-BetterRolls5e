@@ -3,6 +3,10 @@ A Foundry VTT module that replaces the built in rolling system for DnD5e. It all
 
 If you are feeling generous, and would like to support my work, you can do so through this [Paypal](https://www.paypal.me/RedReignDonate) link. Thank you!
 
+## Incompatible Modules
+- Mars (replaces the core roller, competing directly with Better Rolls. Its one or the other)
+- Better NPC Sheet 5e (very out of date)
+
 ## Installation
 ### Method 1
 - Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
