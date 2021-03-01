@@ -128,8 +128,8 @@ export class RollFields {
 	 * @param {RollState} options.rollState
 	 * @param {number} options.slotLevel 
 	 */
-	static constructAttackRoll(options={}) {
-		const { formula, item, rollState, slotLevel } = options;
+	static async constructAttackRoll(options={}) {
+		const { item, slotLevel } = options;
 		const actor = options.actor ?? item?.actor;
 
 		// Get critical threshold
@@ -155,12 +155,15 @@ export class RollFields {
 		}
 
 		// Get Roll. Use Formula if given, otherwise get it from the item
-		let roll = null;
-		if (formula) {
+		let rollState = options.rollState;
+		let formula = null;
+		if (options.formula) {
 			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
-			roll = new Roll(formula, rollData);
+			formula = new Roll(options.formula, rollData).formula;
 		} else if (item) {
-			roll = ItemUtils.getAttackRoll(item);
+			const rollData = await ItemUtils.getAttackRoll(item, rollState);
+			formula = rollData.formula;
+			rollState = rollData.rollState ?? rollState;
 		} else {
 			return null;
 		}
@@ -168,7 +171,7 @@ export class RollFields {
 		// Construct the multiroll
 		return RollFields.constructMultiRoll({
 			...options,
-			formula: roll.formula,
+			formula,
 			rollState,
 			title,
 			critThreshold,
@@ -427,7 +430,7 @@ export class RollFields {
 			case 'header':
 				return [RollFields.constructHeaderData(data)];
 			case 'attack':
-				return [RollFields.constructAttackRoll(data)];
+				return [await RollFields.constructAttackRoll(data)];
 			case 'toolcheck':
 			case 'tool':
 			case 'check':

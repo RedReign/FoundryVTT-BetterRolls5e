@@ -184,20 +184,7 @@ export class Renderer {
 		// Show D20 die icons if enabled
 		let entries = properties.entries;
 		if (d20RollIconsEnabled) {
-			// Inner function to recursively find the first d20 die term and show it
-			function findD20Result(d20Roll) {
-				if (!d20Roll) return null;
-
-				for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
-					if (term.faces === 20) return term.total;
-					if (term.terms ?? term.rolls) {
-						const innerResult = findD20Result(term);
-						if (innerResult) return innerResult;
-					}
-				}
-			}
-
-			entries = entries.map(e => ({ ...e, d20Result: findD20Result(e.roll) }));
+			entries = entries.map(e => ({ ...e, d20Result: Utils.findD20Result(e.roll) }));
 		}
 
 		// Create roll templates

@@ -237,6 +237,22 @@ export class Utils {
 
 		return Array.from(flavors);
 	}
+
+	static findD20Term(d20Roll) {
+		if (!d20Roll) return null;
+
+		for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
+			if (term.faces === 20) return term;
+			if (term.terms ?? term.rolls) {
+				const innerResult = findD20Result(term);
+				if (innerResult) return innerResult;
+			}
+		}
+	}
+
+	static findD20Result(d20Roll) {
+		return Utils.findD20Term(d20Roll)?.total;
+	}
 }
 
 export class ActorUtils {
@@ -550,11 +566,11 @@ export class ItemUtils {
 		const rollData = item.getRollData();
 		if (rollData) {
 			const abl = abilityMod ?? item?.abilityMod;
-		rollData.mod = rollData.abilities[abl]?.mod || 0;
+			rollData.mod = rollData.abilities[abl]?.mod || 0;
 
-		if (slotLevel) {
-			rollData.item.level = slotLevel;
-		}
+			if (slotLevel) {
+				rollData.item.level = slotLevel;
+			}
 		}
 
 		return rollData;
@@ -562,14 +578,33 @@ export class ItemUtils {
 
 	/**
 	 * Returns a roll object that is used to roll the item attack roll.
-	 * @param {*} item 
+	 * @param {Item} item
+	 * @param {import("../fields.js").RollState} rollState
 	 */
-	static getAttackRoll(item) {	
-		const { rollData, parts } = item.getAttackToHit();
+	static async getAttackRoll(item, rollState) {
+		const roll = await item.rollAttack({
+			fastForward: true,
+			chatMessage: false,
+			advantage: rollState === "highest",
+			disadvantage: rollState === "lowest"
+		});
 
-		// Halfling Luck check and final result
-		const d20String = ActorUtils.isHalfling(item.actor) ? "1d20r<2" : "1d20";
-		return new Roll([d20String, ...parts].join("+"), rollData);
+		// Determine if advantage/disadvantage, and how many rolls
+		const d20Term = Utils.findD20Term(roll);
+		const numRolls = d20Term.number;
+		rollState = d20Term.modifiers.includes("kh")
+			? "highest"
+			: d20Term.modifiers.includes("kl")
+			? "lowest"
+			: null;
+
+		// Remove the advantage/disadvantage from the attack roll
+		// At least in the current version of foundry, the formula is not cached
+		// We need to do this because rolls consolidate to a single total, and we want separate totals
+		roll._formula = undefined; // just in case it ever caches using this value in a future release
+		d20Term.number = 1;
+		d20Term.modifiers = d20Term.modifiers.filter((m) => !["kh", "kl"].includes(m));
+		return { formula: roll.formula, numRolls, rollState };
 	}
 
 	/**
