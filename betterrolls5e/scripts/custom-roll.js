@@ -1065,7 +1065,7 @@ export class CustomItemRoll {
 		// Handle quantity when uses are not consumed
 		// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
 		// We are waiting and seeing what the DND system uses before moving everything over
-		if (request.quantity && !hasUses) {
+		if (request.quantity && !consumeUses) {
 			itemUpdates["data.quantity"] = Math.max(0, quantity - 1);
 			if (quantity <= 1 && autoDestroy) {
 				output = "destroy";
