@@ -221,7 +221,7 @@ export class CustomItemRoll {
 		if (item) {
 			console.info(`BetterRolls | Card loaded existing item data ${item.name}`);
 		}
-		
+
 		this._item = item; // store a backup so we don't need to fetch again
 		return item;
 	}
@@ -684,10 +684,12 @@ export class CustomItemRoll {
 		};
 		
 		await Hooks.callAll("messageBetterRolls", this, chatData);
+		await this.dicePool.flush();
 
 		// Send the chat message
-		await this.dicePool.flush();
-		return ChatMessage.create(chatData);
+		const message = await ChatMessage.create(chatData);
+		this.messageId = message.id;
+		return message;
 	}
 
 	/**

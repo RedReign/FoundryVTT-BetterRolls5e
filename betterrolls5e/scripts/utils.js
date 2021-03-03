@@ -135,7 +135,7 @@ export class Utils {
 		if (eventToCheck.shiftKey) {
 			result.adv = 1;
 		}
-		if (keyboard.isCtrl(eventToCheck)) {
+		if (eventToCheck.ctrlKey) {
 			result.disadv = 1;
 		}
 

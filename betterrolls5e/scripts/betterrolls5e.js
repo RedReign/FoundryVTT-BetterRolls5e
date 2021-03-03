@@ -538,7 +538,7 @@ export function BetterRolls() {
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		item.roll()
+		return item.roll();
 	};
 	
 	// Performs a Quick Roll, searching for an item in the controlled actor by name.
@@ -548,7 +548,7 @@ export function BetterRolls() {
 		let item = actor ? actor.items.find(i => i.name === itemName) : null;
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noSelectedActor")}`); }
 		else if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return new CustomItemRoll(item, {event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
 	// Performs a Quick Roll, searching the actor and item by ID.
@@ -558,7 +558,7 @@ export function BetterRolls() {
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return new CustomItemRoll(item, {event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
 	// Performs a Quick Roll, searching the actor and item by name.
@@ -568,7 +568,7 @@ export function BetterRolls() {
 		let item = actor.items.find(i => i.name === itemName);
 		if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return new CustomItemRoll(item, {event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
 	};
 	
 	// Returns if an event should have its corresponding Quick Roll be an Alt Roll.
