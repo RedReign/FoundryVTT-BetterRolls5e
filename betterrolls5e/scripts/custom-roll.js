@@ -198,6 +198,10 @@ export class CustomItemRoll {
 		this.actor = item?.actor;
 	}
 
+	/**
+	 * Retrieves the item associated with this roll. This may have to load the item from the associated actor,
+	 * and in those cases can throw an exception if the actor/item no longer exists.
+	 */
 	get item() {
 		if (this._item) return this._item;
 
@@ -214,12 +218,10 @@ export class CustomItemRoll {
 		const actor = this.actor;
 		const Item5e = game.dnd5e.entities.Item5e;
 		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.getOwnedItem(this.itemId);
-		if (!item) {
-			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
-			ui.notifications.error(message);
-			throw new Error(message);
+		if (item) {
+			console.info(`BetterRolls | Card loaded existing item data ${item.name}`);
 		}
-
+		
 		this._item = item; // store a backup so we don't need to fetch again
 		return item;
 	}
@@ -231,7 +233,7 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * Returns the actor associated 
+	 * Returns the actor associated this item, loading it from the game
 	 */
 	get actor() {
 		if (this._actor) return this._actor;
@@ -329,9 +331,9 @@ export class CustomItemRoll {
 			return false;
 		}
 
-		const item = this.item;
 		let updated = false;
 
+		const baseExtraCritDice = ItemUtils.getExtraCritDice(this.item);
 		const entries = group ? this.entries.filter(e => e.group === group) : this.entries;
 
 		for (const entry of entries) {
@@ -348,7 +350,7 @@ export class CustomItemRoll {
 						entry.critRoll = entry._critBackup;
 					} else {
 						const { formula, total } = entry.baseRoll;
-						const extraCritDice = entry.extraCritDice ?? ItemUtils.getExtraCritDice(item);
+						const extraCritDice = entry.extraCritDice ?? baseExtraCritDice;
 						entry.extraCritDice = extraCritDice;
 						entry.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
 						entry._critBackup = entry.critRoll; // prevent undoing the crit
@@ -715,6 +717,14 @@ export class CustomItemRoll {
 	async repeat() {
 		if (!this.canRepeat()) return;
 
+		// Show error messages if the item/actor was deleted
+		const subject = this.item ?? this.actor;
+		if ((this.itemId || this.actorId) && !subject) {
+			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			ui.notifications.error(message);
+			throw new Error(message);
+		}
+
 		const invalidFields = ["description", "desc"];
 		const fields = duplicate(this.fields.filter(f => !invalidFields.includes(f[0])));
 		const params = duplicate(this.params);
@@ -722,7 +732,7 @@ export class CustomItemRoll {
 		params.rollState = Utils.getRollState({ event });
 		params.prompt = {};
 
-		const newRoll = new CustomItemRoll(this.item ?? this.actor, params, fields);
+		const newRoll = new CustomItemRoll(subject, params, fields);
 		await newRoll.toMessage();
 		return newRoll;
 	}
