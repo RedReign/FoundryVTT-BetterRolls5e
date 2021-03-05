@@ -7,8 +7,8 @@ export const dnd5e = DND5E;
 /**
  * Shorthand for both game.i18n.format() and game.i18n.localize() depending
  * on whether data is supplied or not
- * @param {string} key 
- * @param {object?} data optional data that if given will do a format() instead 
+ * @param {string} key
+ * @param {object?} data optional data that if given will do a format() instead
  */
 export function i18n(key, data=null) {
 	if (data) {
@@ -30,6 +30,32 @@ function isMaestroOn() {
 	return output;
 }
 
+/**
+ * Returns a new object containing a subset of source
+ * using the keys in props. Equivalent to lodash's pick method.
+ * @param {object} source
+ * @param {string[]} props
+ * @returns {object} subset of source
+ */
+export function pick(source, props) {
+	const result = {};
+	for (const prop of props) {
+		result[prop] = source[prop];
+	}
+	return result;
+}
+
+export function pickBy(source, predicate) {
+	const props = [];
+	for (const [key, value] of Object.entries(source)) {
+		if (predicate(value, key)) {
+			props.push(key);
+		}
+	}
+
+	return pick(source, props);
+}
+
 export class Utils {
 	static getVersion() {
 		return game.modules.get("betterrolls5e").data.version;
@@ -49,10 +75,10 @@ export class Utils {
 		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
 			return CONFIG.sounds.dice;
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Additional data to attach to the chat message.
 	 */
@@ -60,18 +86,18 @@ export class Utils {
 		let rollMode = null;
 		let whisper = undefined;
 		let blind = null;
-		
+
 		rollMode = game.settings.get("core", "rollMode");
 		if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
 		if ( rollMode === "blindroll" ) blind = true;
 		else if ( rollMode === "selfroll" ) whisper = [game.user._id];
-		
+
 		return { rollMode, whisper, blind }
 	}
 
 	/**
 	 * Tests a roll to see if it crit, failed, or was mixed.
-	 * @param {Roll} roll 
+	 * @param {Roll} roll
 	 * @param {number} threshold optional crit threshold
 	 * @param {boolean|number[]} critChecks dice to test, true for all
 	 * @param {Roll?} bonus optional bonus roll to add to the total
@@ -105,8 +131,8 @@ export class Utils {
 		return {
 			roll,
 			total: roll.total + (bonus?.total ?? 0),
-			ignored: roll.ignored ? true : undefined, 
-			critType, 
+			ignored: roll.ignored ? true : undefined,
+			critType,
 			isCrit: high > 0,
 		};
 	}
@@ -114,7 +140,7 @@ export class Utils {
 	/**
 	 * Returns an {adv, disadv} object when given an event.
 	 * This one is done via a dialog, and will likely be tweaked eventually
-	 */ 
+	 */
 	static async eventToAdvantage(ev) {
 		if (ev.shiftKey) {
 			return {adv:1, disadv:0};
@@ -127,7 +153,7 @@ export class Utils {
 
 	/**
 	 * Get roll state modifiers given a browser event
-	 * @param {*} ev 
+	 * @param {*} ev
 	 */
 	static getEventRollModifiers(eventToCheck) {
 		const result = {};
@@ -156,7 +182,7 @@ export class Utils {
 			if (adv > 0 || disadv > 0) {
 				if (adv > disadv) { return "highest"; }
 				else if (adv < disadv) { return "lowest"; }
-			} else { 
+			} else {
 				return null;
 			}
 		}
@@ -259,7 +285,7 @@ export class ActorUtils {
 	/**
 	 * Returns a special id for a token that can be used to retrieve it
 	 * from anywhere.
-	 * @param {*} token 
+	 * @param {*} token
 	 */
 	static getTokenId(token) {
 		return [canvas.tokens.get(token.id).scene.id, token.id].join(".")
@@ -267,15 +293,15 @@ export class ActorUtils {
 
 	/**
 	 * True if the actor has the halfling luck special trait.
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 */
 	static isHalfling(actor) {
 		return getProperty(actor, "data.flags.dnd5e.halflingLucky");
 	}
-		
+
 	/**
 	 * True if the actor has the reliable talent special trait.
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 */
 	static hasReliableTalent(actor) {
 		return getProperty(actor, "data.flags.dnd5e.reliableTalent");
@@ -283,16 +309,16 @@ export class ActorUtils {
 
 	/**
 	 * True if the actor has the elven accuracy feature
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 */
 	static hasElvenAccuracy(actor) {
 		return getProperty(actor, "data.flags.dnd5e.elvenAccuracy");
 	}
-	
+
 	/**
 	 * True if the actor has elven accuracy and the ability
 	 * successfully procs it.
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 * @param {string} ability ability mod shorthand
 	 */
 	static testElvenAccuracy(actor, ability) {
@@ -301,7 +327,7 @@ export class ActorUtils {
 
 	/**
 	 * Returns the number of additional melee extra critical dice.
-	 * @param {*} actor 
+	 * @param {*} actor
 	 */
 	static getMeleeExtraCritDice(actor) {
 		return actor?.getFlag("dnd5e", "meleeCriticalDamageDice") ?? 0;
@@ -345,12 +371,12 @@ export class ActorUtils {
 
 	/**
 	 * Returns a roll object for a skill check
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 * @param {string} skill
-	 * @returns {Promise<Roll>} 
+	 * @returns {Promise<Roll>}
 	 */
 	static getSkillCheckRoll(actor, skill) {
-		return actor.rollSkill(skill, { 
+		return actor.rollSkill(skill, {
 			fastForward: true,
 			chatMessage: false,
 			advantage: false,
@@ -360,7 +386,7 @@ export class ActorUtils {
 
 	/**
 	 * Returns a roll object for an ability check
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 * @param {string} abl
 	 * @returns {Promise<Roll>}
 	 */
@@ -375,7 +401,7 @@ export class ActorUtils {
 
 	/**
 	 * Returns a roll object for an ability save
-	 * @param {Actor} actor 
+	 * @param {Actor} actor
 	 * @param {string} abl
 	 * @returns {Promise<Roll>}
 	 */
@@ -404,7 +430,7 @@ export class ItemUtils {
 	/**
 	 * Creates the lower of the item crit threshold, the actor crit threshold, or 20.
 	 * Returns null if null is given.
-	 * @param {*} item 
+	 * @param {*} item
 	 */
 	static getCritThreshold(item) {
 		if (!item) return null;
@@ -428,15 +454,15 @@ export class ItemUtils {
 
 	static getRange(item) {
 		const { range } = item.data.data;
-	
+
 		if (!range?.value && !range?.units) {
 			return null;
 		}
-	
+
 		const standardRange = range.value || "";
 		const longRange = (range.long && range.long !== range.value) ? `/${range.long}` : "";
 		const rangeUnit = range.units ? dnd5e.distanceUnits[range.units] : "";
-	
+
 		return `${standardRange}${longRange} ${rangeUnit}`.trim();
 	}
 
@@ -485,7 +511,7 @@ export class ItemUtils {
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
 		const flags = this.ensureDataFlags(item?.data);
-		
+
 		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
 		if (commit) {
 			await item.update({"flags.betterRolls5e": flags}, { diff: true });
@@ -498,32 +524,32 @@ export class ItemUtils {
 	 */
 	static ensureDataFlags(itemData) {
 		if (!itemData || CONFIG.betterRolls5e.validItemTypes.indexOf(itemData.type) == -1) { return; }
-		
+
 		// Initialize flags
 		itemData.flags = itemData.flags ?? {};
 		const baseFlags = duplicate(CONFIG.betterRolls5e.allFlags[itemData.type.concat("Flags")]);
 		let flags = duplicate(itemData.flags.betterRolls5e ?? {});
 		flags = mergeObject(baseFlags, flags ?? {});
-		
+
 		// If quickDamage flags should exist, update them based on which damage formulae are available
 		if (CONFIG.betterRolls5e.allFlags[itemData.type.concat("Flags")].quickDamage) {
 			let newQuickDamageValues = [];
 			let newQuickDamageAltValues = [];
-			
+
 			// Make quickDamage flags if they don't exist
 			if (!flags.quickDamage) {
 				flags.quickDamage = {type: "Array", value: [], altValue: []};
 			}
-			
+
 			for (let i = 0; i < itemData.data.damage?.parts.length; i++) {
 				newQuickDamageValues[i] = flags.quickDamage.value[i] ?? true;
 				newQuickDamageAltValues[i] = flags.quickDamage.altValue[i] ?? true;
 			}
-	
+
 			flags.quickDamage.value = newQuickDamageValues;
 			flags.quickDamage.altValue = newQuickDamageAltValues;
 		}
-	
+
 		itemData.flags.betterRolls5e = flags;
 		return itemData.flags.betterRolls5e;
 	}
@@ -536,7 +562,7 @@ export class ItemUtils {
 		}
 	}
 
-	/** 
+	/**
 	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */
 	static hasMaestroSound(item) {
@@ -547,7 +573,7 @@ export class ItemUtils {
 	 * Checks if the item applies savage attacks (bonus crit).
 	 * Returns false if the actor doesn't have savage attacks, if the item
 	 * is not a weapon, or if there is no item.
-	 * @param {item?} item 
+	 * @param {item?} item
 	 */
 	static getExtraCritDice(item) {
 		if (item?.actor && item?.data.type === "weapon") {
@@ -610,8 +636,8 @@ export class ItemUtils {
 	/**
 	 * Gets the tool roll for a specific item.
 	 * This is a general item mod + proficiency d20 check.
-	 * @param {Item} itm 
-	 * @param {number?} bonus 
+	 * @param {Item} itm
+	 * @param {number?} bonus
 	 */
 	static getToolRoll(itm, bonus=null) {
 		const itemData = itm.data.data;
@@ -635,17 +661,17 @@ export class ItemUtils {
 			parts.push("@prof");
 			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
 		}
-		
+
 		// Add item's bonus
 		if (itemData.bonus) {
 			parts.push("@bonus");
 			rollData.bonus = itemData.bonus.value;
 		}
-		
+
 		if (bonus) {
 			parts.push(bonus);
 		}
-		
+
 		// Halfling Luck check and final result
 		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
 		return new Roll([d20String, ...parts].join("+"), rollData);
@@ -654,12 +680,12 @@ export class ItemUtils {
 	/**
 	 * Returns the base crit formula, before applying settings to it.
 	 * Only useful really to test if a crit is even possible
-	 * @param {string} baseFormula 
+	 * @param {string} baseFormula
 	 * @returns {Roll | null} the base crit formula, or null if there is no dice
 	 */
 	static getBaseCritRoll(baseFormula) {
 		if (!baseFormula) return null;
-		
+
 		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
 		let critRoll = new Roll(critFormula);
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
@@ -690,7 +716,7 @@ export class ItemUtils {
 		if (critBehavior === "2") {
 			critRoll = new Roll(critRoll.formula).evaluate({maximize:true});
 		}
-		
+
 		// If critBehavior = 3, maximize base and maximize crit dice
 		else if (critBehavior === "3") {
 			let maxDifference = Roll.maximize(baseFormula).total - baseTotal;
@@ -728,24 +754,24 @@ export class ItemUtils {
 			const scale = itemData.scaling.formula;
 			let formula = versatile ? itemData.damage.versatile : itemData.damage.parts[damageIndex][0];
 			const parts = [formula];
-			
+
 			// Scale damage from up-casting spells
 			if (itemData.scaling.mode === "cantrip") {
-				const level = item.actor.data.type === "character" ? 
+				const level = item.actor.data.type === "character" ?
 					actorData.details.level :
 					(actorData.details.spellLevel || actorData.details.cr);
 				item._scaleCantripDamage(parts, scale, level, rollData);
 			} else if (spellLevel && (itemData.scaling.mode === "level") && itemData.scaling.formula) {
 				item._scaleSpellDamage(parts, itemData.level, spellLevel, scale, rollData);
 			}
-			
+
 			return parts[0];
 		}
-		
+
 		return null;
 	}
 
-	
+
 	/**
 	 * A function for returning the properties of an item, which can then be printed as the footer of a chat card.
 	 */
@@ -754,7 +780,7 @@ export class ItemUtils {
 
 		const data = item.data.data;
 		let properties = [];
-		
+
 		const range = ItemUtils.getRange(item);
 		const target = ItemUtils.getTarget(item);
 		const activation = ItemUtils.getActivationData(item)

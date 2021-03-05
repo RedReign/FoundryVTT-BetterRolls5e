@@ -6,7 +6,8 @@ import {
 	ActorUtils,
 	ItemUtils,
 	Utils,
-	FoundryProxy
+	FoundryProxy,
+	pick
 } from "./utils/index.js";
 import { Renderer } from "./renderer.js";
 import { getSettings } from "./settings.js";
@@ -947,16 +948,29 @@ export class CustomItemRoll {
 		const isSpell = item.type === "spell";
 		const requireSpellSlot = isSpell && (data.level > 0) && CONFIG.DND5E.spellUpcastModes.includes(data.preparation.mode);
 		if (requireSpellSlot) {
+			// The ability use dialog shows consumption prompts, but we cannot control the default values
+			// therefore we have to remove them.
+			const propsToRemove = ["uses", "recharge"];
+			let extracted = {};
 			try {
-				window.PH = {};
-				window.PH.actor = actor;
-				window.PH.item = item;
+				extracted = pick(data, propsToRemove);
+				propsToRemove.forEach((prop) => delete data[prop]);
+
 				const spellFormData = await game.dnd5e.applications.AbilityUseDialog.create(item);
+				if (!spellFormData) {
+					return "error";
+				}
+
 				spellLevel = spellFormData.level;
 				consume = Boolean(spellFormData.consumeSlot);
 				placeTemplate = Boolean(spellFormData.placeTemplate);
+			} catch(error) {
+				console.error(error);
+				return "error";
+			} finally {
+				// Restore the stripped props
+				mergeObject(data, extracted);
 			}
-			catch(error) { return "error"; }
 		}
 
 		// If consume is enabled, mark which slot is getting consumed
