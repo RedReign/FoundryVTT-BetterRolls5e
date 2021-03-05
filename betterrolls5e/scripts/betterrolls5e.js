@@ -620,10 +620,10 @@ export function BetterRolls() {
 		// These are still here for compatibility, but will be removed in future versions
 		hooks:{
 			addActorSheet: () => { 
-				console.error("WARNING: BetterRolls.hooks.addActorSheet() is deprecated");
+				console.warn("WARNING: BetterRolls.hooks.addActorSheet() is deprecated");
 			},
 			addItemSheet: () => {
-				console.error("WARNING: BetterRolls.hooks.addItemSheet() is deprecated");
+				console.warn("WARNING: BetterRolls.hooks.addItemSheet() is deprecated");
 			},
 		},
 	};
