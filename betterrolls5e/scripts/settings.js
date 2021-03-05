@@ -1,4 +1,4 @@
-import { i18n } from "./utils.js";
+import { i18n } from "./utils/index.js";
 
 const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
 
@@ -49,7 +49,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		/**
 		* Register added roll buttons
 		*/
@@ -61,7 +61,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		/**
 		* Register better roll for icon
 		*/
@@ -73,7 +73,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "altSecondaryEnabled", {
 			name: i18n("br5e.altSecondaryEnabled.name"),
 			hint: i18n("br5e.altSecondaryEnabled.hint"),
@@ -82,7 +82,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		/**
 		* Register quick roll defaults for description
 		*/
@@ -107,7 +107,7 @@ class Settings {
 				"token": i18n("Token")
 			}
 		});
-		
+
 		/**
 		* Register roll label options
 		*/
@@ -123,7 +123,7 @@ class Settings {
 				"1": i18n("br5e.damageRollPlacement.choices.1")
 			}
 		});
-		
+
 		const damagePlacementOptions = ["damageTitlePlacement", "damageContextPlacement", "damageRollPlacement"];
 
 		damagePlacementOptions.forEach(placementOption => {
@@ -155,7 +155,7 @@ class Settings {
 				type: Boolean
 			});
 		});
-		
+
 		game.settings.register("betterrolls5e", "critBehavior", {
 			name: i18n("br5e.critBehavior.name"),
 			hint: i18n("br5e.critBehavior.hint"),
@@ -171,7 +171,7 @@ class Settings {
 				"4": i18n("br5e.critBehavior.choices.4"), // Max Base Damage, Roll Critical Damage
 			}
 		});
-		
+
 		game.settings.register("betterrolls5e", "critString", {
 			name: i18n("br5e.critString.name"),
 			hint: i18n("br5e.critString.hint"),
@@ -180,7 +180,7 @@ class Settings {
 			default: "Crit",
 			type: String
 		});
-		
+
 		game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {
 			name: i18n("br5e.chatDamageButtonsEnabled.name"),
 			hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
@@ -189,7 +189,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "playRollSounds", {
 			name: i18n("br5e.playRollSounds.name"),
 			hint: i18n("br5e.playRollSounds.hint"),
@@ -198,7 +198,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "hideDC", {
 			name: i18n("br5e.hideDC.name"),
 			hint: i18n("br5e.hideDC.hint"),

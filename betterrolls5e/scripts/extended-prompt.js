@@ -1,5 +1,3 @@
-import { i18n } from "./utils.js";
-
 /**
  * A specialized Dialog subclass for an extended prompt for Better Rolls
  * @type {Dialog}

@@ -1,14 +1,14 @@
 import { BRSettings } from "./settings.js";
 import { BetterRollsChatCard } from "./chat-message.js";
 import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
-import { ItemUtils } from "./utils.js";
+import { ItemUtils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
 
 // Attaches BetterRolls to actor sheet
 Hooks.on("renderActorSheet5e", (app, html, data) => {
 	const triggeringElement = ".item .item-name h4";
 	const buttonContainer = ".item-properties";
-	
+
 	// this timeout allows other modules to modify the sheet before we do
 	setTimeout(() => {
 		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
@@ -23,7 +23,7 @@ Hooks.on("renderItemSheet5e", (app, html, data) => {
 
 Hooks.once("init", () => {
 	BRSettings.init();
-	
+
 	// Setup template partials
 	const prefix = "modules/betterrolls5e/templates"
 	loadTemplates([
@@ -35,7 +35,7 @@ Hooks.on("ready", () => {
 	// Make a combined damage type array that includes healing
 	const dnd5e = CONFIG.DND5E;
 	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);
-	
+
 	// Updates crit text from the dropdown.
 	let critText = BRSettings.critString;
 	if (critText.includes("br5e.critString")) {
@@ -61,7 +61,7 @@ Hooks.on("getChatLogEntryContext", (html, options) => {
 		game.i18n.localize("DND5E.ChatContextDoubleDamage"),
 		game.i18n.localize("DND5E.ChatContextHalfDamage")
 	];
-	
+
 	for (let i=options.length-1; i>=0; i--) {
 		let option = options[i];
 		if (contextDamageLabels.includes(option.name)) {
