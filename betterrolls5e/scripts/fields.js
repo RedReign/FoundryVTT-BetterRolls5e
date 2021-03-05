@@ -433,7 +433,7 @@ export class RollFields {
 			case 'check':
 				return [RollFields.constructMultiRoll({
 					...data,
-					formula: data.formula ?? ItemUtils.getToolRoll(data.item, data.bonus).formula,
+					formula: data.formula ?? (await ItemUtils.getToolRoll(data.item, data.bonus)).formula,
 				})];
 			case 'damage':
 				return RollFields.constructItemDamageRange(data);

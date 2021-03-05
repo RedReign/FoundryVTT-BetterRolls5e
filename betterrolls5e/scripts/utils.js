@@ -620,47 +620,17 @@ export class ItemUtils {
 	}
 
 	/**
-	 * Gets the tool roll for a specific item.
-	 * This is a general item mod + proficiency d20 check.
-	 * @param {Item} itm 
-	 * @param {number?} bonus 
+	 * Gets the tool roll (skill check) for a specific item.
+	 * @param {Item} itm
+	 * @returns {Promise<Roll>} 
 	 */
-	static getToolRoll(itm, bonus=null) {
-		const itemData = itm.data.data;
-		const actorData = itm.actor.data.data;
-
-		const parts = [];
-		const rollData = ItemUtils.getRollData(itm);
-
-		// Add ability modifier bonus
-		if (itemData.ability) {
-			const abl = itemData.ability;
-			const mod = abl ? actorData.abilities[abl].mod : 0;
-			if (mod !== 0) {
-				parts.push("@mod");
-				rollData.mod = mod;
-			}
-		}
-
-		// Add proficiency, expertise, or Jack of all Trades
-		if (itemData.proficient) {
-			parts.push("@prof");
-			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-		}
-		
-		// Add item's bonus
-		if (itemData.bonus) {
-			parts.push("@bonus");
-			rollData.bonus = itemData.bonus.value;
-		}
-		
-		if (bonus) {
-			parts.push(bonus);
-		}
-		
-		// Halfling Luck check and final result
-		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
-		return new Roll([d20String, ...parts].join("+"), rollData);
+	static getToolRoll(item) {
+		return item.rollToolCheck({
+			fastForward: true,
+			chatMessage: false,
+			advantage: false,
+			disadvantage: false
+		});
 	}
 
 	/**
