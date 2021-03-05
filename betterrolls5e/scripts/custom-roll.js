@@ -932,11 +932,14 @@ export class CustomItemRoll {
 		let spellLevel = null;
 		let consume = false;
 		let placeTemplate = false;
+
+		const data = item.data.data;
 		
 		// Only run the dialog if the spell is not a cantrip
-		if (item.data.data.level > 0) {
+		const isSpell = item.type === "spell";
+		const requireSpellSlot = isSpell && (data.level > 0) && CONFIG.DND5E.spellUpcastModes.includes(data.preparation.mode);
+		if (requireSpellSlot) {
 			try {
-				console.log("level > 0")
 				window.PH = {};
 				window.PH.actor = actor;
 				window.PH.item = item;
