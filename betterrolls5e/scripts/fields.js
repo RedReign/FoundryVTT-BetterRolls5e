@@ -163,7 +163,7 @@ export class RollFields {
 		} else if (item) {
 			const rollData = await  ItemUtils.getAttackRoll(item);
 			formula = rollData.formula;
-			rollState = rollData.rollState ?? rollState;
+			rollState = rollState ?? rollData.rollState;
 		} else {
 			return null;
 		}

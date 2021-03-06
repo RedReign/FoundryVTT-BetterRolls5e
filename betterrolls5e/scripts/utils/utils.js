@@ -270,7 +270,7 @@ export class Utils {
 		for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
 			if (term.faces === 20) return term;
 			if (term.terms ?? term.rolls) {
-				const innerResult = findD20Result(term);
+				const innerResult = Utils.findD20Term(term);
 				if (innerResult) return innerResult;
 			}
 		}
@@ -278,6 +278,31 @@ export class Utils {
 
 	static findD20Result(d20Roll) {
 		return Utils.findD20Term(d20Roll)?.total;
+	}
+
+	/**
+	 * Parses a d20 roll to get the "base" formula, the rollstate,
+	 * and the number of times the d20 was rolled.
+	 * @param {*} roll
+	 * @returns
+	 */
+	static parseD20Formula(roll) {
+		// Determine if advantage/disadvantage, and how many rolls
+		const d20Term = Utils.findD20Term(roll);
+		const numRolls = d20Term.number;
+		const rollState = d20Term.modifiers.includes("kh")
+			? "highest"
+			: d20Term.modifiers.includes("kl")
+			? "lowest"
+			: null;
+
+		// Remove the advantage/disadvantage from the attack roll
+		// At least in the current version of foundry, the formula is not cached
+		// We need to do this because rolls consolidate to a single total, and we want separate totals
+		roll._formula = undefined; // just in case it ever caches using this value in a future release
+		d20Term.number = 1;
+		d20Term.modifiers = d20Term.modifiers.filter((m) => !["kh", "kl"].includes(m));
+		return { formula: roll.formula, numRolls, rollState };
 	}
 }
 
@@ -373,45 +398,47 @@ export class ActorUtils {
 	 * Returns a roll object for a skill check
 	 * @param {Actor} actor
 	 * @param {string} skill
-	 * @returns {Promise<Roll>}
+	 * @param {import("../fields.js").RollState} rollState
 	 */
-	static getSkillCheckRoll(actor, skill) {
-		return actor.rollSkill(skill, {
+	static async getSkillCheckRoll(actor, skill, rollState) {
+		return Utils.parseD20Formula(await actor.rollSkill(skill, {
 			fastForward: true,
 			chatMessage: false,
-			advantage: false,
-			disadvantage: false
-		});
+			advantage: rollState === "highest",
+			disadvantage: rollState === "lowest"
+		}));
 	}
 
 	/**
 	 * Returns a roll object for an ability check
 	 * @param {Actor} actor
 	 * @param {string} abl
+	 * @param {import("../fields.js").RollState} rollState
 	 * @returns {Promise<Roll>}
 	 */
-	static getAbilityCheckRoll(actor, abl) {
-		return actor.rollAbilityTest(abl, {
+	static async getAbilityCheckRoll(actor, abl, rollState) {
+		return Utils.parseD20Formula(await actor.rollAbilityTest(abl, {
 			fastForward: true,
 			chatMessage: false,
-			advantage: false,
-			disadvantage: false
-		});
+			advantage: rollState === "highest",
+			disadvantage: rollState === "lowest"
+		}));
 	}
 
 	/**
 	 * Returns a roll object for an ability save
 	 * @param {Actor} actor
 	 * @param {string} abl
+	 * @param {import("../fields.js").RollState} rollState
 	 * @returns {Promise<Roll>}
 	 */
-	static getAbilitySaveRoll(actor, abl) {
-		return actor.rollAbilitySave(abl, {
+	static async getAbilitySaveRoll(actor, abl, rollState) {
+		return Utils.parseD20Formula(await actor.rollAbilitySave(abl, {
 			fastForward: true,
 			chatMessage: false,
-			advantage: false,
-			disadvantage: false
-		});
+			advantage: rollState === "highest",
+			disadvantage: rollState === "lowest"
+		}));
 	}
 }
 
@@ -608,73 +635,26 @@ export class ItemUtils {
 	 * @param {import("../fields.js").RollState} rollState
 	 */
 	static async getAttackRoll(item, rollState) {
-		const roll = await item.rollAttack({
+		return Utils.parseD20Formula(await item.rollAttack({
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		});
-
-		// Determine if advantage/disadvantage, and how many rolls
-		const d20Term = Utils.findD20Term(roll);
-		const numRolls = d20Term.number;
-		rollState = d20Term.modifiers.includes("kh")
-			? "highest"
-			: d20Term.modifiers.includes("kl")
-			? "lowest"
-			: null;
-
-		// Remove the advantage/disadvantage from the attack roll
-		// At least in the current version of foundry, the formula is not cached
-		// We need to do this because rolls consolidate to a single total, and we want separate totals
-		roll._formula = undefined; // just in case it ever caches using this value in a future release
-		d20Term.number = 1;
-		d20Term.modifiers = d20Term.modifiers.filter((m) => !["kh", "kl"].includes(m));
-		return { formula: roll.formula, numRolls, rollState };
+		}));
 	}
 
 	/**
-	 * Gets the tool roll for a specific item.
-	 * This is a general item mod + proficiency d20 check.
-	 * @param {Item} itm
-	 * @param {number?} bonus
+	 * Gets the tool roll (skill check) for a specific item.
+	 * @param {Item} item
+	 * @param {import("../fields.js").RollState} rollState
 	 */
-	static getToolRoll(itm, bonus=null) {
-		const itemData = itm.data.data;
-		const actorData = itm.actor.data.data;
-
-		const parts = [];
-		const rollData = ItemUtils.getRollData(itm);
-
-		// Add ability modifier bonus
-		if (itemData.ability) {
-			const abl = itemData.ability;
-			const mod = abl ? actorData.abilities[abl].mod : 0;
-			if (mod !== 0) {
-				parts.push("@mod");
-				rollData.mod = mod;
-			}
-		}
-
-		// Add proficiency, expertise, or Jack of all Trades
-		if (itemData.proficient) {
-			parts.push("@prof");
-			rollData.prof = Math.floor(itemData.proficient * actorData.attributes.prof);
-		}
-
-		// Add item's bonus
-		if (itemData.bonus) {
-			parts.push("@bonus");
-			rollData.bonus = itemData.bonus.value;
-		}
-
-		if (bonus) {
-			parts.push(bonus);
-		}
-
-		// Halfling Luck check and final result
-		const d20String = ActorUtils.isHalfling(itm.actor) ? "1d20r<2" : "1d20";
-		return new Roll([d20String, ...parts].join("+"), rollData);
+	static async getToolRoll(item, rollState) {
+		return Utils.parseD20Formula(await item.rollToolCheck({
+			fastForward: true,
+			chatMessage: false,
+			advantage: rollState === "highest",
+			disadvantage: rollState === "lowest"
+		}));
 	}
 
 	/**

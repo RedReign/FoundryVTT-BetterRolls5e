@@ -19,6 +19,7 @@ import { RollFields } from "./fields.js";
  * @type {object}
  * @property {number?} adv
  * @property {number?} disadv
+ * @property {import("./fields.js").RollState} rollState
  * @property {number?} critThreshold
  */
 
@@ -33,13 +34,15 @@ export class CustomRoll {
 	 * It creates and display a chat message on completion.
 	 * @param {Actor} actor The actor being rolled for
 	 * @param {string} title The title to show on the header card
-	 * @param {string} formula The formula to multiroll
+	 * @param {object} processedFormula The formula to multiroll
 	 * @param {string} rollType
 	 * @param {FullRollActorParams} params
+	 * @private
 	 */
-	static async fullRollActor(actor, title, formula, rollType, params) {
+	static async _fullRollActor(actor, title, processedFormula, rollType, params) {
 		// Entries to show for the render
-		const rollState = Utils.getRollState({ event, ...params });
+		const { formula } = processedFormula;
+		const rollState = Utils.getRollState({ event, ...params }) ?? processedFormula.rollState;
 		return new CustomItemRoll(actor, { rollState }, [
 			['header', { title }],
 			['check', {
@@ -58,8 +61,8 @@ export class CustomRoll {
 	 */
 	static async rollSkill(actor, skill, params={}) {
 		const label = i18n(dnd5e.skills[skill]);
-		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
-		return CustomRoll.fullRollActor(actor, label, formula, "skill", params);
+		const formula = await ActorUtils.getSkillCheckRoll(actor, skill);
+		return CustomRoll._fullRollActor(actor, label, formula, "skill", params);
 	}
 
 	/**
@@ -95,14 +98,14 @@ export class CustomRoll {
 		let titleString;
 		let formula = "";
 		if (rollType === "check") {
-			formula = (await ActorUtils.getAbilityCheckRoll(actor, ability)).formula;
+			formula = await ActorUtils.getAbilityCheckRoll(actor, ability);
 			titleString = `${i18n(label)} ${i18n("br5e.chat.check")}`;
 		} else if (rollType === "save") {
-			formula = (await ActorUtils.getAbilitySaveRoll(actor, ability)).formula;
+			formula = await ActorUtils.getAbilitySaveRoll(actor, ability);
 			titleString = `${i18n(label)} ${i18n("br5e.chat.save")}`;
 		}
 
-		return CustomRoll.fullRollActor(actor, titleString, formula, rollType, params);
+		return CustomRoll._fullRollActor(actor, titleString, formula, rollType, params);
 	}
 
 	static newItemRoll(itemOrActor, params, fields) {
