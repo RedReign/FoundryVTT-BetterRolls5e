@@ -58,7 +58,7 @@ export class RollFields {
 		// The rollstate in the options has higher priority than whatever was part of the original
 		const parsedData = Utils.parseD20Formula(options.formula);
 		const formula = parsedData.formula;
-		const rollState = options.rollState ?? parsedData.rollState;
+		const rollState = parsedData.rollState ?? options.rollState;
 
 		const d20Mode = getSettings(options.settings).d20Mode;
 		let numRolls = d20Mode === 4 ? 1 : (options.numRolls || d20Mode);
@@ -210,7 +210,7 @@ export class RollFields {
 		const settings = getSettings(options.settings);
 		const { critBehavior } = settings;
 
-		const rollData =  item ?
+		const rollData = item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
 			actor?.getRollData();
 
