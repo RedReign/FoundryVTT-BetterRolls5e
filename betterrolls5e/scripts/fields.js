@@ -35,8 +35,8 @@ export class RollFields {
 
 	/**
 	 * Constructs multiroll data to be used for rendering
-	 * @param {Object} options Roll options used to construct the multiroll.
-	 * @param {string?} options.formula formula to use when constructing the multiroll
+	 * @param {object} options Roll options used to construct the multiroll.
+	 * @param {string | Roll} options.formula formula or roll object to use when constructing the multiroll
 	 * @param {number?} options.critThreshold optional minimum roll on the dice to cause a critical roll.
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title title to display above the roll
@@ -48,11 +48,17 @@ export class RollFields {
 	 * @returns {import("./renderer.js").MultiRollDataProps}
 	 */
 	static constructMultiRoll(options={}) {
-		const { formula, critThreshold, title, rollState, rollType, elvenAccuracy } = options;
-		if (!formula) {
+		const { critThreshold, title, rollType, elvenAccuracy } = options;
+		if (!options.formula) {
 			console.error("No formula given for multi-roll");
 			return;
 		}
+
+		// Extract info from the formula, to know if it was rolled with advantage/disadvantage
+		// The rollstate in the options has higher priority than whatever was part of the original
+		const parsedData = Utils.parseD20Formula(options.formula);
+		const formula = parsedData.formula;
+		const rollState = options.rollState ?? parsedData.rollState;
 
 		const d20Mode = getSettings(options.settings).d20Mode;
 		let numRolls = d20Mode === 4 ? 1 : (options.numRolls || d20Mode);
@@ -129,7 +135,7 @@ export class RollFields {
 	 * @param {number} options.slotLevel
 	 */
 	static async constructAttackRoll(options={}) {
-		const { item, slotLevel } = options;
+		const { formula, item, rollState, slotLevel } = options;
 		const actor = options.actor ?? item?.actor;
 
 		// Get critical threshold
@@ -155,15 +161,12 @@ export class RollFields {
 		}
 
 		// Get Roll. Use Formula if given, otherwise get it from the item
-		let rollState = options.rollState;
-		let formula = null;
-		if (options.formula) {
+		let roll = null;
+		if (formula) {
 			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
-			formula = new Roll(formula, rollData).formula;
+			roll = new Roll(formula, rollData);
 		} else if (item) {
-			const rollData = await  ItemUtils.getAttackRoll(item);
-			formula = rollData.formula;
-			rollState = rollState ?? rollData.rollState;
+			roll = await ItemUtils.getAttackRoll(item);
 		} else {
 			return null;
 		}
@@ -171,7 +174,7 @@ export class RollFields {
 		// Construct the multiroll
 		return RollFields.constructMultiRoll({
 			...options,
-			formula,
+			formula: roll,
 			rollState,
 			title,
 			critThreshold,
@@ -306,7 +309,7 @@ export class RollFields {
 	static constructCritDamageRoll(options={}) {
 		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
-		const rollData =  item ?
+		const rollData = item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
 			actor?.getRollData();
 

@@ -283,10 +283,12 @@ export class Utils {
 	/**
 	 * Parses a d20 roll to get the "base" formula, the rollstate,
 	 * and the number of times the d20 was rolled.
-	 * @param {*} roll
+	 * @param {string | Roll} roll string or Roll object to extract info from
 	 * @returns
 	 */
 	static parseD20Formula(roll) {
+		roll = typeof roll === "string" ? new Roll(roll) : roll;
+
 		// Determine if advantage/disadvantage, and how many rolls
 		const d20Term = Utils.findD20Term(roll);
 		const numRolls = d20Term.number;
@@ -401,12 +403,12 @@ export class ActorUtils {
 	 * @param {import("../fields.js").RollState} rollState
 	 */
 	static async getSkillCheckRoll(actor, skill, rollState) {
-		return Utils.parseD20Formula(await actor.rollSkill(skill, {
+		return await actor.rollSkill(skill, {
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		}));
+		});
 	}
 
 	/**
@@ -417,12 +419,12 @@ export class ActorUtils {
 	 * @returns {Promise<Roll>}
 	 */
 	static async getAbilityCheckRoll(actor, abl, rollState) {
-		return Utils.parseD20Formula(await actor.rollAbilityTest(abl, {
+		return await actor.rollAbilityTest(abl, {
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		}));
+		});
 	}
 
 	/**
@@ -433,12 +435,12 @@ export class ActorUtils {
 	 * @returns {Promise<Roll>}
 	 */
 	static async getAbilitySaveRoll(actor, abl, rollState) {
-		return Utils.parseD20Formula(await actor.rollAbilitySave(abl, {
+		return await actor.rollAbilitySave(abl, {
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		}));
+		});
 	}
 }
 
@@ -635,12 +637,12 @@ export class ItemUtils {
 	 * @param {import("../fields.js").RollState} rollState
 	 */
 	static async getAttackRoll(item, rollState) {
-		return Utils.parseD20Formula(await item.rollAttack({
+		return await item.rollAttack({
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		}));
+		});
 	}
 
 	/**
@@ -649,12 +651,12 @@ export class ItemUtils {
 	 * @param {import("../fields.js").RollState} rollState
 	 */
 	static async getToolRoll(item, rollState) {
-		return Utils.parseD20Formula(await item.rollToolCheck({
+		return await item.rollToolCheck({
 			fastForward: true,
 			chatMessage: false,
 			advantage: rollState === "highest",
 			disadvantage: rollState === "lowest"
-		}));
+		});
 	}
 
 	/**
