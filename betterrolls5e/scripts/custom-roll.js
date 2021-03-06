@@ -396,9 +396,22 @@ export class CustomItemRoll {
 	/**
 	 * Like setCritStatus(), but sets the forceCrit flag, preventing the crit
 	 * from being unset by things like the attack roll being converted to disadvantage.
-	 * @param {*} group
+	 * @param {string?} group group to update. If not set will force crit on the whole roll.
 	 */
 	async forceCrit(group) {
+		// Force crit on the whole roll recursively
+		if (group == null) {
+			let updated = false;
+			const groups = new Set(this.entries.map((e) => e.group).filter((g) => g));
+			for (const group of groups) {
+				if (await this.forceCrit(group)) {
+					updated = true;
+				}
+			}
+
+			return updated;
+		}
+
 		const updated = await this.updateCritStatus(group, true);
 
 		// Note: if there's no group or header then forceCrit can't be set,
