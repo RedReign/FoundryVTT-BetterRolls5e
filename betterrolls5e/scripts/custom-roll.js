@@ -1033,15 +1033,16 @@ export class CustomItemRoll {
 		const { item, actor } = this;
 		if (!item) return;
 
-		const actorUpdates = {};
-		const itemUpdates = {};
-		const resourceUpdates = {};
+		let actorUpdates = {};
+		let itemUpdates = {};
+		let resourceUpdates = {};
 
 		// Merges update data from _getUsageUpdates() into the result dictionaries
+		// Note: mergeObject() also resolves "." nesting which is not what we want
 		function mergeUpdates(updates) {
-			mergeObject(actorUpdates, updates.actorUpdates ?? {});
-			mergeObject(itemUpdates, updates.itemUpdates ?? {});
-			mergeObject(resourceUpdates, updates.resourceUpdates ?? {});
+			actorUpdates = { ...actorUpdates, ...(updates.actorUpdates ?? {})};
+			itemUpdates = { ...itemUpdates, ...(updates.itemUpdates ?? {})};
+			resourceUpdates = { ...resourceUpdates, ...(updates.resourceUpdates ?? {})};
 		}
 
 		const itemData = item.data.data;
@@ -1051,7 +1052,6 @@ export class CustomItemRoll {
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
 		const uses = itemData.uses || {};
-		const current = uses.value || 0;
 		const quantity = itemData.quantity;
 		const autoDestroy = uses.autoDestroy;
 
@@ -1060,21 +1060,12 @@ export class CustomItemRoll {
 		// Identify what's being consumed. Note that ammo is consumed elsewhere
 		const consumeSpellSlot = this.params.consumeSpellSlot;
 		const consumeResource = hasResource && request.resource && itemData.consume.type !== "ammo";
-		const consumeUses = request.use && hasUses;
-
-		// Check for consuming uses, but not quantity
-		if (consumeUses && !request.quantity) {
-			if (!current) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
-		}
+		const consumeUsage = request.use && hasUses;
+		const consumeQuantity = request.quantity || autoDestroy;
 
 		// Check for consuming quantity, but not uses
-		if (request.quantity && !consumeUses) {
+		if (request.quantity && !consumeUsage) {
 			if (!quantity) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
-		}
-
-		// Check for consuming quantity and uses
-		if (consumeUses && request.quantity) {
-			if (!current && quantity <= 1) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
 		}
 
 		// Check for consuming charge ("Action Recharge")
@@ -1089,40 +1080,20 @@ export class CustomItemRoll {
 			mergeUpdates(updates);
 		}
 
-		// Handle quantity when uses are not consumed
-		// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
-		// We are waiting and seeing what the DND system uses before moving everything over
-		if (request.quantity && !consumeUses) {
+		// Consume quantity and uses
+		if (consumeQuantity && !consumeUsage) {
+			// Handle quantity when uses are not consumed
+			// While the rest can be handled by Item._getUsageUpdates() as of DND 1.2.0, this one thing cannot
 			itemUpdates["data.quantity"] = Math.max(0, quantity - 1);
-			if (quantity <= 1 && autoDestroy) {
-				output = "destroy";
-			}
-		}
+		} else if (consumeUsage) {
+			// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)
+			const updates = item._getUsageUpdates({ consumeUsage, consumeQuantity });
+			if (!updates) return "error";
+			mergeUpdates(updates);
 
-		// Handle cases where charge consumption is a thing (uses with quantity consumption OR auto destroy)
-		// This can be handled by Item._getUsageUpdates() in DND 1.2.0, but leaving it here just in case
-		if (consumeUses) {
-			const remaining = request.use ? Math.max(current - 1, 0) : current;
-
-			if (!autoDestroy) {
-				// Handle uses if quantity is not affected
-				itemUpdates["data.uses.value"] = remaining;
-			} else {
-				// Handle quantity and uses
-				let remainingU = remaining;
-				let remainingQ = quantity;
-				console.log(remainingQ, remainingU);
-				if (remainingU < 1) {
-					remainingQ -= 1;
-					ui.notifications.warn(game.i18n.format("br5e.error.autoDestroy", {name: item.name}));
-					if (remainingQ >= 1) {
-						remainingU = itemData.uses.max || 0;
-					} else { remainingU = 0; }
-					if (remainingQ < 1 && autoDestroy) { output = "destroy"; }
-				}
-
-				itemUpdates["data.quantity"] = Math.max(remainingQ,0);
-				itemUpdates["data.uses.value"] = Math.max(remainingU,0);
+			// Work around a bug in Item._getUsageUpdates(). Once this bug is fixed we can remove this code
+			if (itemUpdates["data.quantity"] === 0) {
+				itemUpdates["data.uses.value"] = 0;
 			}
 		}
 
@@ -1140,7 +1111,8 @@ export class CustomItemRoll {
 		}
 
 		// Destroy item if it gets consumed
-		if (output === "destroy") {
+		if (itemUpdates["data.quantity"] === 0 && autoDestroy) {
+			output = "destroy";
 			await actor.deleteOwnedItem(item.id);
 		}
 
