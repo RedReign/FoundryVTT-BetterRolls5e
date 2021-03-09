@@ -1,13 +1,21 @@
 import { getSettings } from "../settings.js";
 import { libWrapper } from "./libWrapper.js";
 
+
 export function patchCoreFunctions() {
-	libWrapper.register(
-		"betterrolls5e",
-		"CONFIG.Item.entityClass.prototype.roll",
-		itemRoll(libWrapper._create_wrapper("CONFIG.Item.entityClass.prototype.roll", "betterrolls5e")._wrapped),
-		"OVERRIDE"
-	);
+	override("CONFIG.Item.entityClass.prototype.roll", itemRoll);
+}
+
+/**
+ * A version of libwrapper OVERRIDE that tries to get the original function.
+ * We want Better Rolls and Core 5e to be swappable between each other,
+ * and for other modules to wrap over it.
+ * @param {*} target
+ * @param {*} fn A curried function that takes the original and returns a function to pass to libwrapper
+ */
+function override(target, fn) {
+	const original = libWrapper._create_wrapper?.(target, "betterrolls5e")._wrapped ?? eval(target);
+	libWrapper.register("betterrolls5e", target, fn(original), "OVERRIDE");
 }
 
 /**

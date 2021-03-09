@@ -6,11 +6,6 @@
 	"compatibleCoreVersion": "0.7.9",
 	"version": "1.3.13",
 	"author": "Red Reign#5128",
-	"dependencies": [
-		{
-			"name": "lib-wrapper"
-		}
-	],
 	"languages": [
 		{
 			"lang": "en",
