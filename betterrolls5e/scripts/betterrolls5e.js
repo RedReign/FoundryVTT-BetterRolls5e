@@ -352,18 +352,13 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			case 'infoRoll':
 				fields.push(["desc"]); params.properties = true; break;
 			case 'vanillaRoll':
-				item.actor.sheet._onItemRoll(event); break;
+				item.roll({ vanilla: true });
 		}
 
 		if (ev.target.dataset.action !== 'vanillaRoll') {
 			new CustomItemRoll(item, params, fields).toMessage();
 		}
 	});
-}
-
-// Gets the total of all damage rolls from a given Better Roll HTML
-export function getTotalDamage(html) {
-	return;
 }
 
 /**

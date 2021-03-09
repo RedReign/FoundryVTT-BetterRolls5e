@@ -696,9 +696,11 @@ export class CustomItemRoll {
 	/**
 	 * Creates and sends a chat message to all players (based on whisper config).
 	 * If not already rolled and rendered, roll() is called first.
+	 * @param {object} param0 options
+	 * @param {string} param0.rollMode roll mode to determine if private/public/etc
 	 * @returns {Promise<ChatMessage>} the created chat message
 	 */
-	async toMessage() {
+	async toMessage({ rollMode=null, createMessage=true }={}) {
 		if (!this.rolled) {
 			await this.roll();
 		}
@@ -720,18 +722,21 @@ export class CustomItemRoll {
 			},
 			flags: this._getFlags(),
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-			roll: new Roll("0").roll(),
-			...Utils.getWhisperData(),
+			roll: this.dicePool.pop(),
+			...Utils.getWhisperData(rollMode),
 			sound: Utils.getDiceSound(hasMaestroSound)
 		};
 
 		await Hooks.callAll("messageBetterRolls", this, chatData);
-		await this.dicePool.flush();
 
 		// Send the chat message
-		const message = await ChatMessage.create(chatData);
-		this.messageId = message.id;
-		return message;
+		if (createMessage) {
+			const message = await ChatMessage.create(chatData);
+			this.messageId = message.id;
+			return message;
+		} else {
+			return chatData;
+		}
 	}
 
 	/**

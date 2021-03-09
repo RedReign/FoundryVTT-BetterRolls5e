@@ -82,12 +82,11 @@ export class Utils {
 	/**
 	 * Additional data to attach to the chat message.
 	 */
-	static getWhisperData() {
-		let rollMode = null;
+	static getWhisperData(rollMode = null) {
 		let whisper = undefined;
 		let blind = null;
 
-		rollMode = game.settings.get("core", "rollMode");
+		rollMode = rollMode || game.settings.get("core", "rollMode");
 		if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
 		if ( rollMode === "blindroll" ) blind = true;
 		else if ( rollMode === "selfroll" ) whisper = [game.user._id];
