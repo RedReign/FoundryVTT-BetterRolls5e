@@ -3,6 +3,7 @@ import { BetterRollsChatCard } from "./chat-message.js";
 import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
 import { ItemUtils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
+import { patchCoreFunctions } from "./patching/index.js"
 
 // Attaches BetterRolls to actor sheet
 Hooks.on("renderActorSheet5e", (app, html, data) => {
@@ -45,6 +46,7 @@ Hooks.on("ready", () => {
 
 	// Initialize Better Rolls
 	window.BetterRolls = BetterRolls();
+	patchCoreFunctions();
 	Hooks.call("readyBetterRolls");
 });
 

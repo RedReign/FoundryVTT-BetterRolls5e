@@ -35,7 +35,7 @@ export function addItemContent(actor, html,
 	buttonContainer = ".item-properties",
 	itemButton = ".item .rollable") {
 	(game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
-	itemButton ? changeRollsToDual(actor, html, null, {itemButton: itemButton}) : null;
+	itemButton ? changeRollsToDual(actor, html, null, {itemButton}) : null;
 }
 
 const dnd5e = DND5E;
@@ -457,48 +457,6 @@ export function changeRollsToDual (actor, html, data, params) {
 			let params = await Utils.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.rollSkill(actor, skill, params);
-		});
-	}
-
-	// Assign new action to item image button
-	let itemImage = html.find(paramRequests.itemButton);
-	if (itemImage.length > 0) {
-		itemImage.off();
-		itemImage.click(async event => {
-			const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
-
-			let li = $(event.currentTarget).parents(".item"),
-				actorID = actor.id,
-				itemID = String(li.attr("data-item-id")),
-				item = actor.getOwnedItem(itemID),
-				params = await Utils.eventToAdvantage(event);
-
-			// Case 1 - If the image button should roll an "Item Macro" macro
-			try {
-				if (window.ItemMacro?.hasMacro(item) && game.settings.get('itemacro','charsheet')) {
-					event.preventDefault();
-					window.ItemMacro.runMacro(actorID, itemID);
-					return;
-				}
-			} catch (ex) {}
-
-			// Case 2 - If the image button should roll a vanilla roll
-			if (!imageButtonEnabled) {
-				item.actor.sheet._onItemRoll(event);
-
-			// Case 3 - If Alt is pressed
-			} else if (event.altKey) {
-				if (altSecondaryEnabled) {
-					event.preventDefault();
-					CustomRoll.newItemRoll(item, mergeObject(params, {preset:1})).toMessage();
-				} else {
-					item.actor.sheet._onItemRoll(event);
-				}
-			// Case 4 - If Alt is not pressed
-			} else {
-				event.preventDefault();
-				CustomRoll.newItemRoll(item, mergeObject(params, {preset:0})).toMessage();
-			}
 		});
 	}
 }
