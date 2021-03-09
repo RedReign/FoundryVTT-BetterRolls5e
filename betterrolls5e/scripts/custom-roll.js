@@ -553,7 +553,7 @@ export class CustomItemRoll {
 			}
 
 			// Determine spell level and configuration settings
-			if (consume && !params.slotLevel && item.data.type === "spell") {
+			if (item.data.type === "spell" && consume && !params.slotLevel) {
 				const config = await this.configureSpell();
 				if (config === "error") {
 					this.error = true;
@@ -982,7 +982,7 @@ export class CustomItemRoll {
 		const requireSpellSlot = isSpell && (data.level > 0) && CONFIG.DND5E.spellUpcastModes.includes(data.preparation.mode);
 		if (requireSpellSlot) {
 			// The ability use dialog shows consumption prompts, but we cannot control the default values
-			// therefore we have to remove them.
+			// therefore we have to remove them then add them back.
 			const propsToRemove = ["uses", "recharge"];
 			let extracted = {};
 			try {
@@ -1004,6 +1004,9 @@ export class CustomItemRoll {
 				// Restore the stripped props
 				mergeObject(data, extracted);
 			}
+		} else {
+			// If there's no dialog, always show the template if enabled
+			placeTemplate = item.hasAreaTarget && this.params.useTemplate;
 		}
 
 		// If consume is enabled, mark which slot is getting consumed
