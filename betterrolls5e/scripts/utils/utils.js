@@ -250,11 +250,11 @@ export class Utils {
 	static getRollFlavors(...rolls) {
 		const flavors = new Set();
 		for (const roll of rolls) {
-			for (const term of (roll?.terms ?? roll?.rolls ?? [])) {
+			for (const term of (roll?.terms ?? roll?.results ?? [])) {
 				if (term.options?.flavor) {
 					flavors.add(term.options.flavor);
 				}
-				if (term.terms || term.rolls) {
+				if (term.terms || term.results) {
 					Utils.getRollFlavors(term).forEach(flavors.add.bind(flavors));
 				}
 			}
