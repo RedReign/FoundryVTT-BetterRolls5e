@@ -291,6 +291,10 @@ export class Utils {
 
 		// Determine if advantage/disadvantage, and how many rolls
 		const d20Term = Utils.findD20Term(roll);
+		if (!d20Term) {
+			return { formula: roll.formula };
+		}
+
 		const numRolls = d20Term.number;
 		const rollState = d20Term.modifiers.includes("kh")
 			? "highest"
