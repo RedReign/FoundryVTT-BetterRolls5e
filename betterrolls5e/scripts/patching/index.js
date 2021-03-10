@@ -26,17 +26,17 @@ function override(target, fn) {
  */
 const itemRoll = (defaultRoll) => function (options) {
 	// Handle options, same defaults as core 5e
-	options = mergeObject({configureDialog: true, createMessage: true }, options);
+	options = mergeObject({configureDialog: true, createMessage: true, event }, options);
 	const { rollMode, createMessage, vanilla } = options;
-
+	const altKey = event?.altKey;
 	const item = this;
 
-	// Case - If the image button should roll a vanilla roll
+	// Case - If the image button should roll a vanilla roll, UNLESS vanilla is defined and is false
 	const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
-	if (vanilla || !imageButtonEnabled || (event?.altKey && !altSecondaryEnabled)) {
+	if (vanilla || (!imageButtonEnabled && vanilla !== false) || (altKey && !altSecondaryEnabled)) {
 		return defaultRoll.bind(item)(options);
 	}
 
-	const preset = event?.altKey ? 1 : 0;
+	const preset = altKey ? 1 : 0;
 	return BetterRolls.rollItem(item, { preset }).toMessage({ rollMode, createMessage });
 }
