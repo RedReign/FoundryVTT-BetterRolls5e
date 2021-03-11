@@ -1,4 +1,4 @@
-import { i18n } from "./utils/index.js";
+import { i18n, Utils } from "./utils/index.js";
 
 const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
 
@@ -11,12 +11,20 @@ class Settings {
 	 * This should only be called once, at initialization.
 	 */
 	init() {
+		// Special non-config flag to handle migrations
+		game.settings.register("betterrolls5e", "migration", {
+			config: false,
+			default: { status: false, version: Utils.getVersion() },
+			scope: 'world',
+			type: Object
+		});
+
 		game.settings.register("betterrolls5e", "d20Mode", {
 			name: i18n("br5e.d20Mode.name"),
 			hint: i18n("br5e.d20Mode.hint"),
 			scope: "world",
 			config: true,
-			default: 2,
+			default: 1,
 			type: Number,
 			choices: {
 				1: i18n("br5e.d20Mode.choices.1"),

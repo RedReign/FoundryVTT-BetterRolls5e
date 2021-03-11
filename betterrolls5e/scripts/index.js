@@ -4,6 +4,7 @@ import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrol
 import { ItemUtils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
 import { patchCoreFunctions } from "./patching/index.js"
+import { migrate } from "./migration.js";
 
 // Attaches BetterRolls to actor sheet
 Hooks.on("renderActorSheet5e", (app, html, data) => {
@@ -32,7 +33,9 @@ Hooks.once("init", () => {
 	]);
 });
 
-Hooks.on("ready", () => {
+Hooks.on("ready", async () => {
+	await migrate();
+
 	// Make a combined damage type array that includes healing
 	const dnd5e = CONFIG.DND5E;
 	CONFIG.betterRolls5e.combinedDamageTypes = mergeObject(duplicate(dnd5e.damageTypes), dnd5e.healingTypes);

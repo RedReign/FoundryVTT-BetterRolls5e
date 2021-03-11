@@ -1,4 +1,5 @@
 import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
+import { migrateChatMessage } from "./migration.js";
 import { BRSettings } from "./settings.js";
 import { i18n, Utils } from "./utils/index.js";
 
@@ -8,6 +9,9 @@ import { i18n, Utils } from "./utils/index.js";
  * with BetterRollsChatCard.bind().
  */
 export class BetterRollsChatCard {
+	/** Min version to enable the card on, to prevent breakage */
+	static min_version = "1.4";
+
 	constructor(message, html) {
 		this.updateBinding(message, html);
 	}
@@ -58,9 +62,14 @@ export class BetterRollsChatCard {
 	 * @param {ChatMessage} message
 	 * @param {JQuery} html
 	 */
-	static bind(message, html) {
+	static async bind(message, html) {
 		const chatCard = html.find('.red-full');
 		if (chatCard.length === 0) {
+			return null;
+		}
+
+		// If the card needs to be migrated, skip the binding
+		if (await migrateChatMessage(message)) {
 			return null;
 		}
 
@@ -170,7 +179,7 @@ export class BetterRollsChatCard {
 				// TODO: Move this elsewhere. There's a known bug when crit settings are changed suddenly
 				// If Crit (setting) is disabled, then re-enabled, crit buttons don't get re-added
 				const id = element.parents('.dice-roll').attr('data-id');
-				const entry = this.roll?.entries.find(m => m.id === id);
+				const entry = this.roll?.getEntry(id);
 				if (!this.roll?.canCrit(entry)) {
 					element.find('.crit-button').remove();
 				}

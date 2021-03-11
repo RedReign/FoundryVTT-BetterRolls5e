@@ -123,7 +123,6 @@ let defaultParams = {
 	event: null,
 	adv: 0,
 	disadv: 0,
-	prompt: {},
 	consume: true
 };
 
@@ -149,6 +148,13 @@ let defaultParams = {
 
 // A custom roll with data corresponding to an item on a character's sheet.
 export class CustomItemRoll {
+	/**
+	 * Current id that is auto-incremented.
+	 * IDs need to be unique within a card
+	 * @private
+	 */
+	_currentId = 1;
+
 	constructor(itemOrActor, params, fields) {
 		if (itemOrActor) {
 			const { item, actor } = Utils.resolveActorOrItem(itemOrActor);
@@ -201,6 +207,27 @@ export class CustomItemRoll {
 		roll.storedItemData = message.getFlag("dnd5e", "itemData");
 
 		return roll;
+	}
+
+	/**
+	 * Returns an entry contained in this roll
+	 * @param {string} id
+	 * @param {*} list
+	 */
+	getEntry(id, list=null) {
+		list = list ?? this.entries;
+		for (const entry of list) {
+			if (entry.id === id) {
+				return entry;
+			}
+
+			if (entry.entries) {
+				const subEntry = this.getEntry(id, entry.entries);
+				if (subEntry) {
+					return subEntry;
+				}
+			}
+		}
 	}
 
 	set item(item) {
@@ -282,39 +309,16 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * Returns the group header.
-	 * Currently this is the multiroll/button-save junction.
-	 * In the future, maybe we want to exchange it for fields? Unsure.
-	 * @param {string} group
-	 * @private
-	 */
-	_getGroupHeader(group) {
-		return this.entries.find(e =>
-			e.group === group &&
-			["multiroll", "button-save"].includes(e.type));
-	}
-
-	/**
-	 * Returns the crit status, for a group if given or for the whole roll is no group is given
-	 * @param {string?} group optional filter to only check for crits within a group
-	 * @returns {boolean} true if the group crit, false otherwise
-	 */
-	getCritStatus(group) {
-		// Get crit status from
-		if (group) {
-			const roll = this._getGroupHeader(group);
-			return roll?.isCrit ?? false;
-		}
-
-		return this.isCrit;
-	}
-
-	/**
-	 * Returns true if a roll entry can crit
+	 * Returns true if a damage entry can crit
 	 * @param {import("./renderer.js").RenderModelEntry} entry
 	 */
 	canCrit(entry) {
-		if (!entry || entry.critRoll || this.getCritStatus(entry.group) || entry?.damageIndex === "other") {
+		const group = this.getEntry(entry?.group) ?? this.getEntry(entry?.id);
+		if (group?.type !== "damage-group") {
+			return false;
+		}
+
+		if (entry.critRoll || group.isCrit || entry?.damageIndex === "other") {
 			return false;
 		}
 
@@ -325,14 +329,16 @@ export class CustomItemRoll {
 	/**
 	 * Rolls crit dice if its not already rolled for the current card.
 	 * This is used when *augmenting* an existing roll to a crit.
-	 * @param {string | null} group If not null, limits the updates to the specified group
+	 * @param {number} group updates the crit status for the specified group
 	 * @param {boolean} isCrit Whether to enable or disable crits
 	 * @returns {Promise<boolean>} if the crit roll went through
 	 */
-	async updateCritStatus(group, isCrit) {
+	async updateCritStatus(groupId, isCrit) {
+		const group = this.getEntry(groupId);
+		if (!group) return;
+
 		// If crits were forced on, can't turn them off
-		const header = this._getGroupHeader(group);
-		if (!isCrit && header.forceCrit) {
+		if (!isCrit && group.forceCrit) {
 			return false;
 		}
 
@@ -342,12 +348,14 @@ export class CustomItemRoll {
 			return false;
 		}
 
+		const baseExtraCritDice = ItemUtils.getExtraCritDice(this.item);
 		let updated = false;
 
-		const baseExtraCritDice = ItemUtils.getExtraCritDice(this.item);
-		const entries = group ? this.entries.filter(e => e.group === group) : this.entries;
+		// Update group crit status
+		group.isCrit = isCrit;
 
-		for (const entry of entries) {
+		// Update group entry crit statuses
+		for (const entry of group?.entries ?? []) {
 			// "Junction" types are used to keep track of crit state
 			if (["multiroll", "button-save"].includes(entry.type)) {
 				entry.isCrit = isCrit;
@@ -410,7 +418,7 @@ export class CustomItemRoll {
 				updated = true;
 			}
 
-			const groups = new Set(this.entries.map((e) => e.group).filter((g) => g));
+			const groups = new Set(this.entries.filter((g) => g.type === "damage-group").map((g) => g.id));
 			for (const group of groups) {
 				if (await this._forceCritForGroup(group)) {
 					updated = true;
@@ -425,20 +433,20 @@ export class CustomItemRoll {
 
 	/**
 	 * Internal helper to force crit for a specific group
-	 * @param {*} group
+	 * @param {*} groupId
 	 * @returns
 	 * @private
 	 */
-	async _forceCritForGroup(group) {
-		const updated = await this.updateCritStatus(group, true);
+	async _forceCritForGroup(groupId) {
+		const updated = await this.updateCritStatus(groupId, true);
 
-		// Note: if there's no group or header then forceCrit can't be set,
+		// Note: if there's no group then forceCrit can't be set,
 		// however currently the only way a crit could be unset is by converting to disadvantage
 		// If there's no attack roll...it can't be unset anyways, so no big deal
-		const header = this._getGroupHeader(group);
-		if (updated || (header.isCrit && !header.forceCrit)) {
-			if (header) {
-				header.forceCrit = true;
+		const group = this.getEntry(groupId);
+		if (updated || (group.isCrit && !group.forceCrit)) {
+			if (group) {
+				group.forceCrit = true;
 			}
 			return true;
 		}
@@ -449,22 +457,23 @@ export class CustomItemRoll {
 	/**
 	 * Rolls damage for a damage group. Returns true if successful.
 	 * This works by revealing all relevant hidden damage data, and visually rolling dice
-	 * @param {string} group
+	 * @param {string} id
 	 */
-	async rollDamage(group) {
-		const wasHidden = this.params.prompt[group];
-		if (!this.hasPermission || !this.entries?.length || !wasHidden) {
+	async rollDamage(id) {
+		const group = this.getEntry(id);
+		const wasHidden = group?.prompt;
+		if (!this.hasPermission || !group || !wasHidden) {
 			return false;
 		}
 
 		// Get whether this was a crit or not
-		const isCrit = this.getCritStatus(group);
+		const isCrit = group.isCrit || this.isCrit;
 
 		// Disable the prompt for this group
-		this.params.prompt[group] = false;
+		group.prompt = false;
 
 		// Add to dicepool for dice so nice
-		for (const entry of this.entries.filter(e => e.group === group)) {
+		for (const entry of group.entries) {
 			if (entry.type === "damage" || (entry.type === "crit" && isCrit)) {
 				this.dicePool.push(entry.baseRoll, entry.critRoll);
 			}
@@ -474,7 +483,7 @@ export class CustomItemRoll {
 	}
 
 	/**
-	 * Assigns a RollState to a multiroll entry. Cannot be used to unset it.
+	 * Assigns a RollState to an existing multiroll entry. Cannot be used to unset it.
 	 * @param {string} id The id of the rollstate entry to update
 	 * @param {import("./fields.js").RollState} rollState
 	 */
@@ -483,7 +492,7 @@ export class CustomItemRoll {
 			return false;
 		}
 
-		const multiroll = this.entries.find(m => m.id === id);
+		const multiroll = this.getEntry(id);
 		if (multiroll?.type !== 'multiroll' || multiroll.rollState) {
 			return false;
 		}
@@ -517,8 +526,8 @@ export class CustomItemRoll {
 		// Update crit status if not forcing crit
 		multiroll.rollState = rollState;
 		if (!multiroll.forceCrit) {
-			multiroll.isCrit = multiroll.entries.some(e => !e.ignored && e.isCrit);
-			this.updateCritStatus(multiroll.group, multiroll.isCrit);
+			const group = this.entries.find((e) => e.attackId === multiroll.id);
+			this.updateCritStatus(group?.id, multiroll.isCrit);
 		}
 
 		return true;
@@ -640,9 +649,11 @@ export class CustomItemRoll {
 		for (const entry of this.entries) {
 			if (entry.type === "multiroll") {
 				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
-			} else if (!entry.group || !this.params.prompt[entry.group]) {
-				if (entry.type === "damage" || (entry.type === "crit" && entry.revealed)) {
-					this.dicePool.push(entry.baseRoll, entry.critRoll);
+			} else if (entry.type === "group" && !entry.prompt) {
+				for (const subEntry of entry.entries) {
+					if (subEntry.type === "damage" || (subEntry.type === "crit" && subEntry.revealed)) {
+						this.dicePool.push(subEntry.baseRoll, subEntry.critRoll);
+					}
 				}
 			}
 		}
@@ -779,7 +790,6 @@ export class CustomItemRoll {
 		const params = duplicate(this.params);
 		params.consume = false;
 		params.rollState = Utils.getRollState({ event });
-		params.prompt = {};
 
 		const newRoll = new CustomItemRoll(subject, params, fields);
 		await newRoll.toMessage();
@@ -853,6 +863,14 @@ export class CustomItemRoll {
 	}
 
 	/**
+	 * Creates and increments an id for internal identification
+	 * @private
+	 */
+	_createId() {
+		return `${this._currentId++}`;
+	}
+
+	/**
 	 * Adds a render entry to the list. Does not add to dicepool, but does flag for crit.
 	 * If damage prompt is enabled, any damage entries will be hidden unless hidden has a value.
 	 * @param {import("./renderer.js").RenderModelEntry} entry
@@ -867,30 +885,43 @@ export class CustomItemRoll {
 			}
 		}
 
-		// Assign roll groups for multirolls
-		if (entry.type === "multiroll" || entry.type === "button-save") {
-			this._lastGroupIdx = (this._lastGroupIdx ?? -1) + 1;
-			entry.group = `br!${this._lastGroupIdx}`
-		}
+		// Assign groups for damage
+		const isDamageEntry = ["damage", "crit"].includes(entry.type);
+		if (isDamageEntry) {
+			let groupEntry = this.entries[this.entries.length - 1];
 
-		// Assign roll groups for damage
-		if (entry.type === "damage" || entry.type === "crit") {
-			const reversedEntries = [...this.entries].reverse();
-			const lastGroup = reversedEntries.find(e => e.group)?.group;
-			entry.group = entry.group ?? lastGroup;
+			// Create group if does not exist
+			if (groupEntry?.type !== "damage-group") {
+				// Find last attack roll, and link to it
+				const reversedEntries = [...this.entries].reverse();
+				const lastAttack = reversedEntries.find((e) => e.type === "multiroll");
+				const hasAttackOrSave = this.entries.some((e) => e.type === "multiroll" || e.type === "button-save");
+				groupEntry = {
+					id: this._createId(),
+					type: "damage-group",
+					attackId: lastAttack?.id,
+					isCrit: lastAttack?.isCrit,
+					prompt: hasAttackOrSave && this.settings.damagePromptEnabled,
+					entries: [],
+				};
+
+				this.entries.push(groupEntry);
+			}
 
 			// Reveal if this was a crit entry, and the group crit
-			if (entry.type === "crit" && this.getCritStatus(entry.group)) {
+			if (entry.type === "crit" && groupEntry.isCrit) {
 				entry.revealed = true;
 			}
 
-			// If damage buttons are enabled, enable prompts
-			if (entry.group && this.settings.damagePromptEnabled) {
-				this.params.prompt[entry.group] = this.params.prompt[entry.group] ?? true;
-			}
+			// Assign an id and add to group
+			entry.id = this._createId();
+			entry.group = groupEntry.id;
+			groupEntry.entries.push(entry)
+		} else {
+			// Non-damage entry. Assign an id and add to list
+			entry.id = this._createId();
+			this.entries.push(entry);
 		}
-
-		this.entries.push(entry);
 	}
 
 	/**
