@@ -813,7 +813,7 @@ export class CustomItemRoll {
 	 * Nothing updates until this method is called.
 	 * Requires the chat message to already exist.
 	 */
-	async update() {
+	async update(additional={}) {
 		const chatMessage = game.messages.get(this.messageId);
 		if (chatMessage) {
 			const content = await this.render();
@@ -821,7 +821,8 @@ export class CustomItemRoll {
 			await this.dicePool.flush();
 			await chatMessage.update({
 				...flattenObject({ flags: duplicate(this._getFlags()) }),
-				content
+				content,
+				...additional
 			}, { diff: true });
 		}
 	}
