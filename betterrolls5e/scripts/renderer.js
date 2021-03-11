@@ -144,8 +144,7 @@ export class Renderer {
 			case "button-save":
 				return Renderer.renderSaveButton(model, settings);
 			case "raw":
-				// todo: print a warning, this means its unconverted
-				return model.content?.html ?? model.content;
+				return model?.html ?? model.content?.html ?? model.content;
 			default:
 				console.error(`Unknown render model type ${model.type}`)
 		}
