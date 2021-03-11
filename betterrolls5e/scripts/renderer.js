@@ -347,8 +347,8 @@ export class Renderer {
 			if (!entry) continue;
 
 			// If its a new attack/damage group, add a divider
-			const previousIsDamage = ["damage", "crit", "group"].includes(previous?.type);
-			if (previousIsDamage && ["multiroll", "button-save", "group"].includes(entry.type)) {
+			const previousIsDamage = ["damage", "crit", "damage-group"].includes(previous?.type);
+			if (previousIsDamage && ["multiroll", "button-save", "damage-group"].includes(entry.type)) {
 				templates.push("<hr/>");
 			}
 

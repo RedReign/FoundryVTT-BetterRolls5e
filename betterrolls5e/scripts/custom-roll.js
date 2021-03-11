@@ -460,6 +460,18 @@ export class CustomItemRoll {
 	 * @param {string} id
 	 */
 	async rollDamage(id) {
+		if (!id) {
+			let updated = false;
+			const groups = this.entries.filter((e) => e.type === "damage-group");
+			for (const group of groups) {
+				if (await this.rollDamage(group.id)) {
+					updated = true;
+				}
+			}
+
+			return updated;
+		}
+
 		const group = this.getEntry(id);
 		const wasHidden = group?.prompt;
 		if (!this.hasPermission || !group || !wasHidden) {
