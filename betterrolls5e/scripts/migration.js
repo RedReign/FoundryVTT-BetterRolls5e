@@ -14,6 +14,7 @@ function showMigrationMessage() {
 }
 
 export async function migrateChatMessage(message) {
+	if (!game.user.isGM) return;
 	const brFlags = message.data.flags.betterrolls5e;
 	if (!brFlags) return false;
 
