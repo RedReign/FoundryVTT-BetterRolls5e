@@ -355,6 +355,13 @@ export class Renderer {
 			previous = entry;
 		}
 
+		// Render apply active effects button if enabled
+		const hasEffects = data.item.data.effects.find(ae => !ae.transfer);
+		if (window.DAE && hasEffects && data.settings.applyActiveEffects) {
+			const button = await renderModuleTemplate("red-ae-button.html");
+			templates.push(button);
+		}
+
 		return renderModuleTemplate("red-fullroll.html", {
 			item: data.item,
 			actor: data.actor,

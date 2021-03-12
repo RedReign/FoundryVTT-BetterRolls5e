@@ -47,6 +47,8 @@
 	"br5e.damagePromptEnabled.hint": "Do not autoroll damage, instead show a damage button if there is an attack roll or saving throw.",
 	"br5e.d20RollIconsEnabled.name": "Show D20 die icon for multi rolls",
 	"br5e.d20RollIconsEnabled.hint": "If enabled, attacks, checks, and saves show natural die roll",
+	"br5e.applyActiveEffects.name": "Show DAE Active Effects Button",
+	"br5e.applyActiveEffects.hint": "Show button to apply active effects. The DAE module is required. If DAE is not installed, this option will not do anything.",
 
 	"br5e.d20Mode.name": "d20 Mode",
 	"br5e.d20Mode.hint": "Determines how attack rolls, ability checks, and saving throws are shown. If set to Single Roll, also enables [-]/[+] roll overlay buttons for advantage and disadvantage.",
@@ -81,6 +83,7 @@
 	"br5e.error.noChargesLeft": "This item has run out of charges!",
 	"br5e.error.autoDestroy": "The {name} disappears as its last charge is consumed.",
 	"br5e.error.rollEvaluation": "Dice roll evaluation failed: {msg}",
+	"br5e.error.noDAE": "DAE is required to apply active effects to targets",
 
 	"br5e.settings.critThreshold": "Critical Threshold",
 	"br5e.settings.critDamage": "Extra Critical Damage",
@@ -121,6 +124,7 @@
 	"br5e.buttons.info": "Info",
 	"br5e.buttons.itemUse": "Use",
 	"br5e.buttons.defaultSheetRoll": "Default Sheet Roll",
+	"br5e.buttons.applyActiveEffects": "Apply Active Effects",
 
 	"br5e.chat.attack": "Attack",
 	"br5e.chat.check": "Check",

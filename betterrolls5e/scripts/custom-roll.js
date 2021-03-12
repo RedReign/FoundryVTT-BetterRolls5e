@@ -308,6 +308,22 @@ export class CustomItemRoll {
 		return game.user.isGM || message?.isAuthor;
 	}
 
+	get totalDamage() {
+		let total = 0;
+		for (const entry of this.entries) {
+			if (entry.type === "damage-group") {
+				for (const subEntry of entry.entries) {
+					total += subEntry.baseRoll?.total ?? 0;
+					if (subEntry.revealed || entry.isCrit) {
+						total += subEntry.critRoll?.total ?? 0;
+					}
+				}
+			}
+		}
+
+		return total;
+	}
+
 	/**
 	 * Returns true if a damage entry can crit
 	 * @param {import("./renderer.js").RenderModelEntry} entry

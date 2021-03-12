@@ -91,6 +91,15 @@ class Settings {
 			type: Boolean
 		});
 
+		game.settings.register("betterrolls5e", "applyActiveEffects", {
+			name: i18n("br5e.applyActiveEffects.name"),
+			hint: i18n("br5e.applyActiveEffects.hint"),
+			scope: "world",
+			config: true,
+			default: true,
+			type: Boolean
+		})
+
 		/**
 		* Register quick roll defaults for description
 		*/
@@ -268,6 +277,10 @@ class Settings {
 
 	get altSecondaryEnabled() {
 		return getBRSetting("altSecondaryEnabled");
+	}
+
+	get applyActiveEffects() {
+		return getBRSetting("applyActiveEffects");
 	}
 
 	get d20Mode() {

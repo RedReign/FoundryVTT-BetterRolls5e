@@ -306,25 +306,45 @@ export class BetterRollsChatCard {
 			button.disabled = true;
 
 			const action = button.dataset.action;
+			try {
+				await this._performAction(action, button.dataset, event);
+			} finally {
+				// Re-enable the button after a delay
+				setTimeout(() => (button.disabled = false), 0);
+			}
+		});
+	}
 
-			if (action === "save") {
-				const actors = Utils.getTargetActors({ required: true });
-				const ability = button.dataset.ability;
-				const params = await Utils.eventToAdvantage(event);
-				for (const actor of actors) {
-					CustomRoll.rollAttribute(actor, ability, "save", params);
-				}
-			} else if (action === "damage") {
-				const group = encodeURIComponent(button.dataset.group);
-				if (await this.roll.rollDamage(group)) {
-					await this.roll.update();
-				}
-			} else if (action === "repeat") {
-				await this.roll.repeat();
+	async _performAction(action, data, event={}) {
+		if (action === "save") {
+			const actors = Utils.getTargetActors({ required: true });
+			const ability = data.ability;
+			const params = await Utils.eventToAdvantage(event);
+			for (const actor of actors) {
+				CustomRoll.rollAttribute(actor, ability, "save", params);
+			}
+		} else if (action === "damage") {
+			const group = encodeURIComponent(data.group);
+			if (await this.roll.rollDamage(group)) {
+				await this.roll.update();
+			}
+		} else if (action === "repeat") {
+			await this.roll.repeat();
+		} else if (action === "apply-active-effects") {
+			if (!window.DAE) {
+				return ui.notifications.warn(i18n("br5e.error.noDAE"));
 			}
 
-			// Re-enable the button
-			setTimeout(() => {button.disabled = false;}, 1);
-		});
+			const roll = this.roll;
+			const item = roll.item;
+			const targets = game.user.targets;
+			window.DAE.doEffects(item, true, targets, {
+				whisper: false,
+				spellLevel: roll.params.slotLevel,
+				damageTotal: roll.totalDamage,
+				critical: roll.isCrit,
+				itemCardId: this.id
+			});
+		}
 	}
 }
