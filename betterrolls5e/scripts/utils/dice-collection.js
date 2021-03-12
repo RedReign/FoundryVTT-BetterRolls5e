@@ -56,7 +56,7 @@ export class DiceCollection {
 		}
 
 		const sound = Utils.getDiceSound(hasMaestroSound);
-		if (sound) {
+		if (sound && hasDice) {
 			// Note: emited events aren't caught by the same client
 			// the push argument didn't work for me, so using sockets instead
 			Utils.playDiceSound();
