@@ -7,22 +7,22 @@ const selected = [actor] || canvas.tokens.controlled || [game.user.character];
     if (actors.length === 0) {
     	return ui.notifications.error("No actors selected");
     }
-    
+
     let handled = false;
     for (const actor of actors) {
         const itemId = actor.items.find(i => i.name === 'Defensive Flourish')?.id;
         const item = actor.getOwnedItem(itemId);
         if (!item) continue;
-        
+
         const roll = BetterRolls.rollItem(item);
         await roll.toMessage();
-        
+
         if (roll.error) continue;
-        
-        const value = roll.entries.find(m => m.type === 'damage')?.baseRoll.total;
+
+        const value = roll.entriesFlattened().find(m => m.type === 'damage')?.baseRoll.total;
         const label = "Defensive Flourish";
         const key = "data.attributes.ac.value";
-        
+
         const existing = actor.effects.entries.find(e => e.data.label === label);
         if (existing) {
             existing.update({
@@ -42,7 +42,7 @@ const selected = [actor] || canvas.tokens.controlled || [game.user.character];
                 ]
             });
         }
-        
+
         handled = true;
     }
 

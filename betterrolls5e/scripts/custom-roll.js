@@ -211,29 +211,6 @@ export class CustomItemRoll {
 		return roll;
 	}
 
-	*entriesFlattened(list=null) {
-		list = list ?? this.entries;
-		for (const entry of list) {
-			yield entry;
-			if (entry.entries) {
-				yield *this.entriesFlattened(entry.entries);
-			}
-		}
-	}
-
-	/**
-	 * Returns an entry contained in this roll
-	 * @param {string} id
-	 * @param {*} list
-	 */
-	getEntry(id) {
-		for (const entry of this.entriesFlattened()) {
-			if (entry.id === id) {
-				return entry;
-			}
-		}
-	}
-
 	set item(item) {
 		this._item = item;
 		this.itemId = item.id;
@@ -326,6 +303,43 @@ export class CustomItemRoll {
 		}
 
 		return total;
+	}
+
+
+	/**
+	 * Generator to create an iterable flattened list
+	 * @private
+	 */
+	*iterEntries(list=null) {
+		list = list ?? this.entries;
+		for (const entry of list) {
+			yield entry;
+			if (entry.entries) {
+				yield *this.iterEntries(entry.entries);
+			}
+		}
+	}
+
+	/**
+	 * Returns a list of all entries flattened, including the damage entries.
+	 * Recomputes each time
+	 * @returns {import("./renderer.js").RenderModelEntry[]}
+	 */
+	entriesFlattened() {
+		return [...this.iterEntries()];
+	}
+
+	/**
+	 * Returns an entry contained in this roll
+	 * @param {string} id
+	 * @param {*} list
+	 */
+	getEntry(id) {
+		for (const entry of this.iterEntries()) {
+			if (entry.id === id) {
+				return entry;
+			}
+		}
 	}
 
 	/**
@@ -904,7 +918,7 @@ export class CustomItemRoll {
 	 */
 	_createId() {
 		if (this._currentId < 0) {
-			const existing = [...this.entriesFlattened()].map(e => Number(e.id));
+			const existing = this.entriesFlattened().map(e => Number(e.id));
 			this._currentId = Math.max(...existing.filter(id => !isNaN(id))) + 1;
 		}
 		return `${this._currentId++}`;
