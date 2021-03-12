@@ -1,7 +1,7 @@
 import { BRSettings } from "./settings.js";
 import { BetterRollsChatCard } from "./chat-message.js";
 import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
-import { ItemUtils } from "./utils/index.js";
+import { ItemUtils, Utils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
 import { patchCoreFunctions } from "./patching/index.js"
 import { migrate } from "./migration.js";
@@ -46,6 +46,13 @@ Hooks.on("ready", async () => {
 		critText = i18n(critText);
 		game.settings.set("betterrolls5e", "critString", critText);
 	}
+
+	// Set up socket
+	game.socket.on("module.betterrolls5e", (data) => {
+		if (data?.action === "roll-sound") {
+			Utils.playDiceSound();
+		}
+	});
 
 	// Initialize Better Rolls
 	window.BetterRolls = BetterRolls();

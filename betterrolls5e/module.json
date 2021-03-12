@@ -46,6 +46,7 @@
 	"systems": ["dnd5e", "dnd5eJP"],
 	"minimumSystemVersion": "1.2.1",
 	"scripts": ["greensock/dist/gsap.min.js"],
+	"socket": true,
 	"esmodules": ["./scripts/index.js"],
 	"styles": ["./css/betterrolls5e.css"],
 	"packs": [],

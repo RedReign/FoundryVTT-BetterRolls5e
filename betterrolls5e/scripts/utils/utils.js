@@ -79,6 +79,15 @@ export class Utils {
 		return null;
 	}
 
+	static playDiceSound() {
+		if (!Utils._playSoundLock) {
+			Utils._playSoundLock = true;
+			const audio = AudioHelper.play({ src: CONFIG.sounds.dice });
+			const duration = Math.min(1000, audio.duration() * 1000 + 100);
+			setTimeout(() => Utils._playSoundLock = false, duration);
+		}
+	}
+
 	/**
 	 * Additional data to attach to the chat message.
 	 */

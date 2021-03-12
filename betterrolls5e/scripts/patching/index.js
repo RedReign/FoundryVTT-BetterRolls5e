@@ -28,7 +28,7 @@ const itemRoll = (defaultRoll) => function (options) {
 	// Handle options, same defaults as core 5e
 	options = mergeObject({configureDialog: true, createMessage: true, event }, options);
 	const { rollMode, createMessage, vanilla } = options;
-	const altKey = event?.altKey;
+	const altKey = options.event?.altKey;
 	const item = this;
 
 	// Case - If the image button should roll a vanilla roll, UNLESS vanilla is defined and is false
@@ -38,5 +38,6 @@ const itemRoll = (defaultRoll) => function (options) {
 	}
 
 	const preset = altKey ? 1 : 0;
-	return BetterRolls.rollItem(item, { preset }).toMessage({ rollMode, createMessage });
+	const card = BetterRolls.rollItem(item, { preset, event: options.event });
+	return card.toMessage({ rollMode, createMessage });
 }

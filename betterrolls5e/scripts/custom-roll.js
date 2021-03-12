@@ -745,12 +745,14 @@ export class CustomItemRoll {
 			},
 			flags: this._getFlags(),
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-			roll: this.dicePool.pop(),
 			...Utils.getWhisperData(rollMode),
-			sound: Utils.getDiceSound(hasMaestroSound)
+
+			// If not blank, D&D will try to modify the card...
+			roll: new Roll("0").roll()
 		};
 
 		await Hooks.callAll("messageBetterRolls", this, chatData);
+		await this.dicePool.flush(hasMaestroSound);
 
 		// Send the chat message
 		if (createMessage) {
@@ -816,9 +818,10 @@ export class CustomItemRoll {
 	async update(additional={}) {
 		const chatMessage = game.messages.get(this.messageId);
 		if (chatMessage) {
+			const hasMaestroSound = this.item && ItemUtils.hasMaestroSound(this.item);
 			const content = await this.render();
 			await Hooks.callAll("updateBetterRolls", this, content);
-			await this.dicePool.flush();
+			await this.dicePool.flush(hasMaestroSound);
 			await chatMessage.update({
 				...flattenObject({ flags: duplicate(this._getFlags()) }),
 				content,

@@ -45,7 +45,7 @@ export class DiceCollection {
 	 * Currently its just Dice So Nice (if enabled).
 	 * @returns {Promise<boolean>} if there were dice in the pool
 	 */
-	async flush() {
+	async flush(hasMaestroSound=false) {
 		// Get and reset immediately (stacking flush calls shouldn't reroll more dice)
 		const pool = this.pop();
 
@@ -53,6 +53,17 @@ export class DiceCollection {
 		if (game.dice3d && hasDice) {
 			const wd = Utils.getWhisperData();
 			await game.dice3d.showForRoll(pool, game.user, true, wd.whisper, wd.blind || false);
+		}
+
+		const sound = Utils.getDiceSound(hasMaestroSound);
+		if (sound) {
+			// Note: emited events aren't caught by the same client
+			// the push argument didn't work for me, so using sockets instead
+			Utils.playDiceSound();
+			game.socket.emit("module.betterrolls5e", {
+				action: "roll-sound",
+				user: game.user.id
+			}, () => console.log("Better Rolls | Roll Sound Message Sent"));
 		}
 
 		return hasDice;
