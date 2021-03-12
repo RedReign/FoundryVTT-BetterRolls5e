@@ -23,9 +23,6 @@ export async function migrateChatMessage(message) {
 
 	// Migrate to 1.4 (damage entries are now grouped)
 	if (isNewerVersion("1.4.0", brVersion)) {
-		console.log(message);
-		console.log(brFlags);
-		console.log(brVersion);
 		updated = true;
 
 		let currentId = (Math.max(...brFlags.entries.map((e) => Number(e.id))) ?? 0) + 1;

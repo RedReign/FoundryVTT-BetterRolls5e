@@ -56,6 +56,35 @@ export function pickBy(source, predicate) {
 	return pick(source, props);
 }
 
+/**
+ * This method is like findIndex except that it iterates
+ * from right to left.
+ */
+export function findLastIndex(array, predicate) {
+	const length = array == null ? 0 : array.length;
+	if (!length) {
+		return -1;
+	}
+
+	for (let index = length - 1; index >= 0; index--) {
+		if (predicate(array[index], index, array)) {
+			return index;
+		}
+	}
+
+	return -1;
+}
+
+/**
+ * This method is like find except that it iterates
+ * from right to left.
+ */
+export function findLast(collection, predicate) {
+	const iterable = Object(collection);
+	const index = findLastIndex(collection, predicate);
+	return index > -1 ? iterable[index] : undefined;
+}
+
 export class Utils {
 	static getVersion() {
 		return game.modules.get("betterrolls5e").data.version;
@@ -82,9 +111,8 @@ export class Utils {
 	static playDiceSound() {
 		if (!Utils._playSoundLock) {
 			Utils._playSoundLock = true;
-			const audio = AudioHelper.play({ src: CONFIG.sounds.dice });
-			const duration = Math.min(1000, audio.duration() * 1000 + 100);
-			setTimeout(() => Utils._playSoundLock = false, duration);
+			AudioHelper.play({ src: CONFIG.sounds.dice });
+			setTimeout(() => Utils._playSoundLock = false, 300);
 		}
 	}
 

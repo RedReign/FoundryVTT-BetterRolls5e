@@ -7,7 +7,8 @@ import {
 	ItemUtils,
 	Utils,
 	FoundryProxy,
-	pick
+	pick,
+	findLast
 } from "./utils/index.js";
 import { Renderer } from "./renderer.js";
 import { getSettings } from "./settings.js";
@@ -190,6 +191,7 @@ export class CustomItemRoll {
 	static fromMessage(message) {
 		const data = message.data.flags.betterrolls5e;
 		const roll = new CustomItemRoll(null, data?.params ?? {}, data?.fields ?? []);
+		roll._currentId = -1;
 		roll.messageId = message.id;
 		roll.rolled = true;
 		if (data) {
@@ -209,23 +211,25 @@ export class CustomItemRoll {
 		return roll;
 	}
 
+	*entriesFlattened(list=null) {
+		list = list ?? this.entries;
+		for (const entry of list) {
+			yield entry;
+			if (entry.entries) {
+				yield *this.entriesFlattened(entry.entries);
+			}
+		}
+	}
+
 	/**
 	 * Returns an entry contained in this roll
 	 * @param {string} id
 	 * @param {*} list
 	 */
-	getEntry(id, list=null) {
-		list = list ?? this.entries;
-		for (const entry of list) {
+	getEntry(id) {
+		for (const entry of this.entriesFlattened()) {
 			if (entry.id === id) {
 				return entry;
-			}
-
-			if (entry.entries) {
-				const subEntry = this.getEntry(id, entry.entries);
-				if (subEntry) {
-					return subEntry;
-				}
 			}
 		}
 	}
@@ -899,6 +903,10 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	_createId() {
+		if (this._currentId < 0) {
+			const existing = [...this.entriesFlattened()].map(e => Number(e.id));
+			this._currentId = Math.max(...existing.filter(id => !isNaN(id))) + 1;
+		}
 		return `${this._currentId++}`;
 	}
 
@@ -920,7 +928,10 @@ export class CustomItemRoll {
 		// Assign groups for damage
 		const isDamageEntry = ["damage", "crit"].includes(entry.type);
 		if (isDamageEntry) {
-			let groupEntry = this.entries[this.entries.length - 1];
+			// Try to add to the last existing group, however multiroll/saves are junctions (stopping points)
+			let groupEntry = findLast(this.entries, (e) =>
+				["damage-group", "multiroll", "button-save"].includes(e?.type)
+			);
 
 			// Create group if does not exist
 			if (groupEntry?.type !== "damage-group") {
