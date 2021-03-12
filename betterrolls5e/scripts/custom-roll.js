@@ -695,7 +695,7 @@ export class CustomItemRoll {
 		for (const entry of this.entries) {
 			if (entry.type === "multiroll") {
 				this.dicePool.push(...entry.entries.map(e => e.roll), entry.bonus);
-			} else if (entry.type === "group" && !entry.prompt) {
+			} else if (entry.type === "damage-group" && !entry.prompt) {
 				for (const subEntry of entry.entries) {
 					if (subEntry.type === "damage" || (subEntry.type === "crit" && subEntry.revealed)) {
 						this.dicePool.push(subEntry.baseRoll, subEntry.critRoll);
