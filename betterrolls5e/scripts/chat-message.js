@@ -337,7 +337,7 @@ export class BetterRollsChatCard {
 
 			const roll = this.roll;
 			const item = roll.item;
-			const targets = game.user.targets;
+			const targets = game.user.targets.size ? game.user.targets : Utils.getTargetTokens();
 			window.DAE.doEffects(item, true, targets, {
 				whisper: false,
 				spellLevel: roll.params.slotLevel,

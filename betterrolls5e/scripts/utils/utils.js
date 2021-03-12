@@ -233,22 +233,30 @@ export class Utils {
 	}
 
 	/**
-	 * Returns all selected actors
-	 * @param param1.required True if a warning should be shown if the list is empty
+	 * Retrieves all tokens currently selected on the canvas. This is the normal select,
+	 * not the target select.
 	 */
-	static getTargetActors({required=false}={}) {
+	static getTargetTokens({required=false}={}) {
 		const character = game.user.character;
 		const controlled = canvas.tokens.controlled;
 		if (!controlled.length && character) {
 			return [character];
 		}
 
-		const results = controlled.map(character => character.actor).filter(a => a);
+		const results = controlled.filter(a => a);
 		if (required && !controlled.length) {
 			ui.notifications.warn(game.i18n.localize("DND5E.ActionWarningNoToken"));
 		}
 
 		return results;
+	}
+
+	/**
+	 * Returns all selected actors
+	 * @param param1.required True if a warning should be shown if the list is empty
+	 */
+	static getTargetActors({required=false}={}) {
+		return Utils.getTargetTokens({required}).map(character => character.actor).filter(a => a);
 	}
 
 	/**
