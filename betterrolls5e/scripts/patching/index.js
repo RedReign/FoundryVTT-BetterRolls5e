@@ -1,7 +1,6 @@
 import { getSettings } from "../settings.js";
 import { libWrapper } from "./libWrapper.js";
 
-
 export function patchCoreFunctions() {
 	override("CONFIG.Item.entityClass.prototype.roll", itemRoll);
 }

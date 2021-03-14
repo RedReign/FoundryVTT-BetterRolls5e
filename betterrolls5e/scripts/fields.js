@@ -475,17 +475,15 @@ export class RollFields {
 				})];
 			case 'description':
 			case 'desc':
-				// Display info from Components module
-				let componentField = "";
-				if (game.modules.get("components5e") && game.modules.get("components5e").active) {
-					componentField = window.ComponentsModule.getComponentHtml(item, 20);
-				}
-				data = {text: `${componentField}${item.data.data.description.value ?? ''}`.trim()};
+				return [{
+					type: "description",
+					content: TextEditor.enrichHTML(item?.data.data.description.value ?? '').trim()
+				}];
 			case 'text':
 				if (data.text) {
 					return [{
 						type: "description",
-						content: data.text
+						content: TextEditor.enrichHTML(data.text ?? "")
 					}];
 				}
 				break;

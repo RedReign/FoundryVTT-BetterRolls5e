@@ -25,6 +25,7 @@ Hooks.on("renderItemSheet5e", (app, html, data) => {
 
 Hooks.once("init", () => {
 	BRSettings.init();
+	patchCoreFunctions();
 
 	// Setup template partials
 	const prefix = "modules/betterrolls5e/templates"
@@ -56,7 +57,6 @@ Hooks.on("ready", async () => {
 
 	// Initialize Better Rolls
 	window.BetterRolls = BetterRolls();
-	patchCoreFunctions();
 	Hooks.call("readyBetterRolls");
 });
 
