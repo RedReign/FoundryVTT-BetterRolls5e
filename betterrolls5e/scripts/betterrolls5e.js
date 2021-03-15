@@ -395,11 +395,10 @@ export function changeRollsToDual (actor, html, data, params) {
 		abilityName.off();
 		abilityName.click(event => {
 			event.preventDefault();
-			let ability = getAbility(event.currentTarget),
-				abl = actor.data.data.abilities[ability];
-			if ( keyboard.isCtrl(event) ) {
+			const ability = getAbility(event.currentTarget);
+			if (event.ctrlKey || event.metaKey) {
 				CustomRoll.rollAttribute(actor, ability, "check");
-			} else if ( event.shiftKey ) {
+			} else if (event.shiftKey) {
 				CustomRoll.rollAttribute(actor, ability, "save");
 			} else {
 				new Dialog({
@@ -408,11 +407,11 @@ export function changeRollsToDual (actor, html, data, params) {
 					buttons: {
 						test: {
 							label: i18n("Ability Check"),
-							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "check"); }
+							callback: async () => { CustomRoll.rollAttribute(actor, ability, "check"); }
 						},
 						save: {
 							label: i18n("Saving Throw"),
-							callback: async () => { params = await Utils.eventToAdvantage(event); CustomRoll.rollAttribute(actor, ability, "save"); }
+							callback: async () => { CustomRoll.rollAttribute(actor, ability, "save"); }
 						}
 					}
 				}).render(true);
@@ -429,7 +428,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await Utils.eventToAdvantage(event);
+				params = Utils.eventToAdvantage(event);
 			CustomRoll.rollAttribute(actor, ability, "check", params);
 		});
 	}
@@ -443,7 +442,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			event.preventDefault();
 			let ability = getAbility(event.currentTarget),
 				abl = actor.data.data.abilities[ability],
-				params = await Utils.eventToAdvantage(event);
+				params = Utils.eventToAdvantage(event);
 			CustomRoll.rollAttribute(actor, ability, "save", params);
 		});
 	}
@@ -454,7 +453,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		skillName.off();
 		skillName.click(async event => {
 			event.preventDefault();
-			let params = await Utils.eventToAdvantage(event);
+			let params = Utils.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.rollSkill(actor, skill, params);
 		});

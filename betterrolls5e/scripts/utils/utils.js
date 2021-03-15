@@ -120,33 +120,15 @@ export class Utils {
 
 	/**
 	 * Returns an {adv, disadv} object when given an event.
-	 * This one is done via a dialog, and will likely be tweaked eventually
 	 */
-	static async eventToAdvantage(ev) {
+	static eventToAdvantage(ev={}) {
 		if (ev.shiftKey) {
 			return {adv:1, disadv:0};
-		} else if ((keyboard.isCtrl(ev))) {
+		} else if (ev.ctrlKey || ev.metaKey) {
 			return {adv:0, disadv:1};
 		} else {
 			return {adv:0, disadv:0};
 		}
-	}
-
-	/**
-	 * Get roll state modifiers given a browser event
-	 * @param {*} ev
-	 */
-	static getEventRollModifiers(eventToCheck) {
-		const result = {};
-		if (!eventToCheck) { return; }
-		if (eventToCheck.shiftKey) {
-			result.adv = 1;
-		}
-		if (keyboard.isCtrl(eventToCheck)) {
-			result.disadv = 1;
-		}
-
-		return result;
 	}
 
 	/**
@@ -169,7 +151,7 @@ export class Utils {
 		}
 
 		if (event) {
-			const modifiers = Utils.getEventRollModifiers(event);
+			const modifiers = Utils.eventToAdvantage(event);
 			if (modifiers.adv || modifiers.disadv) {
 				return Utils.getRollState(modifiers);
 			}

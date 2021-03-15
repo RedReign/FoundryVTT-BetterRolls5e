@@ -320,7 +320,7 @@ export class BetterRollsChatCard {
 		if (action === "save") {
 			const actors = Utils.getTargetActors({ required: true });
 			const ability = data.ability;
-			const params = await Utils.eventToAdvantage(event);
+			const params = Utils.eventToAdvantage(event);
 			for (const actor of actors) {
 				CustomRoll.rollAttribute(actor, ability, "save", params);
 			}
