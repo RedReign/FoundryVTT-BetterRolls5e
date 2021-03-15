@@ -654,7 +654,7 @@ export class CustomItemRoll {
 
 		// Set ammo, and then consume it if so
 		// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
-		if (item && await this.identifyAndConsumeAmmo() === "error") {
+		if (item && await this.consumeAmmo() === "error") {
 			this.error = true;
 			return;
 		}
@@ -897,11 +897,14 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	async _processField(field) {
+		let consume = this.item?.data.data.consume;
+		const ammo = consume?.type === "ammo" ? this.actor?.items.get(consume.target) : null;
+
 		const metadata = {
 			item: this.item,
 			actor: this.actor,
 			rollState: this.params.rollState,
-			ammo: this.ammo,
+			ammo,
 			slotLevel: this.params.slotLevel,
 			isCrit: this.isCrit,
 			settings: this.settings
@@ -1122,27 +1125,23 @@ export class CustomItemRoll {
 
 	/**
 	 * Consumes resources assigned on an item, if that resource is ammo.
-	 * Also sets the this.ammo property
+	 * If Item5e.rollAttack() ever allows a consumeAmmo flag, we can remove it.
 	 */
-	async identifyAndConsumeAmmo() {
+	async consumeAmmo() {
 		const { item, actor } = this;
 		if (!item) return;
 
 		const request = this.params.useCharge;
 		const consume = item.data.data.consume;
 
-		if (consume?.type === "ammo") {
-			// Identify ammo
-			this.ammo = actor.items.get(consume.target);
-
-			// Consume Ammo (if configured to do so)
-			if (request.resource) {
-				const usage = item._getUsageUpdates({consumeResource: true});
-				if (usage === false) return "error";
-				const ammoUpdate = usage.resourceUpdates || {};
-				if (this.ammo && !isObjectEmpty(ammoUpdate)) {
-					await this.ammo.update(ammoUpdate);
-				}
+		// Consume Ammo (if configured to do so)
+		if (request.resource && consume?.type === "ammo") {
+			const ammo = actor.items.get(consume.target);
+			const usage = item._getUsageUpdates({consumeResource: true});
+			if (usage === false) return "error";
+			const ammoUpdate = usage.resourceUpdates || {};
+			if (ammo && !isObjectEmpty(ammoUpdate)) {
+				await ammo.update(ammoUpdate);
 			}
 		}
 
