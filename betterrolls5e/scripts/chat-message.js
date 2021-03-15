@@ -33,6 +33,7 @@ export class BetterRollsChatCard {
 		this.id = message.id;
 		this.roll = CustomItemRoll.fromMessage(message);
 		this.speaker = game.actors.get(message.data.speaker.actor);
+		message.BetterRoll = this.roll;
 
 		// Hide Save DCs
 		const actor = this.speaker;
