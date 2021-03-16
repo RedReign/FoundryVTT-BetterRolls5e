@@ -722,6 +722,40 @@ export class ItemUtils {
 	}
 
 	/**
+	 * Populates the base roll and the critical roll damages depending on the critBehavior
+	 * @param {Roll} baseRoll
+	 * @param {boolean} rollCrit
+	 * @param {number?} param2.critDice extra crit dice
+	 * @returns {Roll | Roll} the base roll and the crit roll, crit roll null if not a critical roll
+	 */
+	static resolveBaseAndCriticalDamageRoll(baseRoll, rollCrit, {settings=null, extraCritDice=null}={}) {
+		let critRoll = ItemUtils.getBaseCritRoll(baseRoll.formula);
+		if(!rollCrit || !critRoll) return {baseRoll: baseRoll.evaluate(), critRoll: null};
+
+		critRoll.alter(1, extraCritDice ?? 0);
+		const { critBehavior } = getSettings(settings);
+
+		switch(critBehavior){
+			case "2": //roll base, max critical damage
+				baseRoll.evaluate();
+				critRoll.evaluate({maximize:true});
+				break;
+			case "3": //max base and critical damage
+				baseRoll.evaluate({maximize:true});
+				critRoll.evaluate({maximize:true});
+				break;
+			case "4": //max base damage, roll critical
+				baseRoll.evaluate({maximize:true});
+				critRoll.evaluate();
+				break;
+			default: //roll base and critical damage
+				baseRoll.evaluate();
+				critRoll.evaluate();
+		}
+		return {baseRoll: baseRoll, critRoll:critRoll};
+	}
+
+	/**
 	 * Returns the scaled damage formula of the spell
 	 * @param {number | "versatile"} damageIndex The index to scale, or versatile
 	 * @returns {string | null} the formula if scaled, or null if its not a spell
