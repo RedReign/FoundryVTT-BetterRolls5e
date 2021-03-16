@@ -1,4 +1,4 @@
-import { dnd5e, i18n, ActorUtils, ItemUtils, Utils } from "./utils.js";
+import { dnd5e, i18n, ActorUtils, ItemUtils, Utils } from "./utils/index.js";
 import { BRSettings, getSettings } from "./settings.js";
 
 /**
@@ -32,11 +32,11 @@ export class RollFields {
 
 		return { type: "header", img, title };
 	}
-	
+
 	/**
 	 * Constructs multiroll data to be used for rendering
-	 * @param {Object} options Roll options used to construct the multiroll.
-	 * @param {string?} options.formula formula to use when constructing the multiroll
+	 * @param {object} options Roll options used to construct the multiroll.
+	 * @param {string | Roll} options.formula formula or roll object to use when constructing the multiroll
 	 * @param {number?} options.critThreshold optional minimum roll on the dice to cause a critical roll.
 	 * @param {number?} options.numRolls number of rolls to perform
 	 * @param {string?} options.title title to display above the roll
@@ -48,20 +48,27 @@ export class RollFields {
 	 * @returns {import("./renderer.js").MultiRollDataProps}
 	 */
 	static constructMultiRoll(options={}) {
-		const { formula, critThreshold, title, rollState, rollType, elvenAccuracy } = options;
-		if (!formula) {
+		const { critThreshold, title, rollType, elvenAccuracy } = options;
+		if (!options.formula) {
 			console.error("No formula given for multi-roll");
 			return;
 		}
 
-		let numRolls = options.numRolls || getSettings(options.settings).d20Mode;
+		// Extract info from the formula, to know if it was rolled with advantage/disadvantage
+		// The rollstate in the options has higher priority than whatever was part of the original
+		const parsedData = Utils.parseD20Formula(options.formula);
+		const formula = parsedData.formula;
+		const rollState = parsedData.rollState ?? options.rollState;
+
+		const d20Mode = getSettings(options.settings).d20Mode;
+		let numRolls = d20Mode === 4 ? 1 : (options.numRolls || d20Mode);
 		if (!options.numRolls) {
 			if (rollState === "first" && !options.numRolls) {
 				numRolls = 1;
 			} else if (rollState && numRolls == 1) {
 				numRolls = 2;
 			}
-	
+
 			// Apply elven accuracy
 			if (numRolls == 2 && elvenAccuracy && rollState !== "lowest") {
 				numRolls = 3;
@@ -72,7 +79,7 @@ export class RollFields {
 			// Split the D20 and bonuses. We assume the first is a d20 roll always...
 			const fullRoll = new Roll(formula);
 			const baseRoll = new Roll(fullRoll.terms[0].formula ?? fullRoll.terms[0]);
-			const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ')).roll();
+			const bonusRoll = new Roll([...fullRoll.terms.slice(1).map(t => t.formula ?? t)].join(' ') || "0").roll();
 
 			// Populate the roll entries
 			const entries = [];
@@ -114,7 +121,7 @@ export class RollFields {
 	}
 
 	/**
-	 * 
+	 * Constructs multiroll (attack) data to be used for data.
 	 * @param {object} options
 	 * @param {string?} options.formula optional formula to use instead of the attack formula
 	 * @param {Actor?} options.actor Actor to derive roll data from if item is not given
@@ -124,13 +131,11 @@ export class RollFields {
 	 * @param {string?} options.title Alternative title to use
 	 * @param {number?} options.critThreshold override
 	 * @param {string?} options.abilityMod override for the default item abilty mod
-	 * @param {Item?} options.ammo
 	 * @param {RollState} options.rollState
-	 * @param {number} options.bonus Extra bonus value
-	 * @param {number} options.slotLevel 
+	 * @param {number} options.slotLevel
 	 */
-	static constructAttackRoll(options={}) {
-		const { formula, item, ammo, bonus, rollState, slotLevel } = options;
+	static async constructAttackRoll(options={}) {
+		const { formula, item, rollState, slotLevel } = options;
 		const actor = options.actor ?? item?.actor;
 
 		// Get critical threshold
@@ -139,16 +144,18 @@ export class RollFields {
 			ActorUtils.getCritThreshold(actor, options.itemType) ??
 			20;
 
-		const abilityMod = options.abilityMod ?? ItemUtils.getAbilityMod(item);
+		const abilityMod = options.abilityMod ?? item?.abilityMod;
 		const elvenAccuracy = ActorUtils.testElvenAccuracy(actor, abilityMod);
-		const ammoBonus = ammo?.data.data.attackBonus;
+
+		let title = options.title;
 
 		// Get ammo bonus and add to title if title not given
 		// Note that "null" is a valid title, so we can't override that
-		let title = options.title;
 		if (typeof title === 'undefined') {
 			title = i18n("br5e.chat.attack");
-			if (ammoBonus) {
+			const consume = item?.data.data.consume;
+			if ((consume?.type === 'ammo') && !!actor.items) {
+				const ammo = actor.items.get(consume.target);
 				title += ` [${ammo.name}]`;
 			}
 		}
@@ -159,7 +166,7 @@ export class RollFields {
 			const rollData = Utils.getRollData({item, actor, abilityMod, slotLevel });
 			roll = new Roll(formula, rollData);
 		} else if (item) {
-			roll = ItemUtils.getAttackRoll(item, { abilityMod, ammoBonus, bonus });
+			roll = await ItemUtils.getAttackRoll(item);
 		} else {
 			return null;
 		}
@@ -167,7 +174,7 @@ export class RollFields {
 		// Construct the multiroll
 		return RollFields.constructMultiRoll({
 			...options,
-			formula: roll.formula,
+			formula: roll,
 			rollState,
 			title,
 			critThreshold,
@@ -183,7 +190,7 @@ export class RollFields {
 	 * @param {string} options.formula optional formula to use, higher priority over the item formula
 	 * @param {Actor} options.actor
 	 * @param {Item} options.item
-	 * @param {number | "versatile" | "other"} options.damageIndex 
+	 * @param {number | "versatile" | "other"} options.damageIndex
 	 * @param {number?} options.slotLevel
 	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
 	 * @param {string?} options.damageType
@@ -199,18 +206,18 @@ export class RollFields {
 		const isVersatile = damageIndex === "versatile";
 		const isFirst = damageIndex === 0 || isVersatile;
 		const extraCritDice = options.extraCritDice ?? ItemUtils.getExtraCritDice(item);
-		
+
 		const settings = getSettings(options.settings);
 		const { critBehavior } = settings;
 
-		const rollData =  item ?
+		const rollData = item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
 			actor?.getRollData();
 
 		// Bonus parts to add to the formula
 		const parts = [];
 
-		// Determine certain fields based on index 
+		// Determine certain fields based on index
 		let title = options.title;
 		let context = options.context;
 		let damageType = options.damageType;
@@ -229,7 +236,7 @@ export class RollFields {
 				// If versatile, use properties from the first entry
 				const trueIndex = isFirst ? 0 : damageIndex;
 
-				formula = isVersatile ? itemData.damage.versatile : itemData.damage.parts[trueIndex][0]; 
+				formula = isVersatile ? itemData.damage.versatile : itemData.damage.parts[trueIndex][0];
 				damageType = damageType ?? itemData.damage.parts[trueIndex][1];
 				context = context ?? flags.quickDamage.context?.[trueIndex];
 
@@ -250,7 +257,7 @@ export class RollFields {
 		}
 
 		// Require a formula to continue
-		if (!formula) { 
+		if (!formula) {
 			return null;
 		}
 
@@ -291,7 +298,7 @@ export class RollFields {
 	 * @param {string} options.formula optional formula to use, higher priority over the item formula
 	 * @param {Actor} options.actor
 	 * @param {Item} options.item
-	 * @param {number | "versatile" | "other"} options.damageIndex 
+	 * @param {number | "versatile" | "other"} options.damageIndex
 	 * @param {number?} options.slotLevel
 	 * @param {string?} options.context Optional damage context. Defaults to the configured damage context
 	 * @param {string?} options.damageType
@@ -302,11 +309,11 @@ export class RollFields {
 	static constructCritDamageRoll(options={}) {
 		const { item, slotLevel } = options;
 		const actor = options?.actor ?? item?.actor;
-		const rollData =  item ?
+		const rollData = item ?
 			ItemUtils.getRollData(item, { slotLevel }) :
 			actor?.getRollData();
 
-		// Determine certain fields based on index 
+		// Determine certain fields based on index
 		let title = options.title;
 		let context = options.context;
 		let damageType = options.damageType;
@@ -317,13 +324,13 @@ export class RollFields {
 			const itemData = item.data.data;
 			const flags = item.data.flags.betterRolls5e;
 			const damageIndex = Number(options.damageIndex ?? flags.critDamage?.value);
-			formula = itemData.damage.parts[damageIndex][0]; 
+			formula = itemData.damage.parts[damageIndex][0];
 			damageType = damageType ?? itemData.damage.parts[damageIndex][1];
 			context = context ?? flags.quickDamage.context?.[damageIndex];
 		}
 
 		// Require a formula to continue
-		if (!formula) { 
+		if (!formula) {
 			return null;
 		}
 
@@ -348,7 +355,7 @@ export class RollFields {
 	 * Creates multiple item damage rolls. This returns an array,
 	 * so when adding to a model list, add them separately or use the splat operator.
 	 * @param {object} options Remaining options that get funneled to createDamageRoll.
-	 * @param {*} options.item 
+	 * @param {*} options.item
 	 * @param {number[] | "all" | number} options.index one more or damage indices to roll for.
 	 * @param {boolean?} options.versatile should the first damage entry be replaced with versatile
 	 * @param {BRSettings} options.settings Override settings to use for the roll
@@ -357,7 +364,7 @@ export class RollFields {
 	static constructItemDamageRange(options={}) {
 		let index = options.index;
 		const { formula, item } = options;
-		
+
 		// If formula is given or there is a single index, fallback to the singular function
 		if (formula || Number.isInteger(index) || !index) {
 			let damageIndex = Number.isInteger(index) ? Number(index) : options.damageIndex;
@@ -386,7 +393,7 @@ export class RollFields {
 			index = index.map(i => i === 0 ? "versatile" : i);
 		}
 
-		return index.map(i => { 
+		return index.map(i => {
 			return RollFields.constructDamageRoll({...options, item, damageIndex: i});
 		}).filter(d => d);
 	}
@@ -404,21 +411,21 @@ export class RollFields {
 		// Determine whether the DC should be hidden
 		const hideDCSetting = getSettings(settings).hideDC;
 		const hideDC = (hideDCSetting == "2" || (hideDCSetting == "1" && actor.data.type == "npc"));
-		
+
 		return { type: "button-save", hideDC, ...saveData };
 	}
 
 	/**
 	 * Construct one or more model entries from a field and some metadata
-	 * @param {} field 
+	 * @param {} field
 	 * @param {*} metadata
 	 * @param {object} settings BetterRoll settings overrides
-	 * @returns {Array<import("./renderer.js").RenderModelEntry>}
+	 * @returns {Promise<Array<import("./renderer.js").RenderModelEntry>>}
 	 */
-	static constructModelsFromField(field, metadata, settings={}) {
+	static async constructModelsFromField(field, metadata, settings={}) {
 		let [fieldType, data] = field;
 		data = mergeObject(metadata, data ?? {}, { recursive: false });
-		
+
 		const { item, actor } = data;
 		settings = getSettings(settings);
 
@@ -426,13 +433,13 @@ export class RollFields {
 			case 'header':
 				return [RollFields.constructHeaderData(data)];
 			case 'attack':
-				return [RollFields.constructAttackRoll(data)];
+				return [await RollFields.constructAttackRoll(data)];
 			case 'toolcheck':
 			case 'tool':
 			case 'check':
 				return [RollFields.constructMultiRoll({
 					...data,
-					formula: data.formula ?? ItemUtils.getToolRoll(data.item, data.bonus).formula,
+					formula: data.formula ?? (await ItemUtils.getToolRoll(data.item, data.bonus)).formula,
 				})];
 			case 'damage':
 				return RollFields.constructItemDamageRange(data);
@@ -441,11 +448,17 @@ export class RollFields {
 			case 'ammo':
 				if (!data.ammo) return [];
 
+				// Only add ammo damage if the ammunition is a consumable with type ammo
+				const ammo = data.ammo;
+				if (ammo.data.type !== "consumable" || ammo.data.data.consumableType !== "ammo") {
+					return [];
+				}
+
 				return RollFields.constructItemDamageRange({
 					...data,
-					item: data.ammo,
+					item: ammo,
 					index: "all",
-					context: `[${data.ammo.name}]`
+					context: `${ammo.name}`
 				});
 			case 'savedc':
 				// {customAbl: null, customDC: null}

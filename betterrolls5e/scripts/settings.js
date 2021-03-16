@@ -1,4 +1,4 @@
-import { i18n } from "./utils.js";
+import { i18n } from "./utils/index.js";
 
 const getBRSetting = (setting) => game.settings.get("betterrolls5e", setting);
 
@@ -11,15 +11,6 @@ class Settings {
 	 * This should only be called once, at initialization.
 	 */
 	init() {
-		game.settings.register("betterrolls5e", "diceEnabled", {
-			name: i18n("br5e.diceEnabled.name"),
-			hint: i18n("br5e.diceEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: true,
-			type: Boolean
-		});
-		
 		game.settings.register("betterrolls5e", "d20Mode", {
 			name: i18n("br5e.d20Mode.name"),
 			hint: i18n("br5e.d20Mode.hint"),
@@ -30,8 +21,21 @@ class Settings {
 			choices: {
 				1: i18n("br5e.d20Mode.choices.1"),
 				2: i18n("br5e.d20Mode.choices.2"),
-				3: i18n("br5e.d20Mode.choices.3")
+				3: i18n("br5e.d20Mode.choices.3"),
+				4: i18n("br5e.d20Mode.choices.4")
 			}
+		});
+
+		/**
+		 * Enables damage buttons
+		 */
+		game.settings.register("betterrolls5e", "damagePromptEnabled", {
+			name: i18n("br5e.damagePromptEnabled.name"),
+			hint: i18n("br5e.damagePromptEnabled.hint"),
+			scope: "world",
+			config: true,
+			default: false,
+			type: Boolean
 		});
 
 		/**
@@ -47,18 +51,6 @@ class Settings {
 		});
 
 		/**
-		* Query roll type in Roll20 style
-		*/
-		game.settings.register("betterrolls5e", "queryAdvantageEnabled", {
-			name: i18n("br5e.queryAdvantageEnabled.name"),
-			hint: i18n("br5e.queryAdvantageEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: false,
-			type: Boolean
-		});
-		
-		/**
 		* Register added roll buttons
 		*/
 		game.settings.register("betterrolls5e", "rollButtonsEnabled", {
@@ -69,7 +61,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		/**
 		* Register better roll for icon
 		*/
@@ -81,7 +73,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "altSecondaryEnabled", {
 			name: i18n("br5e.altSecondaryEnabled.name"),
 			hint: i18n("br5e.altSecondaryEnabled.hint"),
@@ -90,7 +82,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		/**
 		* Register quick roll defaults for description
 		*/
@@ -115,7 +107,7 @@ class Settings {
 				"token": i18n("Token")
 			}
 		});
-		
+
 		/**
 		* Register roll label options
 		*/
@@ -131,7 +123,7 @@ class Settings {
 				"1": i18n("br5e.damageRollPlacement.choices.1")
 			}
 		});
-		
+
 		const damagePlacementOptions = ["damageTitlePlacement", "damageContextPlacement", "damageRollPlacement"];
 
 		damagePlacementOptions.forEach(placementOption => {
@@ -163,7 +155,7 @@ class Settings {
 				type: Boolean
 			});
 		});
-		
+
 		game.settings.register("betterrolls5e", "critBehavior", {
 			name: i18n("br5e.critBehavior.name"),
 			hint: i18n("br5e.critBehavior.hint"),
@@ -179,7 +171,7 @@ class Settings {
 				"4": i18n("br5e.critBehavior.choices.4"), // Max Base Damage, Roll Critical Damage
 			}
 		});
-		
+
 		game.settings.register("betterrolls5e", "critString", {
 			name: i18n("br5e.critString.name"),
 			hint: i18n("br5e.critString.hint"),
@@ -188,7 +180,7 @@ class Settings {
 			default: "Crit",
 			type: String
 		});
-		
+
 		game.settings.register("betterrolls5e", "chatDamageButtonsEnabled", {
 			name: i18n("br5e.chatDamageButtonsEnabled.name"),
 			hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
@@ -197,7 +189,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "playRollSounds", {
 			name: i18n("br5e.playRollSounds.name"),
 			hint: i18n("br5e.playRollSounds.hint"),
@@ -206,7 +198,7 @@ class Settings {
 			default: true,
 			type: Boolean
 		});
-		
+
 		game.settings.register("betterrolls5e", "hideDC", {
 			name: i18n("br5e.hideDC.name"),
 			hint: i18n("br5e.hideDC.hint"),
@@ -220,19 +212,6 @@ class Settings {
 				"2": i18n("br5e.hideDC.choices.2"),
 			}
 		});
-
-		game.settings.register("betterrolls5e", "damagePromptEnabled", {
-			name: i18n("br5e.damagePromptEnabled.name"),
-			hint: i18n("br5e.damagePromptEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: false,
-			type: Boolean
-		});
-	}
-
-	get diceEnabled() {
-		return getBRSetting("diceEnabled");
 	}
 
 	get playRollSounds() {
@@ -310,27 +289,7 @@ class Settings {
 	}
 
 	get queryAdvantageEnabled() {
-		return getBRSetting("queryAdvantageEnabled");
-	}
-
-	/**
-	 * Returns all config config as an object with all data retrieved.
-	 * Internally this resolves all getters, returning their results.
-	 * @returns {BRSettings}
-	 */
-	serialize() {
-		const result = {};
-
-		const proto = Object.getPrototypeOf(this);
-		const descriptors = Object.getOwnPropertyDescriptors(proto);
-		for (const [name, descriptor] of Object.entries(descriptors)) {
-			const { get } = descriptor;
-			if (get) {
-				result[name] = get.call(this);
-			}
-		}
-
-		return result;
+		return this.d20Mode === 4;
 	}
 }
 

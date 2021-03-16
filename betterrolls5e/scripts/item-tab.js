@@ -1,5 +1,5 @@
 import { isAttack, isSave } from "./betterrolls5e.js";
-import { i18n, ItemUtils } from "./utils.js";
+import { i18n, ItemUtils } from "./utils/index.js";
 
 let activate = false;
 
@@ -38,7 +38,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	const hasResource = !!(itemData.consume?.target);
 	// For abilities with "Action Recharge" configured
 	const hasCharge = !!(itemData.recharge?.value);
-	
+
 	// For items that have at least one way to consume something
 	const canConsume = hasQuantity || hasUses || hasResource || hasCharge;
 
@@ -57,7 +57,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 		altSecondaryEnabled,
 		itemHasTemplate: item.hasAreaTarget
 	});
-	
+
 	settingsContainer.append(betterRollsTemplate);
 
 	// Tab back to better rolls if we need (after certain events it may happen)
@@ -96,10 +96,10 @@ export async function addBetterRollsContent(app, protoHtml) {
 		}
 	}
 
-	// Activate the tab if anything changes in any sub-field	
+	// Activate the tab if anything changes in any sub-field
 	const newSection = settingsContainer.find(".tab.item-betterRolls");
 	newSection.find("input[type=text]").change((evt) => activate = true);
 	newSection.find("input[type=number]").change((evt) => activate = true);
 	newSection.find("input[type=checkbox]").change((evt) => activate = true);
 	newSection.find("select").change((evt) => activate = true);
-} 
+}

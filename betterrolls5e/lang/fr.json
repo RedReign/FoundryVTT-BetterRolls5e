@@ -4,8 +4,6 @@
 	"Better Rolls": "Better Rolls",
 	"Better Rolls for 5e": "Better Rolls pour DD5e",
 	
-	"br5e.diceEnabled.name": "Activer Better Rolls",
-	"br5e.diceEnabled.hint": "Activer l'amélioration des jets de dès pour DnD5e. Affect tous les jets de caractéristiques, sauvegarde, objets, sorts et dons de la feuille de personnage. Requière la réouverture de la feuille.",
 	"br5e.rollButtonsEnabled.name": "Ajout des boutons à la feuille",
 	"br5e.rollButtonsEnabled.hint": "Ajoute des boutons aux objets, sorts et dons dans la feuille, qui s'affichent quand l'objet est agrandis. Possible incompatibilité avec le mode Item Sheet Buttons. Requière la réouverture de la feuille.",
 	"br5e.imageButtonEnabled.name": "Jet automatique grâce à l'image",

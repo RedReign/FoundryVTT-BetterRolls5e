@@ -1,11 +1,10 @@
 import { CustomItemRoll, CustomRoll } from "./custom-roll.js";
 import { BRSettings } from "./settings.js";
-import { i18n, Utils } from "./utils.js";
-import { gsap } from "/scripts/greensock/esm/all.js";
+import { i18n, Utils } from "./utils/index.js";
 
 /**
  * Class that encapsulates a better rolls card at runtime.
- * When a chat message enters the chat it should be binded 
+ * When a chat message enters the chat it should be binded
  * with BetterRollsChatCard.bind().
  */
 export class BetterRollsChatCard {
@@ -19,7 +18,7 @@ export class BetterRollsChatCard {
 
 	/**
 	 * Initializes data. Used in the constructor or by BetterRollsChatCard.bind().
-	 * @param {*} message 
+	 * @param {*} message
 	 * @param {*} html
 	 * @private
 	 */
@@ -27,7 +26,7 @@ export class BetterRollsChatCard {
 		// IMPLEMENTATION WARNING: DO NOT STORE html into the class properties (NO this.html AT ALL)
 		// Foundry will sometimes call renderChatMessage() multiple times with un-bound HTML,
 		// and we can't do anything except rely on closures to handle those events.
-		this.id = message.id;		
+		this.id = message.id;
 		this.roll = CustomItemRoll.fromMessage(message);
 		this.speaker = game.actors.get(message.data.speaker.actor);
 
@@ -39,7 +38,7 @@ export class BetterRollsChatCard {
 
 		// Setup the events for card buttons (the permanent ones, not the hover ones)
 		this._setupCardButtons(html);
-		
+
 		// Setup hover buttons when hovered (for optimization)
 		// Just like with html, we cannot save hoverInitialized to the object
 		let hoverInitialized = false;
@@ -56,12 +55,12 @@ export class BetterRollsChatCard {
 	/**
 	 * Inflates an existing chat message, adding runtime elements
 	 * and events to it. Does nothing if the message is not the correct type.
-	 * @param {ChatMessage} message 
-	 * @param {JQuery} html 
+	 * @param {ChatMessage} message
+	 * @param {JQuery} html
 	 */
 	static bind(message, html) {
 		const chatCard = html.find('.red-full');
-		if (chatCard.length === 0) { 
+		if (chatCard.length === 0) {
 			return null;
 		}
 
@@ -75,8 +74,8 @@ export class BetterRollsChatCard {
 			// Wait for the event queue before doing so to allow CSS calculations to work,
 			// otherwise the border color will be incorrectly transparent
 			window.setTimeout(() => {
-				gsap.from(html.get(), {
-					"border-color": "red", 
+				gsap?.from(html.get(), {
+					"border-color": "red",
 					"box-shadow": "0 0 6px inset #ff6400",
 					duration: 2});
 			}, 0);
@@ -97,8 +96,8 @@ export class BetterRollsChatCard {
 
 	/**
 	 * Adds right click menu options
-	 * @param {*} html 
-	 * @param {*} options 
+	 * @param {*} html
+	 * @param {*} options
 	 */
 	static addOptions(html, options) {
 		const getBinding = (li) => game.messages.get(li.data("messageId"))?.BetterRollsCardBinding;
@@ -128,9 +127,9 @@ export class BetterRollsChatCard {
 		}
 
 		// Multiroll buttons (perhaps introduce a new toggle property?)
-		if (this.roll && BRSettings.chatDamageButtonsEnabled) {
+		if (this.roll) {
 			const templateMulti = await renderTemplate("modules/betterrolls5e/templates/red-overlay-multiroll.html");
-			
+
 			// Add multiroll overlay buttons to the DOM.
 			for (const entry of this.roll.entries) {
 				if (entry.type === "multiroll" && !entry.rollState && entry.entries?.length === 1) {
@@ -159,54 +158,56 @@ export class BetterRollsChatCard {
 		// Note: For backwards compatibility, these find on the HTML rather than use the roll models
 		if (BRSettings.chatDamageButtonsEnabled) {
 			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-overlay-damage.html");
-			const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray(); 
+			const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray();
 			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
-			
+
 			// Add chat damage buttons
 			[...dmgElements, ...customElements].forEach(element => {
 				element = $(element);
 				element.append($(templateDamage));
 
 				// Remove crit button if already rolled
+				// TODO: Move this elsewhere. There's a known bug when crit settings are changed suddenly
+				// If Crit (setting) is disabled, then re-enabled, crit buttons don't get re-added
 				const id = element.parents('.dice-roll').attr('data-id');
 				const entry = this.roll?.entries.find(m => m.id === id);
 				if (!this.roll?.canCrit(entry)) {
 					element.find('.crit-button').remove();
 				}
 			});
-		
+
 			// Handle apply damage overlay button events
 			html.find('.apply-damage-buttons button').click(async ev => {
 				ev.preventDefault();
 				ev.stopPropagation();
-		
+
 				// find out the proper dmg thats supposed to be applied
 				const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
 				let dmg = dmgElement.find('.red-base-die').text();
-		
+
 				if (dmgElement.find('.red-extra-die').length > 0) {
 					const critDmg = dmgElement.find('.red-extra-die').text();
 					const dialogPosition = {
 						x: ev.originalEvent.screenX,
 						y: ev.originalEvent.screenY
 					};
-		
+
 					dmg = await this._resolveCritDamage(Number(dmg), Number(critDmg), dialogPosition);
 				}
-		
+
 				// getting the modifier depending on which of the buttons was pressed
 				let modifier = ev.target.dataset.modifier;
-		
+
 				// sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
 				if (modifier === undefined) {
 					modifier = $(ev.target).parent().attr('data-modifier');
 				}
-		
-				// applying dmg to the targeted token and sending only the span that the button sits in 
+
+				// applying dmg to the targeted token and sending only the span that the button sits in
 				const targetActors = Utils.getTargetActors() || [];
 				targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
-				
-				setTimeout(() => { 
+
+				setTimeout(() => {
 					if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
 						canvas.hud.token.render();
 					}
@@ -243,7 +244,7 @@ export class BetterRollsChatCard {
 	_onHoverEnd(html) {
 		html.find(".die-result-overlay-br").attr("style", "display: none;");
 	}
-	
+
 	/**
 	 * Displays a dialog if both dmg and critdmg have a value, otherwise just returns the first not null one.
 	 * @private
@@ -254,7 +255,7 @@ export class BetterRollsChatCard {
 				const options = {
 					left: position.x,
 					top: position.y,
-					width: 100 
+					width: 100
 				};
 
 				const data = {
@@ -281,7 +282,7 @@ export class BetterRollsChatCard {
 
 		return dmg || critdmg;
 	}
-	
+
 	/**
 	 * Bind card button events. These are the clickable action buttons.
 	 * @private
@@ -296,7 +297,7 @@ export class BetterRollsChatCard {
 			button.disabled = true;
 
 			const action = button.dataset.action;
-			
+
 			if (action === "save") {
 				const actors = Utils.getTargetActors({ required: true });
 				const ability = button.dataset.ability;
@@ -306,7 +307,7 @@ export class BetterRollsChatCard {
 				}
 			} else if (action === "damage") {
 				const group = encodeURIComponent(button.dataset.group);
-				if (await this.roll.rollDamage(group)) {	
+				if (await this.roll.rollDamage(group)) {
 					await this.roll.update();
 				}
 			} else if (action === "repeat") {

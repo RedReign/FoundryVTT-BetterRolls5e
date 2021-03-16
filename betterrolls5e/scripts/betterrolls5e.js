@@ -1,9 +1,7 @@
 import { DND5E } from "../../../systems/dnd5e/module/config.js";
-import { BetterRollsHooks } from "./hooks.js";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
-import { i18n, Utils, ItemUtils } from "./utils.js";
+import { i18n, Utils, ItemUtils } from "./utils/index.js";
 import { getSettings } from "./settings.js";
-import { RollFields } from "./fields.js";
 
 // Returns whether an item makes an attack roll
 export function isAttack(item) {
@@ -24,6 +22,22 @@ export function isCheck(item) {
 	return item.data.type === "tool" || typeof item.data.data?.proficient === "number";
 }
 
+/**
+ * Function for adding Better Rolls content to html data made after a sheet is rendered.
+ * actor				The actor object
+ * html					The target html to add content to
+ * triggeringElement	Container for the element that must be clicked for the extra buttons to be shown.
+ * buttonContainer		Container for the element the extra buttons will display in.
+ * itemButton			Selector for the item button.
+ */
+export function addItemContent(actor, html,
+	triggeringElement = ".item .item-name h4",
+	buttonContainer = ".item-properties",
+	itemButton = ".item .rollable") {
+	(game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
+	itemButton ? changeRollsToDual(actor, html, null, {itemButton}) : null;
+}
+
 const dnd5e = DND5E;
 
 function getQuickDescriptionDefault() {
@@ -38,7 +52,7 @@ CONFIG.betterRolls5e = {
 			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
-			quickSave: { type: "Boolean", value: false, altValue: false },
+			quickSave: { type: "Boolean", value: true, altValue: true },
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
@@ -109,7 +123,7 @@ CONFIG.betterRolls5e = {
 			quickProperties: { type: "Boolean", value: true, altValue: true },
 			// Consumables consume uses by default in vanilla 5e
 			quickCharges: { type: "Boolean", value: {quantity: false, use: true, resource: true}, altValue: {quantity: false, use: true, resource: true} },
-			quickTemplate: { type: "Boolean", value: false, altValue: false },
+			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
@@ -125,11 +139,11 @@ CONFIG.betterRolls5e = {
 export async function addItemSheetButtons(actor, html, data, triggeringElement = '', buttonContainer = '') {
 	// Do not modify the sheet if the user does not have permission to use the sheet
 	if (actor.permission < 3) { return; }
-	
+
 	// Setting default element selectors
-	if (triggeringElement === '') triggeringElement = '.item .item-name h4';
+	if (triggeringElement === '') triggeringElement = '.item:not(.magic-item) .item-name h4';
 	if (buttonContainer === '') buttonContainer = '.item-properties';
-	
+
 	// adding an event for when the description is shown
 	html.find(triggeringElement).click(event => {
 		let li = $(event.currentTarget).parents(".item");
@@ -137,7 +151,7 @@ export async function addItemSheetButtons(actor, html, data, triggeringElement =
 	});
 
 	for (let element of html.find(triggeringElement)) {
-		let li = $(element).parents('.item');
+		let li = $(element).parents('.item:not(.magic-item)');
 		addButtonsToItemLi(li, actor, buttonContainer);
 	}
 }
@@ -169,7 +183,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 
 	// Check settings
 	const settings = getSettings();
-	const diceEnabled = settings.diceEnabled;
 	const contextEnabled = settings.damageContextPlacement !== "0" ? true : false;
 
 	if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
@@ -186,13 +199,10 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 		case 'spell':
 		case 'consumable':
 			buttonsWereAdded = true;
-
-			if (diceEnabled) {
-				buttons.append(
-					createButton({ content: i18n("br5e.buttons.roll"), action: "quickRoll" }),
-					createButton({ content: i18n("br5e.buttons.altRoll"), action: "altRoll"})
-				)
-			};
+			buttons.append(
+				createButton({ content: i18n("br5e.buttons.roll"), action: "quickRoll" }),
+				createButton({ content: i18n("br5e.buttons.altRoll"), action: "altRoll"})
+			);
 
 			if (isAttack(item)) {
 				buttons.append(
@@ -275,18 +285,16 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 
 			break;
 	}
-	
+
 	if (buttonsWereAdded) {
 		buttons.append(`<br>`);
 	}
-	
+
 	// Add info button
-	if (diceEnabled) {
-		buttons.append(
-			createButton({ content: i18n("br5e.buttons.info"), action: "infoRoll" })
-		);
-	}
-	
+	buttons.append(
+		createButton({ content: i18n("br5e.buttons.info"), action: "infoRoll" })
+	);
+
 	// Add default roll button
 	buttons.append(
 		createButton({ content: i18n("br5e.buttons.defaultSheetRoll"), action: "vanillaRoll" })
@@ -305,75 +313,52 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 		ev.preventDefault();
 		ev.stopPropagation();
 
-		// which function gets called depends on the type of button stored in the dataset attribute action
-		// If better rolls are on
-		if (diceEnabled) {
-			// The arguments compounded into an object and an array of fields, to be served to the roll() function as the params and fields arguments
-			const params = {forceCrit: ev.altKey, event: ev};
-			const fields = [];
-			if (params.forceCrit) {
-				fields.push([
-					"flavor",
-					{ text: `${getSettings().critString}` }
-				]);
-			}
-			
-			// Sets the damage roll in the argument to the value of the button
-			function setDamage(versatile = false) {
-				if (ev.target.dataset.value === "all") {
-					fields.push(["damage", { index:"all", versatile:versatile} ]);
-				} else {
-					fields.push(["damage", { index:Number(ev.target.dataset.value) }]);
-				}
-			}
-			
-			switch (ev.target.dataset.action) {
-				case 'quickRoll':
-					params.preset = 0; break;
-				case 'altRoll':
-					params.preset = 1; break;
-				case 'attackRoll':
-					fields.push(["attack"]); break;
-				case 'save':
-					fields.push(["savedc"]); break;
-				case 'damageRoll':
-					setDamage(); break;
-				case 'verDamageRoll':
-					setDamage(true); params.versatile = true; break;
-				case 'toolCheck':
-					fields.push(["toolcheck"]); break;
-				case 'otherFormulaRoll':
-					fields.push(["other"]); break;
-				case 'infoRoll':
-					fields.push(["desc"]); params.properties = true; break;
-				case 'vanillaRoll':
-					item.actor.sheet._onItemRoll(event); break;
-			}
+		// The arguments compounded into an object and an array of fields, to be served to the roll() function as the params and fields arguments
+		const params = {forceCrit: ev.altKey, event: ev};
+		const fields = [];
+		if (params.forceCrit) {
+			fields.push([
+				"flavor",
+				{ text: `${getSettings().critString}` }
+			]);
+		}
 
-			if (ev.target.dataset.action !== 'vanillaRoll') {
-				new CustomItemRoll(item, params, fields).toMessage();
-			}
-			// If better rolls are off
-		} else {
-			switch (ev.target.dataset.action) {
-				case 'weaponAttack': item.rollWeaponAttack(ev); break;
-				case 'weaponDamage': item.rollWeaponDamage(ev); break;
-				case 'weaponDamage2': item.rollWeaponDamage(ev, true); break;
-				case 'spellAttack': item.rollSpellAttack(ev); break;
-				case 'spellDamage': item.rollSpellDamage(ev); break;
-				case 'featAttack': item.rollFeatAttack(ev); break;
-				case 'featDamage': item.rollFeatDamage(ev); break;
-				case 'consume': item.rollConsumable(ev); break;
-				case 'toolCheck': item.rollToolCheck(ev); break;
-				case 'infoRoll': BetterRollsDice.fullRoll(item, { info: true, properties: true }); break;
+		// Sets the damage roll in the argument to the value of the button
+		function setDamage(versatile = false) {
+			if (ev.target.dataset.value === "all") {
+				fields.push(["damage", { index:"all", versatile:versatile} ]);
+			} else {
+				fields.push(["damage", { index:Number(ev.target.dataset.value) }]);
 			}
 		}
-	});
-}
 
-// Gets the total of all damage rolls from a given Better Roll HTML
-export function getTotalDamage(html) {
-	return;
+		switch (ev.target.dataset.action) {
+			case 'quickRoll':
+				params.preset = 0; break;
+			case 'altRoll':
+				params.preset = 1; break;
+			case 'attackRoll':
+				fields.push(["attack"]); break;
+			case 'save':
+				fields.push(["savedc"]); break;
+			case 'damageRoll':
+				setDamage(); break;
+			case 'verDamageRoll':
+				setDamage(true); params.versatile = true; break;
+			case 'toolCheck':
+				fields.push(["toolcheck"]); break;
+			case 'otherFormulaRoll':
+				fields.push(["other"]); break;
+			case 'infoRoll':
+				fields.push(["desc"]); params.properties = true; break;
+			case 'vanillaRoll':
+				item.roll({ vanilla: true });
+		}
+
+		if (ev.target.dataset.action !== 'vanillaRoll') {
+			new CustomItemRoll(item, params, fields).toMessage();
+		}
+	});
 }
 
 /**
@@ -381,18 +366,17 @@ export function getTotalDamage(html) {
  * Also replaces the default button on items with a "standard" roll.
  */
 export function changeRollsToDual (actor, html, data, params) {
-
 	if (actor && actor.permission < 3) { return; }
-	
+
 	let paramRequests = mergeObject({
 			abilityButton: '.ability-name',
 			checkButton: '.ability-mod',
 			saveButton: '.ability-save',
 			skillButton: '.skill-name',
-			itemButton: '.item .item-image',
+			itemButton: '.item:not(.magic-item) .item-image',
 			singleAbilityButton: true
 		},params || {});
-	
+
 	function getAbility(target) {
 		let ability = null;
 		for (let i=0; i <= 3; i++) {
@@ -404,7 +388,7 @@ export function changeRollsToDual (actor, html, data, params) {
 		}
 		return ability;
 	}
-	
+
 	// Assign new action to ability check button
 	let abilityName = html.find(paramRequests.abilityButton);
 	if (abilityName.length > 0 && paramRequests.singleAbilityButton === true) {
@@ -435,7 +419,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			}
 		});
 	}
-	
+
 	// Assign new action to ability button
 	let checkName = html.find(paramRequests.checkButton);
 	if (checkName.length > 0) {
@@ -449,7 +433,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			CustomRoll.rollAttribute(actor, ability, "check", params);
 		});
 	}
-	
+
 	// Assign new action to save button
 	let saveName = html.find(paramRequests.saveButton);
 	if (saveName.length > 0) {
@@ -463,7 +447,7 @@ export function changeRollsToDual (actor, html, data, params) {
 			CustomRoll.rollAttribute(actor, ability, "save", params);
 		});
 	}
-	
+
 	// Assign new action to skill button
 	let skillName = html.find(paramRequests.skillButton);
 	if (skillName.length > 0) {
@@ -473,45 +457,6 @@ export function changeRollsToDual (actor, html, data, params) {
 			let params = await Utils.eventToAdvantage(event);
 			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
 			CustomRoll.rollSkill(actor, skill, params);
-		});
-	}
-	
-	// Assign new action to item image button
-	let itemImage = html.find(paramRequests.itemButton);
-	if (itemImage.length > 0) {
-
-		itemImage.off();
-		itemImage.click(async event => {
-			const { imageButtonEnabled, altSecondaryEnabled } = getSettings();
-
-			let li = $(event.currentTarget).parents(".item"),
-				actorID = actor.id,
-				itemID = String(li.attr("data-item-id")),
-				item = actor.getOwnedItem(itemID),
-				params = await Utils.eventToAdvantage(event);
-
-			// Case 1 - If the image button should roll an "Item Macro" macro
-			if (window.ItemMacro?.hasMacro(item)) {
-				event.preventDefault();
-				window.ItemMacro.runMacro(actorID, itemID);
-
-			// Case 2 - If the image button should roll a vanilla roll
-			} else if (!imageButtonEnabled) {
-				item.actor.sheet._onItemRoll(event);
-
-			// Case 3 - If Alt is pressed
-			} else if (event.altKey) {
-				if (altSecondaryEnabled) {
-					event.preventDefault();
-					CustomRoll.newItemRoll(item, mergeObject(params, {preset:1})).toMessage();
-				} else {
-					item.actor.sheet._onItemRoll(event);
-				}
-			// Case 4 - If Alt is not pressed
-			} else {
-				event.preventDefault();
-				CustomRoll.newItemRoll(item, mergeObject(params, {preset:0})).toMessage();
-			}
 		});
 	}
 }
@@ -546,9 +491,9 @@ export function BetterRolls() {
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		item.roll()
+		return item.roll({ vanilla: true, event });
 	};
-	
+
 	// Performs a Quick Roll, searching for an item in the controlled actor by name.
 	function quickRoll(itemName) {
 		let speaker = ChatMessage.getSpeaker();
@@ -556,9 +501,9 @@ export function BetterRolls() {
 		let item = actor ? actor.items.find(i => i.name === itemName) : null;
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noSelectedActor")}`); }
 		else if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return item.roll({ vanilla: false, event });
 	};
-	
+
 	// Performs a Quick Roll, searching the actor and item by ID.
 	function quickRollById(actorId, itemId) {
 		let actor = getActorById(actorId);
@@ -566,9 +511,9 @@ export function BetterRolls() {
 		let item = actor.getOwnedItem(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return item.roll({ vanilla: false, event });
 	};
-	
+
 	// Performs a Quick Roll, searching the actor and item by name.
 	function quickRollByName(actorName, itemName) {
 		let actor = getActorByName(actorName);
@@ -576,9 +521,9 @@ export function BetterRolls() {
 		let item = actor.items.find(i => i.name === itemName);
 		if (!item) { return ui.notifications.warn(`${actor.name} ${i18n("br5e.error.noKnownItemOnActor")} ${itemName}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
-		new CustomItemRoll(item, {event:event, preset:(isAlt(event) ? 1 : 0)}).toMessage();
+		return item.roll({ vanilla: false, event });
 	};
-	
+
 	// Returns if an event should have its corresponding Quick Roll be an Alt Roll.
 	function isAlt(event) {
 		const { altSecondaryEnabled } = getSettings();
@@ -598,7 +543,7 @@ export function BetterRolls() {
 		if (!actor) actor = game.actors.entities.find(e => e.name === actorName);
 		return actor;
 	}
-	
+
 	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
 		if ( data.type !== "Item" ) return true;
 		if (event && event.altKey) { // not using isAlt(event) because it's not related to alternative roll
@@ -608,7 +553,7 @@ export function BetterRolls() {
 		}
 		return false;
 	}].concat(Hooks._hooks.hotbarDrop || []);
-	
+
 	return {
 		version: Utils.getVersion(),
 		assignMacro:assignMacro,
@@ -616,14 +561,23 @@ export function BetterRolls() {
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
 		quickRollByName:quickRollByName,
-		addItemContent:BetterRollsHooks.addItemContent,
-		hooks:BetterRollsHooks,
+		addItemContent:addItemContent,
 		rollCheck:CustomRoll.rollCheck,
 		rollSave:CustomRoll.rollSave,
 		rollAbilityCheck:CustomRoll.rollAbilityCheck,
 		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
-		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})})
+		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})}),
+
+		// These are still here for compatibility, but will be removed in future versions
+		hooks:{
+			addActorSheet: () => {
+				console.warn("WARNING: BetterRolls.hooks.addActorSheet() is deprecated");
+			},
+			addItemSheet: () => {
+				console.warn("WARNING: BetterRolls.hooks.addItemSheet() is deprecated");
+			},
+		},
 	};
 }

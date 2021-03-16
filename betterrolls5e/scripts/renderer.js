@@ -1,6 +1,6 @@
 import { CustomItemRoll } from "./custom-roll.js";
 import { BRSettings, getSettings } from "./settings.js";
-import { i18n, Utils } from "./utils.js";
+import { i18n, Utils } from "./utils/index.js";
 
 /**
  * Model data for rendering the header template.
@@ -93,7 +93,7 @@ import { i18n, Utils } from "./utils.js";
  * Shortcut function to render a templates in the better rolls template folder.
  * @param {string} path sub path of the template in the templates folder
  * @param {Object} props the props to render with
- * @returns {Promise<string>} rendered template 
+ * @returns {Promise<string>} rendered template
  */
 function renderModuleTemplate(path, props) {
 	return renderTemplate(`modules/betterrolls5e/templates/${path}`, props);
@@ -150,7 +150,7 @@ export class Renderer {
 
 	/**
 	 * Renders the header template
-	 * @param {HeaderDataProps} properties 
+	 * @param {HeaderDataProps} properties
 	 */
 	static renderHeader(properties) {
 		const { img, title, slotLevel } = properties;
@@ -163,7 +163,7 @@ export class Renderer {
 
 	/**
 	 * Renders the description template
-	 * @param {DescriptionDataProps} properties 
+	 * @param {DescriptionDataProps} properties
 	 */
 	static renderDescription(properties) {
 		return renderModuleTemplate("red-description.html", properties);
@@ -181,24 +181,11 @@ export class Renderer {
 		// Show D20 die icons if enabled
 		let entries = properties.entries;
 		if (d20RollIconsEnabled) {
-			// Inner function to recursively find the first d20 die term and show it
-			function findD20Result(d20Roll) {
-				if (!d20Roll) return null;
-
-				for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
-					if (term.faces === 20) return term.total;
-					if (term.terms ?? term.rolls) {
-						const innerResult = findD20Result(term);
-						if (innerResult) return innerResult;
-					}
-				}
-			}
-
-			entries = entries.map(e => ({ ...e, d20Result: findD20Result(e.roll) }));
+			entries = entries.map(e => ({ ...e, d20Result: Utils.findD20Result(e.roll) }));
 		}
 
 		// Create roll templates
-		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip())); 
+		const tooltips = await Promise.all(properties.entries.map(e => e.roll.getTooltip()));
 		const bonusTooltip = await properties.bonus?.getTooltip();
 
 		// Render final result
@@ -209,13 +196,13 @@ export class Renderer {
 
 	/**
 	 * Renders damage html data
-	 * @param {DamageDataProps} properties 
+	 * @param {DamageDataProps} properties
 	 */
 	static async renderDamage(properties, settings) {
 		const { damageType, baseRoll, critRoll, context } = properties;
 		const isVersatile = properties.damageIndex === "versatile";
 		if (baseRoll?.terms.length === 0 && critRoll?.terms.length === 0) return;
-		
+
 		const tooltips = (await Promise.all([
 			baseRoll?.getTooltip(),
 			critRoll?.getTooltip()
@@ -238,10 +225,10 @@ export class Renderer {
 		const dtype = CONFIG.betterRolls5e.combinedDamageTypes[damageType];
 
 		let titleString = properties.title ?? "";
-		if (!titleString && CONFIG.DND5E.healingTypes[damageType]) { 
+		if (!titleString && CONFIG.DND5E.healingTypes[damageType]) {
 			// Show "Healing" prefix only if it's not inherently a heal action
-			titleString = ""; 
-		} else if (!titleString && CONFIG.DND5E.damageTypes[damageType]) {	
+			titleString = "";
+		} else if (!titleString && CONFIG.DND5E.damageTypes[damageType]) {
 			// Show "Damage" prefix if it's a damage roll
 			titleString += i18n("br5e.chat.damage");
 		}
@@ -252,7 +239,7 @@ export class Renderer {
 			labels[titlePlacement].push(titleString);
 			pushedTitle = true;
 		}
-		
+
 		// Context (damage type and roll flavors)
 		const bonusContexts = Utils.getRollFlavors(baseRoll, critRoll).filter(c => c !== context);
 		if (context || bonusContexts.length > 0) {
@@ -264,10 +251,10 @@ export class Renderer {
 				labels[contextPlacement].push(contextStr);
 			}
 		}
-		
+
 		// Damage type
 		const damageStringParts = [];
-		if (dtype) { 
+		if (dtype) {
 			damageStringParts.push(dtype);
 		}
 		if (isVersatile) {
@@ -278,7 +265,7 @@ export class Renderer {
 		if (damagePlacement !== "0" && damageString.length > 0 && !(replaceDamage && context && damagePlacement == contextPlacement)) {
 			labels[damagePlacement].push(damageString);
 		}
-		
+
 		for (let p in labels) {
 			labels[p] = labels[p].join(" - ");
 		};
@@ -303,7 +290,7 @@ export class Renderer {
 
 	/**
 	 * Renders an html save button
-	 * @param {ButtonSaveProps} properties 
+	 * @param {ButtonSaveProps} properties
 	 */
 	static async renderSaveButton(properties) {
 		const abilityLabel = CONFIG.DND5E.abilities[properties.ability];
@@ -316,7 +303,7 @@ export class Renderer {
 
 	/**
 	 * Renders an html damage button
-	 * @param {ButtonDamageProps} properties 
+	 * @param {ButtonDamageProps} properties
 	 */
 	static async renderDamageButton(properties) {
 		return renderModuleTemplate("red-damage-button.html", {
@@ -328,13 +315,17 @@ export class Renderer {
 	/**
 	 * Renders a full card
 	 * @param {CustomItemRoll} data
-	 * @param {*} param1 
+	 * @param {*} param1
 	 */
 	static async renderCard(data) {
 		const templates = [];
-		
+
+		let previous = null;
 		const injectedGroups = new Set();
 		for (const entry of data.entries) {
+			if (!entry) continue;
+
+			// If damage prompt is enabled, replace for damage button
 			const hidden = data.params.prompt[entry.group];
 			if (["damage", "crit"].includes(entry.type) && hidden) {
 				if (!injectedGroups.has(entry.group)) {
@@ -344,11 +335,25 @@ export class Renderer {
 						group: entry.group
 					}));
 				}
-			} else if (entry.revealed || entry.type !== "crit") {	
+
+				previous = entry;
+				continue;
+			}
+
+			// If its a new attack/damage group, add a divider
+			const previousIsDamage = ["damage", "crit"].includes(previous?.type);
+			if (previousIsDamage && ["multiroll", "button-save"].includes(entry.type)) {
+				templates.push("<hr/>");
+			}
+
+			// Create the template, only do so if not of type crit unless crit is revealed
+			if (entry.type !== "crit" || entry.revealed) {
 				templates.push(await Renderer.renderModel(entry));
 			}
+
+			previous = entry;
 		}
-		
+
 		return renderModuleTemplate("red-fullroll.html", {
 			item: data.item,
 			actor: data.actor,
