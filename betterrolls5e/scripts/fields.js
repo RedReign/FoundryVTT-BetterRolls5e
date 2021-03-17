@@ -264,8 +264,9 @@ export class RollFields {
 		// Assemble roll data and defer to the general damage construction
 		try {
 			const rollFormula = [formula, ...parts].join("+");
+			const originalRoll = new Roll(rollFormula, rollData).evaluate();
 			let rollCrit = damageIndex !=="other" && isCrit && critBehavior !== "0";
-			const {baseRoll, critRoll} = ItemUtils.resolveBaseAndCriticalDamageRoll(new Roll(rollFormula, rollData), rollCrit, { settings, extraCritDice });
+			const {baseRoll, critRoll} = ItemUtils.resolveBaseAndCriticalDamageRoll(originalRoll, rollCrit, { settings, extraCritDice });
 
 			return {
 				type: "damage",

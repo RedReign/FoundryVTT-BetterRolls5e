@@ -724,20 +724,21 @@ export class ItemUtils {
 	/**
 	 * Populates the base roll and the critical roll damages depending on the critBehavior
 	 * @param {Roll} baseRoll
-	 * @param {boolean} rollCrit
+	 * @param {boolean} isCrit
 	 * @param {number?} param2.critDice extra crit dice
 	 * @returns {Roll | Roll} the base roll and the crit roll, crit roll null if not a critical roll
 	 */
-	static resolveBaseAndCriticalDamageRoll(baseRoll, rollCrit, {settings=null, extraCritDice=null}={}) {
-		let critRoll = ItemUtils.getBaseCritRoll(baseRoll.formula);
-		if(!rollCrit || !critRoll) return {baseRoll: baseRoll.evaluate(), critRoll: null};
+	static resolveBaseAndCriticalDamageRoll(originalRoll, isCrit, {settings=null, extraCritDice=null}={}) {
+		let critRoll = ItemUtils.getBaseCritRoll(originalRoll.formula);
+		if(!isCrit || !critRoll) return {baseRoll: originalRoll, critRoll: null};
 
+		let baseRoll = new Roll(originalRoll.formula,originalRoll.data);
 		critRoll.alter(1, extraCritDice ?? 0);
 		const { critBehavior } = getSettings(settings);
 
 		switch(critBehavior){
 			case "2": //roll base, max critical damage
-				baseRoll.evaluate();
+				baseRoll = originalRoll;
 				critRoll.evaluate({maximize:true});
 				break;
 			case "3": //max base and critical damage
@@ -749,10 +750,10 @@ export class ItemUtils {
 				critRoll.evaluate();
 				break;
 			default: //roll base and critical damage
-				baseRoll.evaluate();
+				baseRoll = originalRoll;
 				critRoll.evaluate();
 		}
-		return {baseRoll: baseRoll, critRoll:critRoll};
+		return {baseRoll, critRoll};
 	}
 
 	/**
