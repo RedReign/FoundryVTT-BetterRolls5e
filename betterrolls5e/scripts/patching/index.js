@@ -28,7 +28,11 @@ function override(target, fn) {
  */
 const itemRoll = (defaultRoll) => function (options) {
 	// Handle options, same defaults as core 5e
-	options = mergeObject({configureDialog: true, createMessage: true, event }, options);
+	options = mergeObject({
+		configureDialog: true,
+		createMessage: true,
+		event
+	}, options, { recursive: false });
 	const { rollMode, createMessage, vanilla } = options;
 	const altKey = options.event?.altKey;
 	const item = this;
