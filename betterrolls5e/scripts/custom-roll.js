@@ -738,6 +738,14 @@ export class CustomItemRoll {
 			flags.betterrolls5e.fields = null;
 		}
 
+		if (this.fields.some(f => f[0] === "attack")) {
+			flags["dnd5e.roll.type"] = "attack";
+		}
+
+		if (this.itemId) {
+			flags["dnd5e.roll.itemId"] = this.itemId;
+		}
+
 		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
 		const { actor, item } = this;
 		if ((item?.data.type === "consumable") && !actor.items.has(item.id) ) {
