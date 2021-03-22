@@ -91,7 +91,9 @@ Extended support for thrown items, consumables, ammunition, and items with other
 - Thank you, Brother Sharp#6921 for providing the Japanese localization for this module.
 - Thank you, KLO#1490 for providing the Korean localization for this module.
 - Thank you, Cosmo Corban#4840 for providing the Spanish localization for this module.
+- Thank you, Innocenti#1455 for providing the Portuguese localization for this module.
 - Thank you, Olirin#0350 for providing the French localization for this module.
+- Thank you, Acd-Jake#9087 for providing the German localization for this module.
 - Additional thanks go to KaKaRoTo, tposney, and Giddy of the Foundry discord for advice and assistance while developing and maintaining this module.
 - My gratitude extends also to all the folks of the Foundry VTT community for their endless wisdom and insight.
 
