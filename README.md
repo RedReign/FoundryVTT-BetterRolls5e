@@ -85,6 +85,7 @@ Extended support for thrown items, consumables, ammunition, and items with other
 
 ## Acknowledgements
 - Big thanks to Atropos for making a wonderful VTT that's worth making modules for!
+- CarlosFdez (Supe on discord) is the current maintainer and has done a great deal of work cleaning up the module's code and implementing new, useful features. Thanks for all your hard work!
 - Thanks are also due to Hooking for the initial Item Sheet Buttons module, without which this project would not exist.
 - Thank you, Felix#6196 for making a wonderful extension of Chat Damage Buttons reconfigured for this module.
 - Thank you, Brother Sharp#6921 for providing the Japanese localization for this module.
