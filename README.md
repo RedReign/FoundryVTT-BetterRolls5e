@@ -7,6 +7,10 @@ If you are feeling generous, and would like to support my work, you can do so th
 - Mars (replaces the core roller, competing directly with Better Rolls. Its one or the other)
 - Better NPC Sheet 5e (very out of date)
 
+#### Partially Compatible (Special Notes)
+- Midi QOL: more or less works, but make sure to enable fast forward attack in the midi options. If auto hit detection is enabled in midi, you'll need to use the query roll mode in Better Rolls to have more accurate results (dual mode / triple mode will throw it off as midi does not detect edits in better rolls).
+- J2BA Animations: Only for attack rolls. If set to play on damage rolls it won't work.
+
 ## Installation
 ### Method 1
 - Start up Foundry and click "Install Module" in the "Add-On Modules" tab.
