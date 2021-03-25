@@ -193,6 +193,7 @@ export class BetterRollsChatCard {
 
 				// find out the proper dmg thats supposed to be applied
 				const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
+				const damageType = dmgElement.find(".dice-total").attr("data-damagetype");
 				let dmg = dmgElement.find('.red-base-die').text();
 
 				if (dmgElement.find('.red-extra-die').length > 0) {
@@ -206,16 +207,12 @@ export class BetterRollsChatCard {
 				}
 
 				// getting the modifier depending on which of the buttons was pressed
-				let modifier = ev.target.dataset.modifier;
-
-				// sometimes the image within the button triggers the event, so we have to make sure to get the proper modifier value
-				if (modifier === undefined) {
-					modifier = $(ev.target).parent().attr('data-modifier');
-				}
+				const modifier = $(ev.target).closest("button").attr('data-modifier');
 
 				// applying dmg to the targeted token and sending only the span that the button sits in
-				const targetActors = Utils.getTargetActors() || [];
-				targetActors.forEach(actor => { actor.applyDamage(dmg, modifier) })
+				for (const actor of Utils.getTargetActors()) {
+					await this.applyDamage(actor, damageType, dmg, modifier)
+				}
 
 				setTimeout(() => {
 					if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
@@ -238,6 +235,28 @@ export class BetterRollsChatCard {
 		// Enable Hover Events (to show/hide the elements)
 		this._onHoverEnd(html);
 		html.hover(this._onHover.bind(this, html), this._onHoverEnd.bind(this, html));
+	}
+
+	async applyDamage(actor, damageType, damage, modifier) {
+		if (damageType === "temphp" && modifier < 0) {
+			const healing = Math.abs(modifier) * damage;
+			const actorData = actor.data.data;
+			if (actorData.attributes.hp.temp > 0) {
+				const overwrite = await Dialog.confirm({
+					title: i18n("br5e.chat.damageButtons.tempOverwrite.title"),
+					content: i18n("br5e.chat.damageButtons.tempOverwrite.content", {
+						original: actorData.attributes.hp.temp,
+						new: healing
+					})
+				});
+
+				if (!overwrite) return;
+			}
+
+			await actor.update({ "data.attributes.hp.temp": healing });
+		} else {
+			await actor.applyDamage(damage, modifier);
+		}
 	}
 
 	_onHover(html) {
