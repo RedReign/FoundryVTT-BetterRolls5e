@@ -152,14 +152,19 @@
 	"br5e.chat.multiRollButtons.advantage.hint": "Hodit s Výhodou (Shift)",
 	"br5e.chat.multiRollButtons.disadvantage.hint": "Hodit s Nevýhodou (Ctrl)",
 
-	"br5e.chat.damageButtons.fullDamage.hint": "Klikni pro aplikování celého zranění vybraným tokenům.",
-	"br5e.chat.damageButtons.halfDamage.hint": "Klikni pro aplikování polovičního zranění vybraným tokenům.",
-	"br5e.chat.damageButtons.doubleDamage.hint": "Klikni pro aplikování dvojitého zranění vybraným tokenům.",
-	"br5e.chat.damageButtons.healing.hint": "Klikni pro aplikování celého léčení vybraným tokenům.",
-	"br5e.chat.damageButtons.crit.hint": "Klikni pro hození kritického zranění.",
-	"br5e.chat.damageButtons.critPrompt.title": "Použít Kritické Zranění?",
-	"br5e.chat.damageButtons.critPrompt.yes": "Ano",
-	"br5e.chat.damageButtons.critPrompt.no": "Ne",
+	"br5e.chat.damageButtons": {
+		"fullDamage.hint": "Klikni pro aplikování celého zranění vybraným tokenům.",
+		"quarterDamage.hint": "Klikni pro aplikování čtvrtinového zranění vybraným tokenům.",
+		"halfDamage.hint": "Klikni pro aplikování polovičního zranění vybraným tokenům.",
+		"doubleDamage.hint": "Klikni pro aplikování dvojitého zranění vybraným tokenům.",
+		"healing.hint": "Klikni pro aplikování celého léčení vybraným tokenům.",
+		"crit.hint": "Klikni pro hození kritického zranění.",
+		"tempOverwrite.title": "Přepsat Dočasné Životy",
+		"tempOverwrite.content": "Nahradit {original} dočasných životů {new} novými dočasnými životy?",
+		"bcritPrompt.title": "Použít Kritické Zranění?",
+		"critPrompt.yes": "Ano",
+		"critPrompt.no": "Ne"
+	},
 
 	"Ability Roll": "Hod na Vlastnost",
 	"What type of roll?": "Jaký typ hodu?",
