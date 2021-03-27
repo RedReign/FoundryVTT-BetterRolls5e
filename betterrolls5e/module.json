@@ -41,6 +41,11 @@
 			"lang": "ko",
 			"name": "한국어 (Korean)",
 			"path": "lang/ko.json"
+		},
+		{
+			"lang": "cs",
+			"name": "Česky",
+			"path": "lang/cs.json"
 		}
 	],
 	"systems": ["dnd5e", "dnd5eJP"],
