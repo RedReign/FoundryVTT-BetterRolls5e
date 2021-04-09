@@ -16,8 +16,7 @@ export function patchCoreFunctions() {
  * @param {*} fn A curried function that takes the original and returns a function to pass to libwrapper
  */
 function override(target, fn) {
-	const original = libWrapper._create_wrapper?.(target, "betterrolls5e")._wrapped ?? eval(target);
-	libWrapper.register("betterrolls5e", target, fn(original), "OVERRIDE");
+	libWrapper.register("betterrolls5e", target, fn, "OVERRIDE", {chain: true});
 }
 
 /**
@@ -26,7 +25,7 @@ function override(target, fn) {
  * @param {} wrapped
  * @returns
  */
-const itemRoll = (defaultRoll) => function (options) {
+function itemRoll(defaultRoll, options) {
 	// Handle options, same defaults as core 5e
 	options = mergeObject({
 		configureDialog: true,
@@ -55,7 +54,7 @@ const itemRoll = (defaultRoll) => function (options) {
  * @param {} wrapped
  * @returns
  */
-const itemRollAttack = (defaultRoll) => async function (options) {
+async function itemRollAttack(defaultRoll, options) {
 	// Call the default version if chatMessage is enabled
 	if (options?.chatMessage !== false) {
 		return defaultRoll.bind(this)(options);
