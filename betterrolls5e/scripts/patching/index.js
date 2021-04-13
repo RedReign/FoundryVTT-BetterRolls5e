@@ -2,8 +2,18 @@ import { getSettings } from "../settings.js";
 import { libWrapper } from "./libWrapper.js";
 
 import { d20Roll } from "../../../../systems/dnd5e/module/dice.js";
+import { i18n } from "../utils/utils.js";
 
 export function patchCoreFunctions() {
+	if (!libWrapper.is_fallback && !libWrapper.version_at_least?.(1, 4, 0)) {
+		Hooks.once("ready", () => {
+			const version = "v1.4.0.0";
+			ui.notifications.warn(i18n("br5e.error.libWrapperMinVersion", { version }));
+		});
+
+		return;
+	}
+
 	override("CONFIG.Item.entityClass.prototype.roll", itemRoll);
 	override("CONFIG.Item.entityClass.prototype.rollAttack", itemRollAttack);
 }

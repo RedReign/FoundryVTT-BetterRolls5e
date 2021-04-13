@@ -84,6 +84,7 @@
 	"br5e.error.autoDestroy": "The {name} disappears as its last charge is consumed.",
 	"br5e.error.rollEvaluation": "Dice roll evaluation failed: {msg}",
 	"br5e.error.noDAE": "DAE is required to apply active effects to targets",
+	"br5e.error.libWrapperMinVersion": "Better Rolls requires libWrapper version {version} or newer.",
 
 	"br5e.settings.critThreshold": "Critical Threshold",
 	"br5e.settings.critDamage": "Extra Critical Damage",
