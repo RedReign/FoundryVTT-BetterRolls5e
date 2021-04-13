@@ -8,7 +8,7 @@ export function patchCoreFunctions() {
 	if (!libWrapper.is_fallback && !libWrapper.version_at_least?.(1, 4, 0)) {
 		Hooks.once("ready", () => {
 			const version = "v1.4.0.0";
-			ui.notifications.warn(i18n("br5e.error.libWrapperMinVersion", { version }));
+			ui.notifications.error(i18n("br5e.error.libWrapperMinVersion", { version }));
 		});
 
 		return;
