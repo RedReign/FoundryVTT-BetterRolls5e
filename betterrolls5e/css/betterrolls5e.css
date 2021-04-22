@@ -64,7 +64,7 @@
 	font-size: 13px;
 	text-align: center;
 	opacity: 0.95;
-	
+
 	position: absolute;
 	top: 50%;
 	right: 5px;
@@ -175,9 +175,9 @@
 }
 
 .die-result-overlay-br button {
-	width: 22px; 
-	height: 22px; 
-	font-size: 10px; 
+	width: 20px;
+	height: 20px;
+	font-size: 10px;
 	line-height: 1px;
 	background-color: white;
 	border: 1px solid #999;

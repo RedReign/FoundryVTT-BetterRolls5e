@@ -203,8 +203,13 @@ class Settings {
 			hint: i18n("br5e.chatDamageButtonsEnabled.hint"),
 			scope: "world",
 			config: true,
-			default: true,
-			type: Boolean
+			default: "1",
+			type: String,
+			choices: {
+				"0": i18n("br5e.chatDamageButtonsEnabled.choices.0"),
+				"1": i18n("br5e.chatDamageButtonsEnabled.choices.1"),
+				"2": i18n("br5e.chatDamageButtonsEnabled.choices.2"),
+			}
 		});
 
 		game.settings.register("betterrolls5e", "playRollSounds", {
@@ -292,7 +297,8 @@ class Settings {
 	}
 
 	get chatDamageButtonsEnabled() {
-		return getBRSetting("chatDamageButtonsEnabled");
+		const setting = getBRSetting("chatDamageButtonsEnabled");
+		return setting === "1" || (setting === "2" && game.user.isGM);
 	}
 
 	/**

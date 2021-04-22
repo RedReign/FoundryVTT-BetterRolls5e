@@ -165,72 +165,70 @@ export class BetterRollsChatCard {
 		}
 
 		// Setup augment crit and apply damage button
-		// Note: For backwards compatibility, these find on the HTML rather than use the roll models
-		if (BRSettings.chatDamageButtonsEnabled) {
-			const templateDamage = await renderTemplate("modules/betterrolls5e/templates/red-overlay-damage.html");
-			const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray();
-			const customElements = html.find('[data-type=custom] .red-base-die').toArray();
+		const templateName = (BRSettings.chatDamageButtonsEnabled) ? "red-overlay-damage" : "red-overlay-damage-crit-only";
+		const templateDamage = await renderTemplate(`modules/betterrolls5e/templates/${templateName}.html`);
+		const dmgElements = html.find('.dice-total .red-base-die, .dice-total .red-extra-die').parents('.dice-row').toArray();
+		const customElements = html.find('[data-type=custom] .red-base-die').toArray();
 
-			// Add chat damage buttons
-			[...dmgElements, ...customElements].forEach(element => {
-				element = $(element);
-				element.append($(templateDamage));
+		// Add chat damage buttons
+		[...dmgElements, ...customElements].forEach(element => {
+			element = $(element);
+			element.append($(templateDamage));
 
-				// Remove crit button if already rolled
-				// TODO: Move this elsewhere. There's a known bug when crit settings are changed suddenly
-				// If Crit (setting) is disabled, then re-enabled, crit buttons don't get re-added
-				const id = element.parents('.dice-roll').attr('data-id');
-				const entry = this.roll?.getEntry(id);
-				if (!this.roll?.canCrit(entry)) {
-					element.find('.crit-button').remove();
+			// Remove crit button if already rolled
+			// TODO: Move this elsewhere. There's a known bug when crit settings are changed suddenly
+			// If Crit (setting) is disabled, then re-enabled, crit buttons don't get re-added
+			const id = element.parents('.dice-roll').attr('data-id');
+			const entry = this.roll?.getEntry(id);
+			if (!this.roll?.canCrit(entry)) {
+				element.find('.crit-button').remove();
+			}
+		});
+
+		// Handle apply damage overlay button events
+		html.find('.apply-damage-buttons button').click(async ev => {
+			ev.preventDefault();
+			ev.stopPropagation();
+
+			// find out the proper dmg thats supposed to be applied
+			const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
+			const damageType = dmgElement.find(".dice-total").attr("data-damagetype");
+			let dmg = dmgElement.find('.red-base-die').text();
+
+			if (dmgElement.find('.red-extra-die').length > 0) {
+				const critDmg = dmgElement.find('.red-extra-die').text();
+				const dialogPosition = {
+					x: ev.originalEvent.screenX,
+					y: ev.originalEvent.screenY
+				};
+
+				dmg = await this._resolveCritDamage(Number(dmg), Number(critDmg), dialogPosition);
+			}
+
+			// getting the modifier depending on which of the buttons was pressed
+			const modifier = $(ev.target).closest("button").attr('data-modifier');
+
+			// applying dmg to the targeted token and sending only the span that the button sits in
+			for (const actor of Utils.getTargetActors()) {
+				await this.applyDamage(actor, damageType, dmg, modifier)
+			}
+
+			setTimeout(() => {
+				if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
+					canvas.hud.token.render();
 				}
-			});
+			}, 50);
+		});
 
-			// Handle apply damage overlay button events
-			html.find('.apply-damage-buttons button').click(async ev => {
-				ev.preventDefault();
-				ev.stopPropagation();
-
-				// find out the proper dmg thats supposed to be applied
-				const dmgElement = $(ev.target.parentNode.parentNode.parentNode.parentNode);
-				const damageType = dmgElement.find(".dice-total").attr("data-damagetype");
-				let dmg = dmgElement.find('.red-base-die').text();
-
-				if (dmgElement.find('.red-extra-die').length > 0) {
-					const critDmg = dmgElement.find('.red-extra-die').text();
-					const dialogPosition = {
-						x: ev.originalEvent.screenX,
-						y: ev.originalEvent.screenY
-					};
-
-					dmg = await this._resolveCritDamage(Number(dmg), Number(critDmg), dialogPosition);
-				}
-
-				// getting the modifier depending on which of the buttons was pressed
-				const modifier = $(ev.target).closest("button").attr('data-modifier');
-
-				// applying dmg to the targeted token and sending only the span that the button sits in
-				for (const actor of Utils.getTargetActors()) {
-					await this.applyDamage(actor, damageType, dmg, modifier)
-				}
-
-				setTimeout(() => {
-					if (canvas.hud.token._displayState && canvas.hud.token._displayState !== 0) {
-						canvas.hud.token.render();
-					}
-				}, 50);
-			});
-
-			// Handle crit button application event
-			html.find('.crit-button').on('click', async (ev) => {
-				ev.preventDefault();
-				ev.stopPropagation();
-				const group = $(ev.target).parents('.dice-roll').attr('data-group');
-				if (await this.roll.forceCrit(group)) {
-					await this.roll.update();
-				}
-			});
-		}
+		// Handle crit button application event
+		html.find('.crit-button').off().on('click', async (ev) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			const group = $(ev.target).parents('.dice-roll').attr('data-group');
+			if (await this.roll.forceCrit(group)) {
+				await this.roll.update();
+			}
+		});
 
 		// Enable Hover Events (to show/hide the elements)
 		this._onHoverEnd(html);
