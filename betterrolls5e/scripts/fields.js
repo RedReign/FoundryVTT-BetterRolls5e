@@ -475,15 +475,12 @@ export class RollFields {
 				})];
 			case 'description':
 			case 'desc':
-				return [{
-					type: "description",
-					content: TextEditor.enrichHTML(item?.data.data.description.value ?? '').trim()
-				}];
 			case 'text':
-				if (data.text) {
+				const textFieldValue = data.text ?? data.content ?? item?.data.data.description.value;
+				if (textFieldValue) {
 					return [{
 						type: "description",
-						content: TextEditor.enrichHTML(data.text ?? "")
+						content: TextEditor.enrichHTML(textFieldValue ?? '').trim()
 					}];
 				}
 				break;
