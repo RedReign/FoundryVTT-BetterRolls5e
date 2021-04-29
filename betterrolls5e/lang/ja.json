@@ -3,7 +3,8 @@
 
 	"Better Rolls": "拡張ロール",
 	"Better Rolls for 5e": "Better Rolls for 5e",
-	
+
+	"br5e.migrating": "v{version}のため、Better Rollsのシステム・マイグレーションを適用します。",
 	"br5e.rollButtonsEnabled.name": "シートにロールボタンを追加する",
 	"br5e.rollButtonsEnabled.hint": "アイテム、呪文、特徴などの内容を確認するとき、チャットに出力するためのボタンを追加します。この機能は同様の機能を提供するモジュールと競合する可能性があります。変更時はシートを開き直してください。",
 	"br5e.imageButtonEnabled.name": "アイテム画像からロールする",
@@ -46,12 +47,15 @@
 	"br5e.damagePromptEnabled.hint": "ダメージロールを自動化せず、攻撃やセーヴ後にダメージロールボタンが表示されるようになります。",
 	"br5e.d20RollIconsEnabled.name": "d20ロールの出目をアイコン表示する",
 	"br5e.d20RollIconsEnabled.hint": "攻撃/判定/セーヴのダイスの結果を、見やすい位置に表示します。",
+	"br5e.applyActiveEffects.name": "チャットカードにアクティブ効果ボタンを表示する",
+	"br5e.applyActiveEffects.hint": "アクティブ効果を適用するためのボタンをチャットカードに表示します。「Dynamic Active Effect」（DAE）モジュールが必要です。DAEが未インストールの場合、このオプションは何も行いません。",
 
 	"br5e.d20Mode.name": "d20モード",
 	"br5e.d20Mode.hint": "攻撃ロール / 能力値判定 / セーヴィング・スローの表示方法を設定します。シングルロールでは、有利/不利を選択するオーバーレイボタン（［-］ / ［+］）が使用できます。",
 	"br5e.d20Mode.choices.1": "シングルロール（Shiftで有利 / Ctrlで不利）",
 	"br5e.d20Mode.choices.2": "デュアルロール（2個同時）",
 	"br5e.d20Mode.choices.3": "トリプルスレット（3個同時）",
+	"br5e.d20Mode.choices.4": "有利/不利を確認する",
 	
 	"br5e.critBehavior.name": "クリティカル・ダメージ",
 	"br5e.critBehavior.hint": "クリティカル・ダメージの計算方法を指定します。",
@@ -59,7 +63,7 @@
 	"br5e.critBehavior.choices.1": "追加のダメージダイスを振る（5eの標準）",
 	"br5e.critBehavior.choices.2": "元の出目＋追加の最大値",
 	"br5e.critBehavior.choices.3": "元の最大値＋追加の最大値",
-	"br5e.critBehavior.choices.4": "有利 / 不利を確認する",
+	"br5e.critBehavior.choices.4": "元の最大値＋追加の出目",
 	
 	"br5e.critString.name": "クリティカルの表示",
 	"br5e.critString.hint": "クリティカル時に表示するテキストを設定します。このテキストはダメージの右側に表示されます（クイックロール時のみ）。",
@@ -79,6 +83,7 @@
 	"br5e.error.noChargesLeft": "このアイテムはチャージ切れです！",
 	"br5e.error.autoDestroy": "最後のチャージを消費すると {name} は消滅します。",
 	"br5e.error.rollEvaluation": "ダイスロールの評価に失敗しました：{msg}",
+	"br5e.error.noDAE": "目標にアクティブ効果を適用するにはDAEが必要です。",
 	
 	"br5e.settings.critThreshold": "クリティカル範囲",
 	"br5e.settings.critDamage": "追加クリティカルダメージ",
@@ -115,10 +120,11 @@
 	"br5e.buttons.damage": "ダメージ",
 	"br5e.buttons.altDamage": "サブダメージ",
 	"br5e.buttons.extraDamage": "追加ダメージ",
-	"br5e.buttons.verDamage": "代替ダメージ",
+	"br5e.buttons.verDamage": "両用ダメージ",
 	"br5e.buttons.info": "詳細",
 	"br5e.buttons.itemUse": "使用",
 	"br5e.buttons.defaultSheetRoll": "元々のロール",
+	"br5e.buttons.applyActiveEffects": "効果を適用",
 	
 	"br5e.chat.attack": "攻撃",
 	"br5e.chat.check": "判定",
@@ -146,15 +152,20 @@
 	"br5e.chat.multiRollButtons.advantage.hint": "有利でロールする（Shift）",
 	"br5e.chat.multiRollButtons.disadvantage.hint": "不利でロールする（Ctrl）",
 
-	"br5e.chat.damageButtons.fullDamage.hint": "通常ダメージを選択コマに適用する",
-	"br5e.chat.damageButtons.halfDamage.hint": "半減ダメージを選択コマに適用する",
-	"br5e.chat.damageButtons.doubleDamage.hint": "2倍ダメージを選択コマに適用する",
-	"br5e.chat.damageButtons.healing.hint": "回復を選択コマに適用する",
-	"br5e.chat.damageButtons.crit.hint": "クリティカルでダメージロールを行います",
-	"br5e.chat.damageButtons.critPrompt.title": "クリティカルですか？",
-	"br5e.chat.damageButtons.critPrompt.yes": "はい",
-	"br5e.chat.damageButtons.critPrompt.no": "いいえ",
-	
+	"br5e.chat.damageButtons": {
+		"fullDamage.hint": "通常ダメージを適用",
+		"quarterDamage.hint": "1/4ダメージを適用",
+		"halfDamage.hint": "半減ダメージを適用",
+		"doubleDamage.hint": "2倍ダメージを適用",
+		"healing.hint": "回復を適用する",
+		"crit.hint": "クリティカルでダメージロールを行います",
+		"tempOverwrite.title": "一時的hpを上書きします",
+		"tempOverwrite.content": "現在の一時的hp {original} を新しい値 {new} に置き換えますか？",
+		"bcritPrompt.title": "クリティカルですか？",
+		"critPrompt.yes": "はい",
+		"critPrompt.no": "いいえ"
+	},
+
 	"Ability Roll": "能力値ロール",
 	"What type of roll?": "どの振り方にしますか？",
 	"Ability Check": "能力値判定",
@@ -169,11 +180,5 @@
 	"Concentration": "集中",
 	"AC": "AC",
 	"Equipped": "装備済",
-	"Stealth Disadv.": "隠密不利",
-
-
-	"br5e.settings.extraType": "追加ダメージ種別",
-	"br5e.settings.addExtraToBase": "ダメージロールに追加ダメージも合算する",
-	"br5e.settings.addExtraToAlt": "サブロールに追加ダメージも合算する",
-	"br5e.settings.extraDamage": "追加ダメージ"
+	"Stealth Disadv.": "隠密不利"
 }
