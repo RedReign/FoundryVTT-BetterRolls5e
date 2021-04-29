@@ -170,7 +170,7 @@
 		"crit.hint": "Click to roll crit damage.",
 		"tempOverwrite.title": "Overwrite Temporary Health",
 		"tempOverwrite.content": "Replace {original} temporary health with {new} new temporary health?",
-		"bcritPrompt.title": "Use Crit Damage?",
+		"critPrompt.title": "Use Crit Damage?",
 		"critPrompt.yes": "Yes",
 		"critPrompt.no": "No"
 	},
