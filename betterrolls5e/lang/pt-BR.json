@@ -1,9 +1,9 @@
 {
 	"I18N.MAINTAINERS": ["Innocenti, Melithian"],
-	
+
 	"Better Rolls": "Rolagens Melhores",
 	"Better Rolls for 5e": "Better Rolls for 5e",
-	
+
 	"br5e.rollButtonsEnabled.name": "Adicionar Botões de Rolagem na Ficha",
 	"br5e.rollButtonsEnabled.hint": "Adiciona botões aos itens, magias e recursos da ficha, exibidos quando o item é expandido. Pode ser incompatível com o mod Item Sheet Buttons. Necessário reabrir a ficha.",
 	"br5e.imageButtonEnabled.name": "Fazer Imagem do Item Rolar Automaticamente",
@@ -53,14 +53,14 @@
 	"br5e.d20Mode.choices.2": "Jogadas Duplas",
 	"br5e.d20Mode.choices.3": "ゴゴ Ameaça Tripla ゴゴ",
 	"br5e.d20Mode.choices.4": "Consultar para (Des)Vantagens",
-	
+
 	"br5e.critBehavior.name": "Dano Crítico",
 	"br5e.critBehavior.hint": "Determina como o dano crítico é calculado.",
 	"br5e.critBehavior.choices.0": "Sem Dano Extra",
 	"br5e.critBehavior.choices.1": "Rolar dados de Dano Crítico",
 	"br5e.critBehavior.choices.2": "Rolar Dano Base, Maximizar Crítico",
 	"br5e.critBehavior.choices.3": "Maximizar Base e Dano Crítico",
-	
+
 	"br5e.critString.name": "Indicador Crítico",
 	"br5e.critString.hint": "Determina como os críticos são rotulados. Aparece como texto à direita da rolagem de dano crítico. Funciona apenas com Rolagens Melhores.",
 	"br5e.critString.choices.2": "Crít",
@@ -70,7 +70,7 @@
 	"br5e.critString.choices.6": "Crítico!",
 	"br5e.critString.choices.7": "(Crítico)",
 	"br5e.critString.choices.8": "POWWWWW!",
-	
+
 	"br5e.error.noSelectedActor": "Deve haver um personagem selecionado para usar este macro!",
 	"br5e.error.noKnownItemOnActor": "não possui um item chamado",
 	"br5e.error.noActorWithId": "Nenhum ator é conhecido com esse ID",
@@ -79,9 +79,9 @@
 	"br5e.error.noChargesLeft": "Este item ficou sem cargas!",
 	"br5e.error.autoDestroy": "O(A) {name} desaparecerá assim que a última carga for consumida.",
 	"br5e.error.rollEvaluation": "Avaliação da rolagem de dado falhou: {msg}",
-	
+
 	"br5e.settings.critThreshold": "Intervalo de Crítico",
-	"br5e.settings.critDamage": "Dano Crítico Extra",
+	"br5e.settings.critDamage.name": "Dano Crítico Extra",
 	"br5e.settings.critDamage.hint": "Dano Crítico Extra a ser aplicado quando pelo menos um dano for rolado",
 	"br5e.settings.quickRollsLabel": "Rolagens Rápidas",
 	"br5e.settings.quickRollsAltLabel": "Rolagens Rápidas Alternativas",
@@ -105,7 +105,7 @@
 	"br5e.settings.otherFormula": "Outra Fórmula",
 	"br5e.settings.quickFlavor": "Extras",
 	"br5e.settings.prompt": "Aviso Extendido",
-	
+
 	"br5e.buttons.roll": "Rolagem",
 	"br5e.buttons.altRoll": "Rolagem Alt.",
 	"br5e.buttons.attack": "Ataque",
@@ -119,7 +119,7 @@
 	"br5e.buttons.info": "Info",
 	"br5e.buttons.itemUse": "Uso",
 	"br5e.buttons.defaultSheetRoll": "Rolagem Padrão da Ficha",
-	
+
 	"br5e.chat.attack": "Ataque",
 	"br5e.chat.check": "Teste",
 	"br5e.chat.save": "Salvaguarda",
@@ -142,7 +142,7 @@
 	"br5e.querying.disadvantage": "Desvantagem",
 	"br5e.querying.normal": "Normal",
 	"br5e.querying.advantage": "Vantagem",
-	
+
 	"br5e.chat.multiRollButtons.advantage.hint": "Rolar com Vantagem (Shift)",
 	"br5e.chat.multiRollButtons.disadvantage.hint": "Rolar com Desvantagem (Ctrl)",
 
@@ -154,12 +154,12 @@
 	"br5e.chat.damageButtons.critPrompt.title": "Usar Dano Crítico?",
 	"br5e.chat.damageButtons.critPrompt.yes": "Sim",
 	"br5e.chat.damageButtons.critPrompt.no": "Não",
-	
+
 	"Ability Roll": "Rolagem de Atributo",
 	"What type of roll?": "Qual tipo de rolagem?",
 	"Ability Check": "Teste de Atributo",
 	"Saving Throw": "Salvaguarda",
-	
+
 	"Not Proficient": "Não Proficiente",
 	"Proficient": "Proficiente",
 	"Jack of all Trades": "Pau Para Toda Obra",

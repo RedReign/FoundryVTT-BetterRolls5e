@@ -1,9 +1,9 @@
 {
 	"I18N.MAINTAINERS": ["KLO"],
-	
+
 	"Better Rolls": "Better Rolls",
 	"Better Rolls for 5e": "D&D 5판을 위한 개선된 굴림 모듈",
-	
+
 	"br5e.rollButtonsEnabled.name": "시트에 굴림 버튼 추가",
 	"br5e.rollButtonsEnabled.hint": "시트 내 아이템, 주문, 기능에 버튼을 추가한다. 아이템이 열렸을 시 표시된다. 아이템 시트 버튼 모듈과 충돌할 수 있다. 시트를 다시 열어야 한다. ",
 	"br5e.imageButtonEnabled.name": "아이템 이미지 자동 굴림",
@@ -46,14 +46,14 @@
 	"br5e.d20Mode.choices.1": "단일 굴림 (Shift 유리함, Ctrl 불리함)",
 	"br5e.d20Mode.choices.2": "2중 굴림",
 	"br5e.d20Mode.choices.3": "3중 굴림",
-	
+
 	"br5e.critBehavior.name": "치명타 피해",
 	"br5e.critBehavior.hint": "치명타 피해가 어떻게 계산되는 지를 결정한다.",
 	"br5e.critBehavior.choices.0": "추가 피해 없음",
 	"br5e.critBehavior.choices.1": "치명타 주사위 굴림",
 	"br5e.critBehavior.choices.2": "기본 피해 굴림, 치명타 피해 최대",
 	"br5e.critBehavior.choices.3": "기본 피해 굴림과 치명타 피해 최대",
-	
+
 	"br5e.critString.name": "치명타 표시",
 	"br5e.critString.hint": "치명타 표시 방법을 결정한다. 치명타 피해 굴림의 우측에 텍스트로 표시된다. Better Rolls에서만 적용된다.",
 	"br5e.critString.choices.2": "치명타",
@@ -63,7 +63,7 @@
 	"br5e.critString.choices.6": "치명적 피해l!",
 	"br5e.critString.choices.7": "(치명적 피해)",
 	"br5e.critString.choices.8": "빼앰!",
-	
+
 	"br5e.error.noSelectedActor": "이 매크로를 사용하려면 캐릭터를 선택해야 합니다!",
 	"br5e.error.noKnownItemOnActor": "지정된 아이템을 소유하고 있지 않습니다",
 	"br5e.error.noActorWithId": "해당 ID를 가진 액터가 존재하지 않습니다",
@@ -71,9 +71,9 @@
 	"br5e.error.noItemWithId": "액터에 대한 ID로 알려진 아이템이 없습니다",
 	"br5e.error.noChargesLeft": "이 아이템은 차지가 다 떨어졌습니다",
 	"br5e.error.autoDestroy": "마지막 충전량이 소비되어 항목이 사라집니다.",
-	
+
 	"br5e.settings.critThreshold": "치명타 한계점",
-	"br5e.settings.critDamage": "추가 치명타 피해",
+	"br5e.settings.critDamage.name": "추가 치명타 피해",
 	"br5e.settings.critDamage.hint": "하나 이상의 피해가 굴려질 때 더해지는 추가 치명타 피해",
 	"br5e.settings.quickRollsLabel": "빠른 굴림",
 	"br5e.settings.quickRollsAltLabel": "대체된 빠른 굴림",
@@ -92,7 +92,7 @@
 	"br5e.settings.context": "설명",
 	"br5e.settings.otherFormula": "기타 수식",
 	"br5e.settings.quickFlavor": "플레이버",
-	
+
 	"br5e.buttons.roll": "굴림",
 	"br5e.buttons.altRoll": "대체 굴림",
 	"br5e.buttons.attack": "공격",
@@ -106,7 +106,7 @@
 	"br5e.buttons.info": "정보",
 	"br5e.buttons.itemUse": "사용",
 	"br5e.buttons.defaultSheetRoll": "기본 시트 굴림",
-	
+
 	"br5e.chat.attack": "공격",
 	"br5e.chat.check": "판정",
 	"br5e.chat.save": "내성 굴림",
@@ -121,7 +121,7 @@
 	"br5e.chat.other": "기타",
 	"br5e.chat.advantage": "유리함",
 	"br5e.chat.disadvantage": "불리함",
-	
+
 	"br5e.chat.damageButtons.fullDamage.hint": "선택한 토큰에 모든 피해를 적용함.",
 	"br5e.chat.damageButtons.halfDamage.hint": "선택한 토큰에 절반의 피해를 적용함.",
 	"br5e.chat.damageButtons.doubleDamage.hint": "선택한 토큰에 2배의 피해를 적용함.",
@@ -129,12 +129,12 @@
 	"br5e.chat.damageButtons.critPrompt.title": "치명타 피해를 사용합니까?",
 	"br5e.chat.damageButtons.critPrompt.yes": "예",
 	"br5e.chat.damageButtons.critPrompt.no": "아니오",
-	
+
 	"Ability Roll": "능력치 굴림",
 	"What type of roll?": "어떤 굴림을 합니까?",
 	"Ability Check": "능력 판정",
 	"Saving Throw": "내성 굴림",
-	
+
 	"Not Proficient": "비숙련",
 	"Proficient": "숙련",
 	"Jack of all Trades": "다재다능",

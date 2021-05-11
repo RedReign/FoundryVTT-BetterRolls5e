@@ -1,9 +1,9 @@
 {
 	"I18N.MAINTAINERS": ["Red Reign"],
-	
+
 	"Better Rolls": "Besser Würfeln",
 	"Better Rolls for 5e": "Besser Würfeln für 5e",
-	
+
 	"br5e.rollButtonsEnabled.name": "Würfelbuttons zum Blatt hinzufügen",
 	"br5e.rollButtonsEnabled.hint": "Fügt Buttons zu Gegenständen, Zaubern und Merkmalen auf dem Blatt hinzu, die angezeigt werden, wenn der Gegenstand erweitert wird. Möglicherweise inkompatibel mit den Buttons des Modules \"Item Sheet Buttons\". Erfordert ein erneutes Öffnen des Blattes.",
 	"br5e.imageButtonEnabled.name": "Element-Bild automatisch würfeln lassen",
@@ -40,20 +40,20 @@
 	"br5e.hideDC.choices.0": "Niemals",
 	"br5e.hideDC.choices.1": "Nur bei NSCs",
 	"br5e.hideDC.choices.2": "Immer",
-	
+
 	"br5e.d20Mode.name": "d20 Modus",
 	"br5e.d20Mode.hint": "Legt fest, wie Angriffswürfe, Attributsproben und Rettungswürfe angezeigt werden.",
 	"br5e.d20Mode.choices.1": "Einzelner Wurf (Shift-Vorteil, Strg-Nachteil)",
 	"br5e.d20Mode.choices.2": "Dualer Wurf",
 	"br5e.d20Mode.choices.3": "ゴゴ Dreifache Bedrohung ゴゴ",
-	
+
 	"br5e.critBehavior.name": "Kritischer Schaden",
 	"br5e.critBehavior.hint": "Bestimmt, wie der kritische Schaden berechnet wird.",
 	"br5e.critBehavior.choices.0": "Kein zusätzlicher Schaden",
 	"br5e.critBehavior.choices.1": "Würfeln mit \"Kritischer Schaden\"-Würfel",
 	"br5e.critBehavior.choices.2": "Basisschaden würfeln, Kritschen Schaden maximieren",
 	"br5e.critBehavior.choices.3": "Basisschaden & kritischen Schaden maximieren",
-	
+
 	"br5e.critString.name": "Hinweis auf kritischen Treffer",
 	"br5e.critString.hint": "Legt fest, wie kritische Treffer gekennzeichnet werden. Erscheint als Text auf der rechten Seite des kritischen Schadenswurfes. Funktioniert nur mit \"Besser Würfeln\".",
 	"br5e.critString.choices.2": "Krit",
@@ -63,7 +63,7 @@
 	"br5e.critString.choices.6": "Kritisch!",
 	"br5e.critString.choices.7": "(Kritisch)",
 	"br5e.critString.choices.8": "BAMMMM!",
-	
+
 	"br5e.error.noSelectedActor": "Es muss ein Charakter ausgewählt sein, um dieses Makro zu verwenden!",
 	"br5e.error.noKnownItemOnActor": "besitzt keinen Gegenstand namens",
 	"br5e.error.noActorWithId": "Es ist kein Akteur mit dieser ID bekannt",
@@ -71,9 +71,9 @@
 	"br5e.error.noItemWithId": "Es ist kein Element mit dieser ID beim Akteur bekannt",
 	"br5e.error.noChargesLeft": "Dieser Gegenstand hat keine Ladungen mehr!",
 	"br5e.error.autoDestroy": "Der Gegenstand verschwindet, wenn seine letzte Ladung verbraucht ist.",
-	
+
 	"br5e.settings.critThreshold": "Kritischer Grenzwert",
-	"br5e.settings.critDamage": "Zusätzlicher kritischer Schaden",
+	"br5e.settings.critDamage.name": "Zusätzlicher kritischer Schaden",
 	"br5e.settings.critDamage.hint": "Besonders kritischer Schaden, der anzuwenden ist, wenn mindestens ein Schaden gewürfelt wird",
 	"br5e.settings.quickRollsLabel": "Schnellwürfeln",
 	"br5e.settings.quickRollsAltLabel": "Alternatives Schnellwürfeln",
@@ -92,7 +92,7 @@
 	"br5e.settings.context": "Kontext",
 	"br5e.settings.otherFormula": "Andere Formel",
 	"br5e.settings.quickFlavor": "Zusätzlicher Text",
-	
+
 	"br5e.buttons.roll": "Wurf",
 	"br5e.buttons.altRoll": "Alt. Wurf",
 	"br5e.buttons.attack": "Angriff",
@@ -106,7 +106,7 @@
 	"br5e.buttons.info": "Info",
 	"br5e.buttons.itemUse": "Benutzen",
 	"br5e.buttons.defaultSheetRoll": "Standard Blattwurf",
-	
+
 	"br5e.chat.attack": "Angriff",
 	"br5e.chat.check": "Probe",
 	"br5e.chat.save": "Rettungswurf",
@@ -121,7 +121,7 @@
 	"br5e.chat.other": "Andere",
 	"br5e.chat.advantage": "Vorteil",
 	"br5e.chat.disadvantage": "Nachteil",
-	
+
 	"br5e.chat.damageButtons.fullDamage.hint": "Anklicken, um den vollen Schaden auf die ausgewählte(n) Spielfigur(en) anzuwenden.",
 	"br5e.chat.damageButtons.halfDamage.hint": "Anklicken, um den halbierten Schaden auf die ausgewählte(n) Spielfigur(en) anzuwenden.",
 	"br5e.chat.damageButtons.doubleDamage.hint": "Anklicken, um den doppelten Schaden auf die ausgewählte(n) Spielfigur(en) anzuwenden.",
@@ -129,12 +129,12 @@
 	"br5e.chat.damageButtons.critPrompt.title": "Krit. Schaden anwenden?",
 	"br5e.chat.damageButtons.critPrompt.yes": "Ja",
 	"br5e.chat.damageButtons.critPrompt.no": "Nein",
-	
+
 	"Ability Roll": "Attributswürfe",
 	"What type of roll?": "Welche Art des Wurfes?",
 	"Ability Check": "Attributsprobe",
 	"Saving Throw": "Rettungswurf",
-	
+
 	"Not Proficient": "Nich geübt",
 	"Proficient": "Geübt",
 	"Jack of all Trades": "Alleskönner",

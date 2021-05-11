@@ -86,7 +86,7 @@
 	"br5e.error.noDAE": "Pro aplikovaní aktivních evektů cílům je vyžadován DAE",
 
 	"br5e.settings.critThreshold": "Kritická Hranice",
-	"br5e.settings.critDamage": "Extra Krytické Zranění",
+	"br5e.settings.critDamage.name": "Extra Krytické Zranění",
 	"br5e.settings.critDamage.hint": "Extra Kritické Zranění, které se má aplikovat pokud je hozeno alespoň jedno zranění",
 	"br5e.settings.quickRollsLabel": "Rychlé Hody",
 	"br5e.settings.quickRollsAltLabel": "Alt Rychlé Hody",

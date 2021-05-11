@@ -177,7 +177,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 		return;
 	}
 
-	const item = actor.getOwnedItem(itemId);
+	const item = actor.items.get(itemId);
 	const itemData = item.data.data;
 	const flags = item.data.flags.betterRolls5e;
 
@@ -470,7 +470,7 @@ export function BetterRolls() {
 				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`;
 			}
 		}
-		let macro = game.macros.entities.find(m => (m.name === item.name) && (m.command === command));
+		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
 		if (!macro) {
 			macro = await Macro.create({
 				name: item.data.name,
@@ -487,7 +487,7 @@ export function BetterRolls() {
 	function vanillaRoll(actorId, itemId) {
 		let actor = getActorById(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
-		let item = actor.getOwnedItem(itemId);
+		let item = actor.items.get(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
 		return item.roll({ vanilla: true, event });
@@ -507,7 +507,7 @@ export function BetterRolls() {
 	function quickRollById(actorId, itemId) {
 		let actor = getActorById(actorId);
 		if (!actor) { return ui.notifications.warn(`${i18n("br5e.error.noActorWithId")}`); }
-		let item = actor.getOwnedItem(itemId);
+		let item = actor.items.get(itemId);
 		if (!item) { return ui.notifications.warn(`${i18n("br5e.error.noItemWithId")}`); }
 		if (actor.permission != 3) { return ui.notifications.warn(`${i18n("br5e.error.noActorPermission")}`); }
 		return item.roll({ vanilla: false, event });
@@ -532,14 +532,14 @@ export function BetterRolls() {
 	// Prefer synthetic actors over game.actors to avoid consumables and spells being missdepleted.
 	function getActorById(actorId) {
 		let actor = canvas.tokens.placeables.find(t => t.actor?._id === actorId)?.actor;
-		if (!actor) actor = game.actors.entities.find(a => a._id === actorId);
+		if (!actor) actor = game.actors.get(actorId);
 		return actor;
 	}
 
 	// Prefer token actors over game.actors to avoid consumables and spells being missdepleted.
 	function getActorByName(actorName) {
 		let actor = canvas.tokens.placeables.find(p => p.data.name === actorName)?.actor;
-		if (!actor) actor = game.actors.entities.find(e => e.name === actorName);
+		if (!actor) actor = game.actors.find(e => e.name === actorName);
 		return actor;
 	}
 

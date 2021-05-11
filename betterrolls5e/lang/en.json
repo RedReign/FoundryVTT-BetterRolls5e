@@ -95,7 +95,7 @@
 	"br5e.error.libWrapperMinVersion": "Better Rolls requires libWrapper version {version} or newer.",
 
 	"br5e.settings.critThreshold": "Critical Threshold",
-	"br5e.settings.critDamage": "Extra Critical Damage",
+	"br5e.settings.critDamage.name": "Extra Critical Damage",
 	"br5e.settings.critDamage.hint": "Extra Critical Damage to apply when at least one damage is rolled",
 	"br5e.settings.quickRollsLabel": "Quick Rolls",
 	"br5e.settings.quickRollsAltLabel": "Alt Quick Rolls",

@@ -14,8 +14,8 @@ export function patchCoreFunctions() {
 		return;
 	}
 
-	override("CONFIG.Item.entityClass.prototype.roll", itemRoll);
-	override("CONFIG.Item.entityClass.prototype.rollAttack", itemRollAttack);
+	override("CONFIG.Item.documentClass.prototype.roll", itemRoll);
+	override("CONFIG.Item.documentClass.prototype.rollAttack", itemRollAttack);
 }
 
 /**

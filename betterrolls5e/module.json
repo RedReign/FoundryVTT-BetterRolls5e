@@ -2,8 +2,8 @@
 	"name": "betterrolls5e",
 	"title": "Better Rolls for 5e",
 	"description": "This module overhauls rolls for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
-	"minimumCoreVersion": "0.7.7",
-	"compatibleCoreVersion": "0.7.9",
+	"minimumCoreVersion": "0.8.3",
+	"compatibleCoreVersion": "0.8.3",
 	"version": "1.4.11",
 	"author": "Red Reign#5128",
 	"languages": [

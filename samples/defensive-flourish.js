@@ -11,7 +11,7 @@ const selected = [actor] || canvas.tokens.controlled || [game.user.character];
     let handled = false;
     for (const actor of actors) {
         const itemId = actor.items.find(i => i.name === 'Defensive Flourish')?.id;
-        const item = actor.getOwnedItem(itemId);
+        const item = actor.items.get(itemId);
         if (!item) continue;
 
         const roll = BetterRolls.rollItem(item);

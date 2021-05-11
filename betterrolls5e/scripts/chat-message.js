@@ -17,7 +17,7 @@ export class BetterRollsChatCard {
 	}
 
 	get message() {
-		return ChatMessage.collection.get(this.id);
+		return game.messages.get(this.id);
 	}
 
 	/**
@@ -91,7 +91,7 @@ export class BetterRollsChatCard {
 			}, 0);
 
 			// Scroll to bottom if the last card had updated
-			const last = ChatMessage.collection.entries[ChatMessage.collection.entries.length - 1];
+			const last = game.messages.contents[game.messages.size - 1];
 			if (last?.id === existing.id) {
 				window.setTimeout(() => { ui.chat.scrollBottom(); }, 0);
 			}
