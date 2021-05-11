@@ -161,7 +161,7 @@
 		"crit.hint": "Klikni pro hození kritického zranění.",
 		"tempOverwrite.title": "Přepsat Dočasné Životy",
 		"tempOverwrite.content": "Nahradit {original} dočasných životů {new} novými dočasnými životy?",
-		"bcritPrompt.title": "Použít Kritické Zranění?",
+		"critPrompt.title": "Použít Kritické Zranění?",
 		"critPrompt.yes": "Ano",
 		"critPrompt.no": "Ne"
 	},

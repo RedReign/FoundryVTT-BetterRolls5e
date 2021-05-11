@@ -161,7 +161,7 @@
 		"crit.hint": "クリティカルでダメージロールを行います",
 		"tempOverwrite.title": "一時的hpを上書きします",
 		"tempOverwrite.content": "現在の一時的hp {original} を新しい値 {new} に置き換えますか？",
-		"bcritPrompt.title": "クリティカルですか？",
+		"critPrompt.title": "クリティカルですか？",
 		"critPrompt.yes": "はい",
 		"critPrompt.no": "いいえ"
 	},
