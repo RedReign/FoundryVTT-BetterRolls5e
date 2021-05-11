@@ -778,10 +778,10 @@ export class CustomItemRoll {
 
 		// Create the chat message
 		const chatData = {
-			user: game.user._id,
+			user: game.user.id,
 			content: await this.render(),
 			speaker: {
-				actor: actor?._id,
+				actor: actor?.id,
 				token: actor?.token,
 				alias: actor?.token?.name || actor?.name
 			},

@@ -71,7 +71,7 @@ export class Utils {
 		rollMode = rollMode || game.settings.get("core", "rollMode");
 		if ( ["gmroll", "blindroll"].includes(rollMode) ) whisper = ChatMessage.getWhisperRecipients("GM");
 		if ( rollMode === "blindroll" ) blind = true;
-		else if ( rollMode === "selfroll" ) whisper = [game.user._id];
+		else if ( rollMode === "selfroll" ) whisper = [game.user.id];
 
 		return { rollMode, whisper, blind }
 	}
@@ -360,7 +360,7 @@ export class ActorUtils {
 	static getImage(actor) {
 		if (!actor) return null;
 
-		const actorImage = (actor.data.img && actor.data.img !== DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
+		const actorImage = (actor.data.img && actor.data.img !== CONST.DEFAULT_TOKEN && !actor.data.img.includes("*")) ? actor.data.img : false;
 		const tokenImage = actor.token?.data?.img ? actor.token.data.img : actor.data.token.img;
 
 		switch(game.settings.get("betterrolls5e", "defaultRollArt")) {

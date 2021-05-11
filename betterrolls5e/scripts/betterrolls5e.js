@@ -466,8 +466,8 @@ export function BetterRolls() {
 		function command() {
 			switch (mode) {
 				case "name": return `BetterRolls.quickRoll("${item.name}");`;
-				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.data._id}");`;
-				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.data._id}");`;
+				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.id}");`;
+				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.id}");`;
 			}
 		}
 		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
@@ -531,7 +531,7 @@ export function BetterRolls() {
 
 	// Prefer synthetic actors over game.actors to avoid consumables and spells being missdepleted.
 	function getActorById(actorId) {
-		let actor = canvas.tokens.placeables.find(t => t.actor?._id === actorId)?.actor;
+		let actor = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor;
 		if (!actor) actor = game.actors.get(actorId);
 		return actor;
 	}
