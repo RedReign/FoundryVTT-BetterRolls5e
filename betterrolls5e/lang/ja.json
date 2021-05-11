@@ -33,8 +33,6 @@
 	"br5e.damageRollPlacement.choices.3": "ダメージ欄の下",
 	"br5e.altSecondaryEnabled.name": "Alt＋クリックでサブロールを出力する",
 	"br5e.altSecondaryEnabled.hint": "Altキーを押しながらアイテム画像をクリックすると、アイテムごとに個別に設定したサブロールを出力します。これはAltキーを標準のロールに使用する機能を上書きします（「アイテム画像からロールする」を参照）。",
-	"br5e.chatDamageButtonsEnabled.name": "ダメージ適用ボタンの有効化",
-	"br5e.chatDamageButtonsEnabled.hint": "選択したコマにダメージを適用するボタンを、ダメージロールの下に表示します。FVTTの再読み込みが必要です。",
 	"br5e.playRollSounds.name": "ダイスロール音の有効化",
 	"br5e.playRollSounds.hint": "Better Rollsのメッセージがチャットに送信されると、ダイスロール音が鳴ります。MaestroのItem Trackが有効になっている場合は再生されません。",
 	"br5e.hideDC.name": "セーヴ難易度を隠す",
@@ -75,6 +73,16 @@
 	"br5e.critString.choices.7": "逃れ得ぬ強打！",
 	"br5e.critString.choices.8": "会心の一撃！",
 	
+	"br5e.chatDamageButtonsEnabled": {
+		"name": "ダメージ適用ボタンの有効化",
+		"hint": "選択したコマにダメージを適用するボタンを、ダメージロールの下に表示します。Foundryの再読み込みが必要です。",
+		"choices": {
+			"0": "無効",
+			"1": "有効",
+			"2": "DMのみ"
+		}
+	},
+
 	"br5e.error.noSelectedActor": "このマクロを使用するには、キャラクターを選択している必要があります！",
 	"br5e.error.noKnownItemOnActor": "という名前のアイテムを所有していません。",
 	"br5e.error.noActorWithId": "そのIDのアクターは存在しません。",
@@ -84,7 +92,8 @@
 	"br5e.error.autoDestroy": "最後のチャージを消費すると {name} は消滅します。",
 	"br5e.error.rollEvaluation": "ダイスロールの評価に失敗しました：{msg}",
 	"br5e.error.noDAE": "目標にアクティブ効果を適用するにはDAEが必要です。",
-	
+	"br5e.error.libWrapperMinVersion": "Better Rollsには「libWrapper」のバージョン {version} 以降が必要です。",
+
 	"br5e.settings.critThreshold": "クリティカル範囲",
 	"br5e.settings.critDamage": "追加クリティカルダメージ",
 	"br5e.settings.critDamage.hint": "追加のクリティカルダメージを設定します。1ダメージ以上でないと適用されません。",
@@ -161,7 +170,7 @@
 		"crit.hint": "クリティカルでダメージロールを行います",
 		"tempOverwrite.title": "一時的hpを上書きします",
 		"tempOverwrite.content": "現在の一時的hp {original} を新しい値 {new} に置き換えますか？",
-		"bcritPrompt.title": "クリティカルですか？",
+		"critPrompt.title": "クリティカルですか？",
 		"critPrompt.yes": "はい",
 		"critPrompt.no": "いいえ"
 	},
