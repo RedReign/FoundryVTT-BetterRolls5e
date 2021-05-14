@@ -264,7 +264,7 @@ export class CustomItemRoll {
 			const scene = game.scenes.get(sceneId);
 			if (!scene) return null;
 
-			const tokenData = scene.getEmbeddedEntity("Token", tokenId);
+			const tokenData = scene.getEmbeddedDocument("Token", tokenId);
 			if (!tokenData) return null;
 
 			actor = new Token(tokenData).actor;

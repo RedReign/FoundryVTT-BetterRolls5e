@@ -236,6 +236,7 @@ export class Utils {
 	}
 
 	static findD20Term(d20Roll) {
+		debugger;
 		if (!d20Roll) return null;
 
 		for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {

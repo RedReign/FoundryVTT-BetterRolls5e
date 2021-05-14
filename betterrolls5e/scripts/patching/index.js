@@ -70,52 +70,54 @@ async function itemRollAttack(defaultRoll, options) {
 		return defaultRoll.bind(this)(options);
 	}
 
-    const flags = this.actor.data.flags.dnd5e || {};
-    if ( !this.hasAttack ) {
-      throw new Error("You may not place an Attack Roll with this Item.");
-    }
+	const flags = this.actor.data.flags.dnd5e || {};
+	if ( !this.hasAttack ) {
+	  throw new Error("You may not place an Attack Roll with this Item.");
+	}
 
-    let title = `${this.name} - ${game.i18n.localize("DND5E.AttackRoll")}`;
+	let title = `${this.name} - ${game.i18n.localize("DND5E.AttackRoll")}`;
 
-    // get the parts and rollData for this item's attack
-    const {parts, rollData} = this.getAttackToHit();
+	// get the parts and rollData for this item's attack
+	const {parts, rollData} = this.getAttackToHit();
 
-    // Compose roll options
-    const rollConfig = mergeObject({
-      parts: parts,
-      actor: this.actor,
-      data: rollData,
-      title: title,
-      flavor: title,
-      speaker: ChatMessage.getSpeaker({actor: this.actor}),
-      dialogOptions: {
-        width: 400,
-        top: options.event ? options.event.clientY - 80 : null,
-        left: window.innerWidth - 710
-      },
-      messageData: {"flags.dnd5e.roll": {type: "attack", itemId: this.id }}
-    }, options);
-    rollConfig.event = options.event;
+	// Compose roll options
+	const rollConfig = mergeObject({
+		parts: parts,
+		actor: this.actor,
+		data: rollData,
+		title: title,
+		flavor: title,
+		dialogOptions: {
+			width: 400,
+			top: options.event ? options.event.clientY - 80 : null,
+			left: window.innerWidth - 710
+		},
+		messageData: {
+			speaker: ChatMessage.getSpeaker({actor: this.actor}),
+			"flags.dnd5e.roll": { type: "attack", itemId: this.id }
+		}
+	}, options);
+	rollConfig.event = options.event;
 
-    // Expanded critical hit thresholds
-    if (( this.data.type === "weapon" ) && flags.weaponCriticalThreshold) {
-      rollConfig.critical = parseInt(flags.weaponCriticalThreshold);
-    } else if (( this.data.type === "spell" ) && flags.spellCriticalThreshold) {
-      rollConfig.critical = parseInt(flags.spellCriticalThreshold);
-    }
+	// Expanded critical hit thresholds
+	if (( this.data.type === "weapon" ) && flags.weaponCriticalThreshold) {
+	  rollConfig.critical = parseInt(flags.weaponCriticalThreshold);
+	} else if (( this.data.type === "spell" ) && flags.spellCriticalThreshold) {
+	  rollConfig.critical = parseInt(flags.spellCriticalThreshold);
+	}
 
-    // Elven Accuracy
-    if ( ["weapon", "spell"].includes(this.data.type) ) {
-      if (flags.elvenAccuracy && ["dex", "int", "wis", "cha"].includes(this.abilityMod)) {
-        rollConfig.elvenAccuracy = true;
-      }
-    }
+	// Elven Accuracy
+	if ( ["weapon", "spell"].includes(this.data.type) ) {
+	  if (flags.elvenAccuracy && ["dex", "int", "wis", "cha"].includes(this.abilityMod)) {
+		rollConfig.elvenAccuracy = true;
+	  }
+	}
 
-    // Apply Halfling Lucky
-    if ( flags.halflingLucky ) rollConfig.halflingLucky = true;
+	// Apply Halfling Lucky
+	if ( flags.halflingLucky ) rollConfig.halflingLucky = true;
 
-    // Invoke the d20 roll helper
-    const roll = await d20Roll(rollConfig);
-    if ( roll === false ) return null;
-    return roll;
+	// Invoke the d20 roll helper
+	const roll = await d20Roll(rollConfig);
+	if ( roll === false ) return null;
+	return roll;
 }
