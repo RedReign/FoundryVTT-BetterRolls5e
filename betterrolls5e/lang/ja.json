@@ -33,8 +33,6 @@
 	"br5e.damageRollPlacement.choices.3": "ダメージ欄の下",
 	"br5e.altSecondaryEnabled.name": "Alt＋クリックでサブロールを出力する",
 	"br5e.altSecondaryEnabled.hint": "Altキーを押しながらアイテム画像をクリックすると、アイテムごとに個別に設定したサブロールを出力します。これはAltキーを標準のロールに使用する機能を上書きします（「アイテム画像からロールする」を参照）。",
-	"br5e.chatDamageButtonsEnabled.name": "ダメージ適用ボタンの有効化",
-	"br5e.chatDamageButtonsEnabled.hint": "選択したコマにダメージを適用するボタンを、ダメージロールの下に表示します。FVTTの再読み込みが必要です。",
 	"br5e.playRollSounds.name": "ダイスロール音の有効化",
 	"br5e.playRollSounds.hint": "Better Rollsのメッセージがチャットに送信されると、ダイスロール音が鳴ります。MaestroのItem Trackが有効になっている場合は再生されません。",
 	"br5e.hideDC.name": "セーヴ難易度を隠す",
@@ -56,7 +54,7 @@
 	"br5e.d20Mode.choices.2": "デュアルロール（2個同時）",
 	"br5e.d20Mode.choices.3": "トリプルスレット（3個同時）",
 	"br5e.d20Mode.choices.4": "有利/不利を確認する",
-
+	
 	"br5e.critBehavior.name": "クリティカル・ダメージ",
 	"br5e.critBehavior.hint": "クリティカル・ダメージの計算方法を指定します。",
 	"br5e.critBehavior.choices.0": "追加ダメージなし",
@@ -64,7 +62,7 @@
 	"br5e.critBehavior.choices.2": "元の出目＋追加の最大値",
 	"br5e.critBehavior.choices.3": "元の最大値＋追加の最大値",
 	"br5e.critBehavior.choices.4": "元の最大値＋追加の出目",
-
+	
 	"br5e.critString.name": "クリティカルの表示",
 	"br5e.critString.hint": "クリティカル時に表示するテキストを設定します。このテキストはダメージの右側に表示されます（クイックロール時のみ）。",
 	"br5e.critString.choices.2": "クリティカル！",
@@ -74,6 +72,16 @@
 	"br5e.critString.choices.6": "不可避の痛撃！",
 	"br5e.critString.choices.7": "逃れ得ぬ強打！",
 	"br5e.critString.choices.8": "会心の一撃！",
+	
+	"br5e.chatDamageButtonsEnabled": {
+		"name": "ダメージ適用ボタンの有効化",
+		"hint": "選択したコマにダメージを適用するボタンを、ダメージロールの下に表示します。Foundryの再読み込みが必要です。",
+		"choices": {
+			"0": "無効",
+			"1": "有効",
+			"2": "DMのみ"
+		}
+	},
 
 	"br5e.error.noSelectedActor": "このマクロを使用するには、キャラクターを選択している必要があります！",
 	"br5e.error.noKnownItemOnActor": "という名前のアイテムを所有していません。",
@@ -84,9 +92,10 @@
 	"br5e.error.autoDestroy": "最後のチャージを消費すると {name} は消滅します。",
 	"br5e.error.rollEvaluation": "ダイスロールの評価に失敗しました：{msg}",
 	"br5e.error.noDAE": "目標にアクティブ効果を適用するにはDAEが必要です。",
+	"br5e.error.libWrapperMinVersion": "Better Rollsには「libWrapper」のバージョン {version} 以降が必要です。",
 
 	"br5e.settings.critThreshold": "クリティカル範囲",
-	"br5e.settings.critDamage.name": "追加クリティカルダメージ",
+	"br5e.settings.critDamage": "追加クリティカルダメージ",
 	"br5e.settings.critDamage.hint": "追加のクリティカルダメージを設定します。1ダメージ以上でないと適用されません。",
 	"br5e.settings.quickRollsLabel": "クイックロール",
 	"br5e.settings.quickRollsAltLabel": "サブクイックロール",
@@ -110,7 +119,7 @@
 	"br5e.settings.otherFormula": "その他の式",
 	"br5e.settings.quickFlavor": "フレーバー",
 	"br5e.settings.prompt": "拡張プロンプト",
-
+	
 	"br5e.buttons.roll": "ロール",
 	"br5e.buttons.altRoll": "サブロール",
 	"br5e.buttons.attack": "攻撃",
@@ -125,7 +134,7 @@
 	"br5e.buttons.itemUse": "使用",
 	"br5e.buttons.defaultSheetRoll": "元々のロール",
 	"br5e.buttons.applyActiveEffects": "効果を適用",
-
+	
 	"br5e.chat.attack": "攻撃",
 	"br5e.chat.check": "判定",
 	"br5e.chat.save": "セーヴ",
@@ -148,7 +157,7 @@
 	"br5e.querying.disadvantage": "不利",
 	"br5e.querying.normal": "通常",
 	"br5e.querying.advantage": "有利",
-
+	
 	"br5e.chat.multiRollButtons.advantage.hint": "有利でロールする（Shift）",
 	"br5e.chat.multiRollButtons.disadvantage.hint": "不利でロールする（Ctrl）",
 
@@ -170,7 +179,7 @@
 	"What type of roll?": "どの振り方にしますか？",
 	"Ability Check": "能力値判定",
 	"Saving Throw": "セーヴィング・スロー",
-
+	
 	"Not Proficient": "未習熟",
 	"Proficient": "習熟",
 	"Jack of all Trades": "なんでも屋",
