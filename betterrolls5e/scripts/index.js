@@ -61,9 +61,7 @@ Hooks.on("ready", async () => {
 });
 
 // Create flags for item when it's first created
-Hooks.on("preCreateOwnedItem", (actor, itemData) => {
-	ItemUtils.ensureDataFlags(itemData);
-});
+Hooks.on("preCreateItem", (item) => ItemUtils.ensureFlags(item));
 
 // Modify context menu for damage rolls (they break)
 Hooks.on("getChatLogEntryContext", (html, options) => {

@@ -236,7 +236,6 @@ export class Utils {
 	}
 
 	static findD20Term(d20Roll) {
-		debugger;
 		if (!d20Roll) return null;
 
 		for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
@@ -515,19 +514,21 @@ export class ItemUtils {
 	 * @param {boolean} commit whether to update at the end or not
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
-		const flags = this.ensureDataFlags(item?.data);
+		const flags = this.createFlags(item?.data);
+		if (!flags) return;
+		item.data.flags.betterRolls5e = flags;
 
 		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
 		if (commit) {
-			await item.update({"flags.betterRolls5e": flags}, { diff: true });
+			await item.data.update({ "flags.betterRolls5e": flags }, { diff: true });
 		}
 	}
 
 	/**
-	 * Assigns the data flags to the item. Does not save to database.
+	 * Creates the flags that should be assigned to the the item. Does not save to database.
 	 * @param {*} itemData The item.data property to be updated
 	 */
-	static ensureDataFlags(itemData) {
+	static createFlags(itemData) {
 		if (!itemData || CONFIG.betterRolls5e.validItemTypes.indexOf(itemData.type) == -1) { return; }
 
 		// Initialize flags
@@ -555,8 +556,7 @@ export class ItemUtils {
 			flags.quickDamage.altValue = newQuickDamageAltValues;
 		}
 
-		itemData.flags.betterRolls5e = flags;
-		return itemData.flags.betterRolls5e;
+		return flags;
 	}
 
 	static placeTemplate(item) {
