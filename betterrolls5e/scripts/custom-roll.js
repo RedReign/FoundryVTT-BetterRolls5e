@@ -591,32 +591,35 @@ export class CustomItemRoll {
 
 		Hooks.call("preRollItemBetterRolls", this);
 
-		const { params, item } = this;
-		const consume = this.params.consume;
-		let placeTemplate = false;
+		const item  = this.item;
 
-		// Pre-update item configurations
+		// Pre-update item configurations which updates the params
 		if (item) {
 			await ItemUtils.ensureFlags(item, { commit: true });
 
 			// Set up preset but only if there aren't fields
 			if (!this.fields || this.fields.length === 0) {
-				params.preset = params.preset ?? 0;
-				if (Number.isInteger(params.preset)) {
+				this.params.preset = this.params.preset ?? 0;
+				if (Number.isInteger(this.params.preset)) {
 					this.updateForPreset();
 				}
 			}
+		}
 
-			// Determine spell level and configuration settings
-			if (item.data.type === "spell" && consume && !params.slotLevel) {
-				const config = await this.configureSpell();
-				if (config === "error") {
-					this.error = true;
-					return;
-				}
+		// Get Params
+		const params = this.params;
+		const consume = params.consume;
+		let placeTemplate = params.useTemplate;
 
-				placeTemplate = config.placeTemplate;
+		// Determine spell level and configuration settings
+		if (item?.data.type === "spell" && consume && !params.slotLevel) {
+			const config = await this.configureSpell();
+			if (config === "error") {
+				this.error = true;
+				return;
 			}
+
+			placeTemplate = config.placeTemplate;
 		}
 
 		// Show Advantage/Normal/Disadvantage dialog if enabled
@@ -681,7 +684,7 @@ export class CustomItemRoll {
 			}
 
 			// Place the template if applicable
-			if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
+			if (placeTemplate) {
 				ItemUtils.placeTemplate(item);
 			}
 		}
