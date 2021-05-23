@@ -34,9 +34,7 @@ class Settings {
 			}
 		});
 
-		/**
-		 * Enables damage buttons
-		 */
+		// Enables damage buttons
 		game.settings.register("betterrolls5e", "damagePromptEnabled", {
 			name: i18n("br5e.damagePromptEnabled.name"),
 			hint: i18n("br5e.damagePromptEnabled.hint"),
@@ -46,21 +44,7 @@ class Settings {
 			type: Boolean
 		});
 
-		/**
-		 * Used to enable showing the natural die roll for a d20 roll.
-		 */
-		game.settings.register("betterrolls5e", "d20RollIconsEnabled", {
-			name: i18n("br5e.d20RollIconsEnabled.name"),
-			hint: i18n("br5e.d20RollIconsEnabled.hint"),
-			scope: "world",
-			config: true,
-			default: true,
-			type: Boolean
-		});
-
-		/**
-		* Register added roll buttons
-		*/
+		// Register added roll buttons
 		game.settings.register("betterrolls5e", "rollButtonsEnabled", {
 			name: i18n("br5e.rollButtonsEnabled.name"),
 			hint: i18n("br5e.rollButtonsEnabled.hint"),
@@ -70,9 +54,7 @@ class Settings {
 			type: Boolean
 		});
 
-		/**
-		* Register better roll for icon
-		*/
+		// Register better roll for items
 		game.settings.register("betterrolls5e", "imageButtonEnabled", {
 			name: i18n("br5e.imageButtonEnabled.name"),
 			hint: i18n("br5e.imageButtonEnabled.hint"),
@@ -82,6 +64,7 @@ class Settings {
 			type: Boolean
 		});
 
+		// Does Alt Click perform an Alt Roll?
 		game.settings.register("betterrolls5e", "altSecondaryEnabled", {
 			name: i18n("br5e.altSecondaryEnabled.name"),
 			hint: i18n("br5e.altSecondaryEnabled.hint"),
@@ -91,6 +74,7 @@ class Settings {
 			type: Boolean
 		});
 
+		// Show Apply Active Effects Button
 		game.settings.register("betterrolls5e", "applyActiveEffects", {
 			name: i18n("br5e.applyActiveEffects.name"),
 			hint: i18n("br5e.applyActiveEffects.hint"),
@@ -100,9 +84,7 @@ class Settings {
 			type: Boolean
 		})
 
-		/**
-		* Register quick roll defaults for description
-		*/
+		// Register quick roll defaults for description
 		game.settings.register("betterrolls5e", "quickDefaultDescriptionEnabled", {
 			name: i18n("br5e.quickDefaultDescriptionEnabled.name"),
 			hint: i18n("br5e.quickDefaultDescriptionEnabled.hint"),
@@ -112,6 +94,17 @@ class Settings {
 			type: Boolean
 		});
 
+		// Used to enable visually showing the natural die roll for a d20 roll.
+		game.settings.register("betterrolls5e", "d20RollIconsEnabled", {
+			name: i18n("br5e.d20RollIconsEnabled.name"),
+			hint: i18n("br5e.d20RollIconsEnabled.hint"),
+			scope: "world",
+			config: true,
+			default: true,
+			type: Boolean
+		});
+
+		// Actor Roll Image Choices
 		game.settings.register("betterrolls5e", "defaultRollArt", {
 			name: i18n("br5e.defaultRollArt.name"),
 			hint: i18n("br5e.defaultRollArt.hint"),
@@ -125,9 +118,7 @@ class Settings {
 			}
 		});
 
-		/**
-		* Register roll label options
-		*/
+		// Register roll label options
 		game.settings.register("betterrolls5e", "rollTitlePlacement", {
 			name: i18n("br5e.rollTitlePlacement.name"),
 			hint: i18n("br5e.rollTitlePlacement.hint"),

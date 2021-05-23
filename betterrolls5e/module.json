@@ -48,7 +48,7 @@
 			"path": "lang/cs.json"
 		}
 	],
-	"systems": ["dnd5e", "dnd5eJP"],
+	"systems": ["dnd5e"],
 	"minimumSystemVersion": "1.2.1",
 	"scripts": ["greensock/dist/gsap.min.js"],
 	"socket": true,
