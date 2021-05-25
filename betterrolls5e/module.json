@@ -1,61 +1,72 @@
 {
-	"name": "betterrolls5e",
-	"title": "Better Rolls for 5e",
-	"description": "This module overhauls rolls for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
-	"minimumCoreVersion": "0.8.3",
-	"compatibleCoreVersion": "0.8.3",
-	"version": "1.4.14-beta",
-	"author": "Red Reign#5128",
-	"languages": [
-		{
-			"lang": "en",
-			"name": "English",
-			"path": "lang/en.json"
-		},
-		{
-			"lang": "fr",
-			"name": "Français (French)",
-			"path": "lang/fr.json"
-		},
-		{
-			"lang": "es",
-			"name": "Español (Spanish)",
-			"path": "lang/es.json"
-		},
-		{
-			"lang": "pt-BR",
-			"name": "Português (Brasil)",
-			"path": "lang/pt-BR.json"
-		},
-		{
-			"lang": "de",
-			"name": "Deutsch (German)",
-			"path": "lang/de.json"
-		},
-		{
-			"lang": "ja",
-			"name": "日本語 (Japanese)",
-			"path": "lang/ja.json"
-		},
-		{
-			"lang": "ko",
-			"name": "한국어 (Korean)",
-			"path": "lang/ko.json"
-		},
-		{
-			"lang": "cs",
-			"name": "Česky",
-			"path": "lang/cs.json"
-		}
-	],
-	"systems": ["dnd5e"],
-	"minimumSystemVersion": "1.2.1",
-	"scripts": ["greensock/dist/gsap.min.js"],
-	"socket": true,
-	"esmodules": ["./scripts/index.js"],
-	"styles": ["./css/betterrolls5e.css"],
-	"packs": [],
-	"url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/development/betterrolls5e",
-	"manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/development/betterrolls5e/module.json",
-	"download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.4.14-beta/module.zip"
+  "name": "betterrolls5e",
+  "title": "Better Rolls for 5e",
+  "description": "This module overhauls rolls for the D&D 5e system, allowing \"dual rolls\" for d20 rolls, buttons that support full output to chat, and customization for said outputs.",
+  "author": "Red Reign#5128",
+  "authors": [],
+  "url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/development/betterrolls5e",
+  "flags": {},
+  "version": "1.4.14-beta",
+  "minimumCoreVersion": "0.8.3",
+  "compatibleCoreVersion": "0.8.3",
+  "scripts": [
+    "greensock/dist/gsap.min.js"
+  ],
+  "esmodules": [
+    "./scripts/index.js"
+  ],
+  "styles": [
+    "./css/betterrolls5e.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français (French)",
+      "path": "lang/fr.json"
+    },
+    {
+      "lang": "es",
+      "name": "Español (Spanish)",
+      "path": "lang/es.json"
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch (German)",
+      "path": "lang/de.json"
+    },
+    {
+      "lang": "ja",
+      "name": "日本語 (Japanese)",
+      "path": "lang/ja.json"
+    },
+    {
+      "lang": "ko",
+      "name": "한국어 (Korean)",
+      "path": "lang/ko.json"
+    },
+    {
+      "lang": "cs",
+      "name": "Česky",
+      "path": "lang/cs.json"
+    }
+  ],
+  "packs": [],
+  "system": [],
+  "dependencies": [],
+  "socket": true,
+  "manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/development/betterrolls5e/module.json",
+  "download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.4.14-beta/module.zip",
+  "protected": false,
+  "coreTranslation": false,
+  "minimumSystemVersion": "1.2.1"
 }

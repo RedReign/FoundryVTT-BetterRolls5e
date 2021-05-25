@@ -285,15 +285,6 @@ export class Utils {
 
 export class ActorUtils {
 	/**
-	 * Returns a special id for a token that can be used to retrieve it
-	 * from anywhere.
-	 * @param {*} token
-	 */
-	static getTokenId(token) {
-		return [canvas.tokens.get(token.id).scene.id, token.id].join(".")
-	}
-
-	/**
 	 * True if the actor has the halfling luck special trait.
 	 * @param {Actor} actor
 	 */
@@ -571,6 +562,7 @@ export class ItemUtils {
 	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */
 	static hasMaestroSound(item) {
+		if (!item) return false;
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 	}
 
