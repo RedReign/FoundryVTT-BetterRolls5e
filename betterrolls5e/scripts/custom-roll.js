@@ -60,6 +60,9 @@ export class CustomRoll {
 	 * @param {FullRollActorParams} params parameters
 	 */
 	static async rollSkill(actor, skill, params={}) {
+		if (!(skill in dnd5e.skills)) {
+			throw new Error(`Better Rolls | Skill ${skill} does not exist. Valid values can be found in CONFIG.DND5E.skills`);
+		}
 		const label = i18n(dnd5e.skills[skill]);
 		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
 		return CustomRoll._fullRollActor(actor, label, formula, "skill", params);
