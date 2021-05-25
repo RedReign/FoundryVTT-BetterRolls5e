@@ -6,7 +6,7 @@
   "authors": [],
   "url": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/tree/development/betterrolls5e",
   "flags": {},
-  "version": "1.4.14-beta",
+  "version": "1.4.15-beta",
   "minimumCoreVersion": "0.8.3",
   "compatibleCoreVersion": "0.8.3",
   "scripts": [
@@ -65,7 +65,7 @@
   "dependencies": [],
   "socket": true,
   "manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/development/betterrolls5e/module.json",
-  "download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.4.14-beta/module.zip",
+  "download": "https://github.com/RedReign/FoundryVTT-BetterRolls5e/releases/download/v1.4.15-beta/module.zip",
   "protected": false,
   "coreTranslation": false,
   "minimumSystemVersion": "1.2.1"
