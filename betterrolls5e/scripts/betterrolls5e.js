@@ -563,7 +563,6 @@ export function BetterRolls() {
 		addItemContent:addItemContent,
 		rollCheck:CustomRoll.rollCheck,
 		rollSave:CustomRoll.rollSave,
-		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
 		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})}),
