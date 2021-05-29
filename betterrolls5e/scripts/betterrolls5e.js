@@ -464,11 +464,14 @@ export function changeRollsToDual (actor, html, data, params) {
 export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
-			switch (mode) {
-				case "name": return `BetterRolls.quickRoll("${item.name}");`;
-				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.id}");`;
-				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.id}");`;
-			}
+			const vanilla = mode === 'vanillaRoll' ? "true" : "false";
+			return `
+const actorId = "${item.actorId}";
+const itemId = "${item.data._id}";
+let actor = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor;
+if (!actor) actor = game.actors.get(actorId);
+return actor.items.get(itemId).roll({ vanilla: ${vanilla} });
+`;
 		}
 		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
 		if (!macro) {
