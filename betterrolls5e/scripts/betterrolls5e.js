@@ -468,9 +468,13 @@ export function BetterRolls() {
 			return `
 const actorId = "${item.actorId}";
 const itemId = "${item.data._id}";
-let actor = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor;
-if (!actor) actor = game.actors.get(actorId);
-return actor.items.get(itemId).roll({ vanilla: ${vanilla} });
+const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
+const itemToRoll = actorToRoll?.items.get(itemId);
+if (!itemToRoll) {
+	return ui.notifications.warn(game.i18n.format("DND5E.ActionWarningNoItem", { item: itemId, name: actorToRoll?.name ?? "[Not Found]" }));
+}
+
+return itemToRoll.roll({ vanilla: ${vanilla} });
 `;
 		}
 		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
