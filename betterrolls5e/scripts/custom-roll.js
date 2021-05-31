@@ -60,6 +60,9 @@ export class CustomRoll {
 	 * @param {FullRollActorParams} params parameters
 	 */
 	static async rollSkill(actor, skill, params={}) {
+		if (!(skill in dnd5e.skills)) {
+			throw new Error(`Better Rolls | Skill ${skill} does not exist. Valid values can be found in CONFIG.DND5E.skills`);
+		}
 		const label = i18n(dnd5e.skills[skill]);
 		const formula = (await ActorUtils.getSkillCheckRoll(actor, skill)).formula;
 		return CustomRoll._fullRollActor(actor, label, formula, "skill", params);
@@ -184,7 +187,7 @@ export class CustomItemRoll {
 
 		this.properties = [];
 		this.rolled = false;
-		this.isCrit = this.params.forceCrit || false;			// Defaults to false, becomes "true" when a valid attack or check first crits.
+		this.isCrit = this.params.forceCrit || false; // Becomes "true" when a valid attack or check first crits.
 		this.dicePool = new DiceCollection();
 	}
 
@@ -217,11 +220,35 @@ export class CustomItemRoll {
 		this.actor = item?.actor;
 	}
 
+	set actor(actor) {
+		this._actor = actor;
+		this.actorId = actor?.id;
+		this.tokenId = actor?.token ? actor.token.uuid : null;
+	}
+
+	/**
+	 * Returns the actor associated this item, loading it from the game
+	 */
+	async getActor() {
+		if (this._actor) return this._actor;
+
+		let actor = null;
+		if (this.tokenId) {
+			const token = await fromUuid(this.tokenId);
+			actor = token?.actor;
+		} else {
+			actor = game.actors.get(this.actorId);
+		}
+
+		this._actor = actor;
+		return actor;
+	}
+
 	/**
 	 * Retrieves the item associated with this roll. This may have to load the item from the associated actor,
 	 * and in those cases can throw an exception if the actor/item no longer exists.
 	 */
-	get item() {
+	async getItem() {
 		if (this._item) return this._item;
 
 		let storedData = null;
@@ -234,7 +261,7 @@ export class CustomItemRoll {
 			return null;
 		}
 
-		const actor = this.actor;
+		const actor = await this.getActor();
 		const Item5e = game.dnd5e.entities.Item5e;
 		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.items.get(this.itemId);
 		if (item) {
@@ -245,35 +272,20 @@ export class CustomItemRoll {
 		return item;
 	}
 
-	set actor(actor) {
-		this._actor = actor;
-		this.actorId = actor?.id;
-		this.tokenId = actor?.token ? ActorUtils.getTokenId(actor.token) : null;
-	}
-
-	/**
-	 * Returns the actor associated this item, loading it from the game
-	 */
 	get actor() {
 		if (this._actor) return this._actor;
 
-		let actor = null;
-		if (this.tokenId) {
-			const [sceneId, tokenId] = this.tokenId.split(".");
-
-			const scene = game.scenes.get(sceneId);
-			if (!scene) return null;
-
-			const tokenData = scene.getEmbeddedDocument("Token", tokenId);
-			if (!tokenData) return null;
-
-			actor = new Token(tokenData).actor;
-		} else {
-			actor = game.actors.get(this.actorId);
+		if (this.tokenId || this.actorId) {
+			throw new Error("BetterRolls | Attempted to retrieve actor without loading, use getActor() instead");
 		}
+	}
 
-		this._actor = actor;
-		return actor;
+	get item() {
+		if (this._item) return this._item;
+
+		if (this.itemId) {
+			throw new Error("BetterRolls | Attempted to retrieve item without loading, use getItem() instead");
+		}
 	}
 
 	get settings() {
@@ -382,7 +394,8 @@ export class CustomItemRoll {
 			return false;
 		}
 
-		const baseExtraCritDice = ItemUtils.getExtraCritDice(this.item);
+		const item = await this.getItem();
+		const baseExtraCritDice = ItemUtils.getExtraCritDice(item);
 		let updated = false;
 
 		// Update group crit status
@@ -591,32 +604,35 @@ export class CustomItemRoll {
 
 		Hooks.call("preRollItemBetterRolls", this);
 
-		const { params, item } = this;
-		const consume = this.params.consume;
-		let placeTemplate = false;
+		const item  = await this.getItem();
 
-		// Pre-update item configurations
+		// Pre-update item configurations which updates the params
 		if (item) {
 			await ItemUtils.ensureFlags(item, { commit: true });
 
 			// Set up preset but only if there aren't fields
 			if (!this.fields || this.fields.length === 0) {
-				params.preset = params.preset ?? 0;
-				if (Number.isInteger(params.preset)) {
-					this.updateForPreset();
+				this.params.preset = this.params.preset ?? 0;
+				if (Number.isInteger(this.params.preset)) {
+					await this.updateForPreset();
 				}
 			}
+		}
 
-			// Determine spell level and configuration settings
-			if (item.data.type === "spell" && consume && !params.slotLevel) {
-				const config = await this.configureSpell();
-				if (config === "error") {
-					this.error = true;
-					return;
-				}
+		// Get Params
+		const params = this.params;
+		const consume = params.consume;
+		let placeTemplate = params.useTemplate;
 
-				placeTemplate = config.placeTemplate;
+		// Determine spell level and configuration settings
+		if (item?.data.type === "spell" && consume && !params.slotLevel) {
+			const config = await this.configureSpell();
+			if (config === "error") {
+				this.error = true;
+				return;
 			}
+
+			placeTemplate = config.placeTemplate;
 		}
 
 		// Show Advantage/Normal/Disadvantage dialog if enabled
@@ -681,7 +697,7 @@ export class CustomItemRoll {
 			}
 
 			// Place the template if applicable
-			if (placeTemplate || (params.useTemplate && (item.data.type == "feat" || item.data.data.level == 0))) {
+			if (placeTemplate) {
 				ItemUtils.placeTemplate(item);
 			}
 		}
@@ -747,9 +763,11 @@ export class CustomItemRoll {
 		}
 
 		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
-		const { actor, item } = this;
-		if ((item?.data.type === "consumable") && !actor.items.has(item.id) ) {
-			flags["dnd5e.itemData"] = item.data;
+		// We retrieve the private internal cached actor/items so that this method can stay synchronous,
+		// If we destroyed the last item, the actor/item should have been retrieved anyways.
+		const { _actor, _item } = this;
+		if ((_item?.data.type === "consumable") && !_actor.items.has(_item.id) ) {
+			flags["dnd5e.itemData"] = _item.data;
 		}
 
 		// Allow the roll to popout
@@ -772,8 +790,8 @@ export class CustomItemRoll {
 
 		if (this.error) return;
 
-		const item = this.item;
-		const actor = this.actor ?? item?.actor;
+		const item = await this.getItem();
+		const actor = await this.getActor() ?? item?.actor;
 		const hasMaestroSound = item && ItemUtils.hasMaestroSound(item);
 
 		// Create the chat message
@@ -834,9 +852,10 @@ export class CustomItemRoll {
 		if (!this.canRepeat()) return;
 
 		// Show error messages if the item/actor was deleted
-		const subject = this.item ?? this.actor;
+		const subject = await this.getItem() ?? await this.getActor();
 		if ((this.itemId || this.actorId) && !subject) {
-			const message = this.actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
+			const actor = await this.getActor();
+			const message = actor ? i18n("br5e.error.noItemWithId") : i18n("br5e.error.noActorWithId");
 			ui.notifications.error(message);
 			throw new Error(message);
 		}
@@ -860,7 +879,8 @@ export class CustomItemRoll {
 	async update(additional={}) {
 		const chatMessage = game.messages.get(this.messageId);
 		if (chatMessage) {
-			const hasMaestroSound = this.item && ItemUtils.hasMaestroSound(this.item);
+			const item = await this.getItem();
+			const hasMaestroSound = ItemUtils.hasMaestroSound(item);
 			const content = await this.render();
 			await Hooks.callAll("updateBetterRolls", this, content);
 			await this.dicePool.flush(hasMaestroSound);
@@ -905,12 +925,14 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	async _processField(field) {
-		let consume = this.item?.data.data.consume;
-		const ammo = consume?.type === "ammo" ? this.actor?.items.get(consume.target) : null;
+		const actor = await this.getActor();
+		const item = await this.getItem();
+		let consume = item?.data.data.consume;
+		const ammo = consume?.type === "ammo" ? actor?.items.get(consume.target) : null;
 
 		const metadata = {
-			item: this.item,
-			actor: this.actor,
+			item,
+			actor,
 			rollState: this.params.rollState,
 			ammo,
 			slotLevel: this.params.slotLevel,
@@ -996,11 +1018,11 @@ export class CustomItemRoll {
 	 * Updates the rollRequests based on the br5e flags.
 	 * This creates the default set of fields to process.
 	 */
-	updateForPreset() {
-		if (!this.item) return;
+	async updateForPreset() {
+		const item = await this.getItem();
+		if (!item) return;
 
-		let item = this.item,
-			itemData = item.data.data,
+		let itemData = item.data.data,
 			flags = item.data.flags,
 			brFlags = flags.betterRolls5e,
 			preset = this.params.preset,
@@ -1136,7 +1158,8 @@ export class CustomItemRoll {
 	 * If Item5e.rollAttack() ever allows a consumeAmmo flag, we can remove it.
 	 */
 	async consumeAmmo() {
-		const { item, actor } = this;
+		const actor = await this.getActor();
+		const item = await this.getItem();
 		if (!item) return;
 
 		const request = this.params.useCharge;
@@ -1164,7 +1187,8 @@ export class CustomItemRoll {
 	 * @private
 	 */
 	async consume() {
-		const { item, actor } = this;
+		const actor = await this.getActor();
+		const item = await this.getItem();
 		if (!item) return;
 
 		let actorUpdates = {};
@@ -1180,14 +1204,13 @@ export class CustomItemRoll {
 		}
 
 		const itemData = item.data.data;
-		const hasUses = !!(itemData.uses?.value || itemData.uses?.max); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
+		const hasUses = !!(Number(itemData.uses?.value) || Number(itemData.uses?.max)); // Actual check to see if uses exist on the item, even if params.useCharge.use == true
 		const hasResource = !!(itemData.consume?.target); // Actual check to see if a resource is entered on the item, even if params.useCharge.resource == true
 
 		const request = this.params.useCharge; // Has bools for quantity, use, resource, and charge
 		const recharge = itemData.recharge || {};
-		const uses = itemData.uses || {};
 		const quantity = itemData.quantity;
-		const autoDestroy = uses.autoDestroy;
+		const { autoDestroy } = itemData.uses || {};
 
 		let output = "success";
 

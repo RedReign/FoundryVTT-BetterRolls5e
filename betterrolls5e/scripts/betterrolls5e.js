@@ -56,7 +56,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: true}, altValue: {quantity: false, use: false, resource: true} },
+			quickCharges: { type: "Boolean", value: {quantity: false, use: false, resource: true}, altValue: {quantity: false, use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
@@ -464,11 +464,14 @@ export function changeRollsToDual (actor, html, data, params) {
 export function BetterRolls() {
 	async function assignMacro(item, slot, mode) {
 		function command() {
-			switch (mode) {
-				case "name": return `BetterRolls.quickRoll("${item.name}");`;
-				case "id": return `BetterRolls.quickRollById("${item.actorId}", "${item.id}");`;
-				case "vanillaRoll": return `BetterRolls.vanillaRoll("${item.actorId}", "${item.id}");`;
-			}
+			const vanilla = mode === 'vanillaRoll' ? "true" : "false";
+			return `
+const actorId = "${item.actorId}";
+const itemId = "${item.data._id}";
+let actor = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor;
+if (!actor) actor = game.actors.get(actorId);
+return actor.items.get(itemId).roll({ vanilla: ${vanilla} });
+`;
 		}
 		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
 		if (!macro) {
@@ -563,8 +566,6 @@ export function BetterRolls() {
 		addItemContent:addItemContent,
 		rollCheck:CustomRoll.rollCheck,
 		rollSave:CustomRoll.rollSave,
-		rollAbilityCheck:CustomRoll.rollAbilityCheck,
-		rollSavingThrow:CustomRoll.rollAbilitySave,
 		rollSkill:CustomRoll.rollSkill,
 		rollItem:CustomRoll.newItemRoll,
 		getRollState: (params) => Utils.getRollState({ event, ...(params ?? {})}),

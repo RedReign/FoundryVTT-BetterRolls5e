@@ -24,44 +24,15 @@ export async function migrateChatMessage(message) {
 	// Migrate to 1.4 (damage entries are now grouped)
 	if (isNewerVersion("1.4.0", brVersion)) {
 		updated = true;
-
-		let currentId = (Math.max(...brFlags.entries.map((e) => Number(e.id))) ?? 0) + 1;
-		let lastAttack = null;
-		let lastJunction = null;
-		const newEntries = [];
-		for (const entry of brFlags.entries) {
-			if (entry.type === "multiroll") lastAttack = entry;
-			if (["multiroll", "button-save"].includes(entry.type)) {
-				lastJunction = entry;
-			}
-
-			entry.id = `${entry.id}`;
-			if (entry.group) entry.group = `${entry.group}`;
-			if (entry.attackId) entry.attackId = `${entry.attackId}`;
-			let lastEntry = newEntries[newEntries.length - 1];
-			if (["damage", "crit"].includes(entry.type)) {
-				if (lastEntry?.type !== "damage-group") {
-					lastEntry = {
-						id: `${currentId++}`,
-						type: "damage-group",
-						attackId: lastAttack?.id,
-						isCrit: lastAttack?.isCrit || entry?.isCrit,
-						forceCrit: lastJunction?.forceCrit,
-						prompt: brFlags.params.prompt[entry.group],
-						entries: [],
-					}
-
-					newEntries.push(lastEntry);
-				}
-
-				entry.group = lastEntry.id;
-				lastEntry.entries.push(entry);
-			} else {
-				newEntries.push(entry);
-			}
-		}
-
+		migrateTo_1_4(brFlags);
 		brFlags.version = "1.4.0";
+	}
+
+	// Migrate to 1.5 (update uuids for Foundry 0.8)
+	if (isNewerVersion("1.5.0", brVersion)) {
+		brFlags.version = "1.5.0";
+		migrateTo_1_5(brFlags);
+		brFlags.version = "1.5.0";
 	}
 
 	if (updated) {
@@ -72,4 +43,50 @@ export async function migrateChatMessage(message) {
 	}
 
 	return updated;
+}
+
+function migrateTo_1_4(brFlags) {
+	let currentId = (Math.max(...brFlags.entries.map((e) => Number(e.id))) ?? 0) + 1;
+	let lastAttack = null;
+	let lastJunction = null;
+	const newEntries = [];
+	for (const entry of brFlags.entries) {
+		if (entry.type === "multiroll") lastAttack = entry;
+		if (["multiroll", "button-save"].includes(entry.type)) {
+			lastJunction = entry;
+		}
+
+		entry.id = `${entry.id}`;
+		if (entry.group) entry.group = `${entry.group}`;
+		if (entry.attackId) entry.attackId = `${entry.attackId}`;
+		let lastEntry = newEntries[newEntries.length - 1];
+		if (["damage", "crit"].includes(entry.type)) {
+			if (lastEntry?.type !== "damage-group") {
+				lastEntry = {
+					id: `${currentId++}`,
+					type: "damage-group",
+					attackId: lastAttack?.id,
+					isCrit: lastAttack?.isCrit || entry?.isCrit,
+					forceCrit: lastJunction?.forceCrit,
+					prompt: brFlags.params.prompt[entry.group],
+					entries: [],
+				}
+
+				newEntries.push(lastEntry);
+			}
+
+			entry.group = lastEntry.id;
+			lastEntry.entries.push(entry);
+		} else {
+			newEntries.push(entry);
+		}
+	}
+}
+
+function migrateTo_1_5(brFlags) {
+	const parts = brFlags.tokenId?.split(".");
+	if (parts?.length !== 2) return;
+
+	const [sceneId, tokenId] = parts;
+	brFlags.tokenId = `Scene.${sceneId}.Token.${tokenId}`;
 }

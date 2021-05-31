@@ -236,7 +236,6 @@ export class Utils {
 	}
 
 	static findD20Term(d20Roll) {
-		debugger;
 		if (!d20Roll) return null;
 
 		for (const term of d20Roll.terms ?? d20Roll.rolls ?? []) {
@@ -285,15 +284,6 @@ export class Utils {
 }
 
 export class ActorUtils {
-	/**
-	 * Returns a special id for a token that can be used to retrieve it
-	 * from anywhere.
-	 * @param {*} token
-	 */
-	static getTokenId(token) {
-		return [canvas.tokens.get(token.id).scene.id, token.id].join(".")
-	}
-
 	/**
 	 * True if the actor has the halfling luck special trait.
 	 * @param {Actor} actor
@@ -515,19 +505,21 @@ export class ItemUtils {
 	 * @param {boolean} commit whether to update at the end or not
 	 */
 	static async ensureFlags(item, { commit=true } = {}) {
-		const flags = this.ensureDataFlags(item?.data);
+		const flags = this.createFlags(item?.data);
+		if (!flags) return;
+		item.data.flags.betterRolls5e = flags;
 
 		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
 		if (commit) {
-			await item.update({"flags.betterRolls5e": flags}, { diff: true });
+			await item.data.update({ "flags.betterRolls5e": flags }, { diff: true });
 		}
 	}
 
 	/**
-	 * Assigns the data flags to the item. Does not save to database.
+	 * Creates the flags that should be assigned to the the item. Does not save to database.
 	 * @param {*} itemData The item.data property to be updated
 	 */
-	static ensureDataFlags(itemData) {
+	static createFlags(itemData) {
 		if (!itemData || CONFIG.betterRolls5e.validItemTypes.indexOf(itemData.type) == -1) { return; }
 
 		// Initialize flags
@@ -555,8 +547,7 @@ export class ItemUtils {
 			flags.quickDamage.altValue = newQuickDamageAltValues;
 		}
 
-		itemData.flags.betterRolls5e = flags;
-		return itemData.flags.betterRolls5e;
+		return flags;
 	}
 
 	static placeTemplate(item) {
@@ -571,6 +562,7 @@ export class ItemUtils {
 	 * Finds if an item has a Maestro sound on it, in order to determine whether or not the dice sound should be played.
 	 */
 	static hasMaestroSound(item) {
+		if (!item) return false;
 		return (isMaestroOn() && item.data.flags.maestro && item.data.flags.maestro.track) ? true : false;
 	}
 
