@@ -1096,7 +1096,8 @@ export class CustomItemRoll {
 	 * and returns the spell configuration, or "error" on forced close.
 	 */
 	async configureSpell() {
-		let { item, actor } = this;
+		const item = await this.getItem();
+		const actor = await this.getActor();
 		let spellLevel = null;
 		let consume = false;
 		let placeTemplate = false;
@@ -1144,10 +1145,9 @@ export class CustomItemRoll {
 			spellLevel = getProperty(actor, `data.data.spells.pact.level`) || spellLevel;
 		}
 
-		if (spellLevel !== data.level) {
-			this.item = item.clone({ "data.level": spellLevel }, { keepId: true });
-		}
-
+		// Update params and item data temporarily
+		// We use data.update() so that changes are maintained even through clone() uses
+		item.data.update({ 'data.castedLevel': spellLevel });
 		this.params.slotLevel = spellLevel;
 		this.params.consumeSpellLevel = consume;
 		return { lvl: spellLevel, consume, placeTemplate };
@@ -1188,8 +1188,12 @@ export class CustomItemRoll {
 	 */
 	async consume() {
 		const actor = await this.getActor();
-		const item = await this.getItem();
-		if (!item) return;
+		const baseItem = await this.getItem();
+		if (!baseItem) return;
+
+		// The error message for spells uses the item level, so we tweak so that it reports correctly
+		const itemLevel = this.params.slotLevel ?? baseItem.data.data.level;
+		const item = baseItem.clone({ "data.level": itemLevel }, { keepId: true });
 
 		let actorUpdates = {};
 		let itemUpdates = {};

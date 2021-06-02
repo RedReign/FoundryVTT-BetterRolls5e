@@ -757,8 +757,8 @@ export class ItemUtils {
 				data.isAttack = data.actionType === "attack";
 
 				properties = [
+					dnd5e.spellLevels[data.castedLevel ?? data.level],
 					dnd5e.spellSchools[data.school],
-					dnd5e.spellLevels[data.level],
 					data.components.ritual ? i18n("Ritual") : null,
 					activation,
 					duration,
