@@ -131,7 +131,7 @@ export class BetterRollsChatCard {
 	 */
 	async _setupOverlayButtons(html) {
 		// Add reroll button
-		if (this.roll?.canRepeat() && BRSettings.chatDamageButtonsEnabled) {
+		if (this.roll?.canRepeat()) {
 			const templateHeader = await renderTemplate("modules/betterrolls5e/templates/red-overlay-header.html");
 			html.find(".card-header").append($(templateHeader));
 		}
