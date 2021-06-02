@@ -1144,12 +1144,12 @@ export class CustomItemRoll {
 			spellLevel = getProperty(actor, `data.data.spells.pact.level`) || spellLevel;
 		}
 
-		if (spellLevel !== item.data.data.level) {
-			item = item.constructor.createOwned(mergeObject(duplicate(item.data), {"data.level": spellLevel}, {inplace: false}), actor);
+		if (spellLevel !== data.level) {
+			this.item = item.clone({ "data.level": spellLevel }, { keepId: true });
 		}
 
 		this.params.slotLevel = spellLevel;
-		this.params.consumeSpellSlot = consume;
+		this.params.consumeSpellLevel = consume;
 		return { lvl: spellLevel, consume, placeTemplate };
 	}
 
@@ -1215,7 +1215,7 @@ export class CustomItemRoll {
 		let output = "success";
 
 		// Identify what's being consumed. Note that ammo is consumed elsewhere
-		const consumeSpellSlot = this.params.consumeSpellSlot;
+		const consumeSpellLevel = this.params.consumeSpellLevel;
 		const consumeResource = hasResource && request.resource && itemData.consume.type !== "ammo";
 		const consumeUsage = request.use && hasUses;
 		const consumeQuantity = request.quantity || autoDestroy;
@@ -1231,8 +1231,8 @@ export class CustomItemRoll {
 		}
 
 		// Consume resources and spell slots
-		if (consumeResource || consumeSpellSlot) {
-			const updates = item._getUsageUpdates({ consumeResource, consumeSpellSlot });
+		if (consumeResource || consumeSpellLevel) {
+			const updates = item._getUsageUpdates({ consumeResource, consumeSpellLevel });
 			if (!updates) return "error";
 			mergeUpdates(updates);
 		}
