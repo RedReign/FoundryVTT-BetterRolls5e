@@ -635,6 +635,12 @@ export class CustomItemRoll {
 			placeTemplate = config.placeTemplate;
 		}
 
+		// Update item casted level property to match the slot level
+		// This ensure things like the property list showing the correct spell level
+		if (item && this.params.slotLevel) {
+			item.data.update({ 'data.castedLevel': this.params.slotLevel });
+		}
+
 		// Show Advantage/Normal/Disadvantage dialog if enabled
 		const hasAttack = this.fields.some(
 			(f) => ["attack", "check", "custom", "tool", "toolcheck"].includes(f[0]) && !f[1]?.rollState);
@@ -1145,9 +1151,7 @@ export class CustomItemRoll {
 			spellLevel = getProperty(actor, `data.data.spells.pact.level`) || spellLevel;
 		}
 
-		// Update params and item data temporarily
-		// We use data.update() so that changes are maintained even through clone() uses
-		item.data.update({ 'data.castedLevel': spellLevel });
+		// Update params temporarily
 		this.params.slotLevel = spellLevel;
 		this.params.consumeSpellLevel = consume;
 		return { lvl: spellLevel, consume, placeTemplate };
