@@ -354,7 +354,7 @@ export class BetterRollsChatCard {
 			}
 
 			const roll = this.roll;
-			const item = roll.item;
+			const item = await roll.getItem();
 			const targets = game.user.targets.size ? game.user.targets : Utils.getTargetTokens();
 			window.DAE.doEffects(item, true, targets, {
 				whisper: false,
