@@ -1227,6 +1227,7 @@ export class CustomItemRoll {
 		const consumeResource = hasResource && request.resource && itemData.consume.type !== "ammo";
 		const consumeUsage = request.use && hasUses;
 		const consumeQuantity = request.quantity || autoDestroy;
+		const consumeCharge = request.charge && recharge.value;
 
 		// Check for consuming quantity, but not uses
 		if (request.quantity && !consumeUsage) {
@@ -1234,8 +1235,9 @@ export class CustomItemRoll {
 		}
 
 		// Check for consuming charge ("Action Recharge")
-		if (request.charge) {
-			if (!recharge.charged) { ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name})); return "error"; }
+		if (consumeCharge && !recharge.charged) {
+			ui.notifications.warn(game.i18n.format("DND5E.ItemNoUses", {name: item.name}));
+			return "error";
 		}
 
 		// Consume resources and spell slots
