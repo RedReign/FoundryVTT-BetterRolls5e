@@ -605,6 +605,7 @@ export class CustomItemRoll {
 		Hooks.call("preRollItemBetterRolls", this);
 
 		const item  = await this.getItem();
+		const actor = await this.getActor();
 
 		// Pre-update item configurations which updates the params
 		if (item) {
@@ -674,16 +675,32 @@ export class CustomItemRoll {
 			this.params.rollState = rollState;
 		}
 
-		// Set ammo, and then consume it if so
+		// Check if we need to consume ammo. It will be consumed later (so that attack calcs work properly)
 		// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
-		if (item && await this.consumeAmmo() === "error") {
-			this.error = true;
-			return;
+		let ammo = null;
+		let ammoUpdate = {};
+		if (actor && item) {
+			const request = this.params.useCharge;
+			const consume = item.data.data.consume;
+			if (request.resource && consume?.type === "ammo") {
+				ammo = actor.items.get(consume.target);
+				const usage = item._getUsageUpdates({consumeResource: true});
+				if (usage === false) {
+					this.error = true;
+					return;
+				}
+				ammoUpdate = usage.resourceUpdates || {};
+			}
 		}
 
 		// Process all fields (this builds the data entries)
 		for (const field of this.fields) {
 			await this._processField(field);
+		}
+
+		// Consume ammo (now that fields have been processed)
+		if (ammo && !isObjectEmpty(ammoUpdate)) {
+			await ammo.update(ammoUpdate);
 		}
 
 		// Post-build item updates
@@ -1155,32 +1172,6 @@ export class CustomItemRoll {
 		this.params.slotLevel = spellLevel;
 		this.params.consumeSpellLevel = consume;
 		return { lvl: spellLevel, consume, placeTemplate };
-	}
-
-	/**
-	 * Consumes resources assigned on an item, if that resource is ammo.
-	 * If Item5e.rollAttack() ever allows a consumeAmmo flag, we can remove it.
-	 */
-	async consumeAmmo() {
-		const actor = await this.getActor();
-		const item = await this.getItem();
-		if (!item) return;
-
-		const request = this.params.useCharge;
-		const consume = item.data.data.consume;
-
-		// Consume Ammo (if configured to do so)
-		if (request.resource && consume?.type === "ammo") {
-			const ammo = actor.items.get(consume.target);
-			const usage = item._getUsageUpdates({consumeResource: true});
-			if (usage === false) return "error";
-			const ammoUpdate = usage.resourceUpdates || {};
-			if (ammo && !isObjectEmpty(ammoUpdate)) {
-				await ammo.update(ammoUpdate);
-			}
-		}
-
-		return "success";
 	}
 
 	/**
