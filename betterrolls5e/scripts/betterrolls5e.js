@@ -466,6 +466,7 @@ export function BetterRolls() {
 		function command() {
 			const vanilla = mode === 'vanillaRoll' ? "true" : "false";
 			return `
+// HotbarUses5e: ActorID="${item.actorId}" ItemID="${item.data._id}"
 const actorId = "${item.actorId}";
 const itemId = "${item.data._id}";
 const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
