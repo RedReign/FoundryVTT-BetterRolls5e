@@ -255,7 +255,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			}
 
 			if (itemData.formula.length > 0) {
-				const otherString = contextEnabled && flags.quickOther.context || "br5e.settings.otherFormula";
+				const otherString = contextEnabled && flags.quickOther.context || i18n("br5e.settings.otherFormula");
 
 				buttons.append(
 					createButton({ content: otherString, action: "otherFormulaRoll" })
@@ -276,7 +276,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			);
 
 			if (itemData.formula && itemData.formula.length > 0) {
-				const otherString = (contextEnabled && flags.quickOther.context) || "br5e.settings.otherFormula";
+				const otherString = (contextEnabled && flags.quickOther.context) || i18n("br5e.settings.otherFormula");
 
 				buttons.append(
 					createButton({ content: otherString, action: "otherFormulaRoll" })
