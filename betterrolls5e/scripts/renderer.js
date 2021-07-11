@@ -358,7 +358,7 @@ export class Renderer {
 		// Render apply active effects button if enabled
 		const actor = await data.getActor();
 		const item = await data.getItem();
-		const hasEffects = item?.data.effects.find(ae => !ae.transfer);
+		const hasEffects = item?.data.effects.find(ae => !ae.data.transfer);
 		if (window.DAE && hasEffects && data.settings.applyActiveEffects) {
 			const button = await renderModuleTemplate("red-ae-button.html");
 			templates.push(button);
