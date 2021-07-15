@@ -821,11 +821,7 @@ export class CustomItemRoll {
 		const chatData = {
 			user: game.user.id,
 			content: await this.render(),
-			speaker: {
-				actor: actor?.id,
-				token: actor?.token,
-				alias: actor?.token?.name || actor?.name
-			},
+			speaker: ChatMessage.getSpeaker({ item, actor }),
 			flags: this._getFlags(),
 			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
 			...Utils.getWhisperData(rollMode),
