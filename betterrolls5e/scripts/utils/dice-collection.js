@@ -45,13 +45,13 @@ export class DiceCollection {
 	 * Currently its just Dice So Nice (if enabled).
 	 * @returns {Promise<boolean>} if there were dice in the pool
 	 */
-	async flush(hasMaestroSound=false) {
-		// Get and reset immediately (stacking flush calls shouldn't reroll more dice)
+	async flush({ hasMaestroSound=false, whisperData=null }) {
+		// Get and reset immediately (stacking flush calls shouldn't roll more dice)
 		const pool = this.pop();
 
 		const hasDice = pool.dice.length > 0;
 		if (game.dice3d && hasDice) {
-			const wd = Utils.getWhisperData();
+			const wd = whisperData ?? Utils.getWhisperData();
 			await game.dice3d.showForRoll(pool, game.user, true, wd.whisper, wd.blind || false);
 		}
 

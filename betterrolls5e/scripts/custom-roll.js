@@ -831,7 +831,7 @@ export class CustomItemRoll {
 		};
 
 		await Hooks.callAll("messageBetterRolls", this, chatData);
-		await this.dicePool.flush(hasMaestroSound);
+		await this.dicePool.flush({ hasMaestroSound, whisperData: chatData });
 
 		// Send the chat message
 		if (createMessage) {
@@ -902,7 +902,7 @@ export class CustomItemRoll {
 			const hasMaestroSound = ItemUtils.hasMaestroSound(item);
 			const content = await this.render();
 			await Hooks.callAll("updateBetterRolls", this, content);
-			await this.dicePool.flush(hasMaestroSound);
+			await this.dicePool.flush({ hasMaestroSound });
 			await chatMessage.update({
 				...flattenObject({ flags: duplicate(this._getFlags()) }),
 				content,
