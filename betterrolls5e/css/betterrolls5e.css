@@ -11,6 +11,7 @@
 .dnd5e.chat-card .card-header img {
 	flex: 0 0 36px;
 	margin-right: 5px;
+	object-fit: contain;
 }
 
 .dnd5e.chat-card.red-full .card-header {
