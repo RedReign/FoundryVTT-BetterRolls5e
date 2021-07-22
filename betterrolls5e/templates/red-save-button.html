@@ -2,6 +2,6 @@
     <button data-action="save" data-ability="{{ability}}">
         {{ localize "br5e.buttons.saveDC" }}
         <span {{#if hideDC}}class="hideSave"{{/if}} style="display:inline;line-height:inherit;">{{dc}}</span>
-        {{ abilityLabel }}
+        {{ abilityLabel }} {{#if context}}[{{ context }}]{{/if}}
     </button>
 </div>

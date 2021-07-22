@@ -1,5 +1,6 @@
 import { dnd5e, i18n, ActorUtils, ItemUtils, Utils } from "./utils/index.js";
 import { BRSettings, getSettings } from "./settings.js";
+import { isSave } from "./betterrolls5e.js";
 
 /**
  * Roll type for advantage/disadvantage/etc
@@ -403,11 +404,12 @@ export class RollFields {
 	 * Generates the html for a save button to be inserted into a chat message. Players can click this button to perform a roll through their controlled token.
 	 * @returns {import("./renderer.js").ButtonSaveProps}
 	 */
-	static constructSaveButton({ item, abl = null, dc = null, settings }) {
+	static constructSaveButton({ item, abl = null, dc = null, context = null, settings }) {
 		const actor = item?.actor;
 		const saveData = ItemUtils.getSave(item);
 		if (abl) { saveData.ability = abl; }
 		if (dc) { saveData.dc = dc; }
+		if (context) { saveData.context = context; }
 
 		// Determine whether the DC should be hidden
 		const hideDCSetting = getSettings(settings).hideDC;
@@ -464,6 +466,16 @@ export class RollFields {
 			case 'savedc':
 				// {customAbl: null, customDC: null}
 				return [RollFields.constructSaveButton({ settings, ...data })];
+			case 'ammosavedc':
+				// {customAbl: null, customDC: null}
+				if (!data.ammo || !isSave(data.ammo)) return [];
+
+				return [RollFields.constructSaveButton({
+					settings,
+					...data,
+					item: data.ammo,
+					context: `${data.ammo.name}`
+				 })];
 			case 'custom':
 				const { title, rolls, formula, rollState } = data;
 				const rollData = Utils.getRollData({ item, actor });
