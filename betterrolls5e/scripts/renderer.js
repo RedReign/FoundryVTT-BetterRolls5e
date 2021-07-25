@@ -358,10 +358,27 @@ export class Renderer {
 		// Render apply active effects button if enabled
 		const actor = await data.getActor();
 		const item = await data.getItem();
-		const hasEffects = item?.data.effects.find(ae => !ae.data.transfer);
-		if (window.DAE && hasEffects && data.settings.applyActiveEffects) {
-			const button = await renderModuleTemplate("red-ae-button.html");
-			templates.push(button);
+
+		if (window.DAE && data.settings.applyActiveEffects) {
+			const hasEffects = item?.data.effects.find(ae => !ae.data.transfer);
+			if (hasEffects) {
+				const button = await renderModuleTemplate("red-ae-button.html");
+				templates.push(button);
+			}
+
+			const hasAmmo = item?.data.data.consume?.type === "ammo" && item?.data.data.consume?.target;
+			if (hasAmmo) {
+				const ammo = actor.items.get(item.data.data.consume.target);
+				const ammoHasEffects = ammo?.data.effects.find(ae => !ae.data.transfer);
+
+				if (ammoHasEffects) {
+					const button = await renderModuleTemplate("red-ae-button.html", {
+						ammo: true,
+						context: ammo.data.name
+					});
+					templates.push(button);
+				}
+			}
 		}
 
 		return renderModuleTemplate("red-fullroll.html", {

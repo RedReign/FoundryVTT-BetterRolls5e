@@ -354,7 +354,10 @@ export class BetterRollsChatCard {
 			}
 
 			const roll = this.roll;
-			const item = await roll.getItem();
+			let item = await roll.getItem();
+			if (data.ammo) {
+				item = item.parent.items.get(item.data.data.consume.target)
+			}
 			const targets = game.user.targets.size ? game.user.targets : Utils.getTargetTokens();
 			window.DAE.doEffects(item, true, targets, {
 				whisper: false,

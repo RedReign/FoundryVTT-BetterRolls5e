@@ -1069,6 +1069,7 @@ export class CustomItemRoll {
 			if (flagIsTrue("quickAttack") && isAttack(item)) { fields.push(["attack"]); }
 			if (flagIsTrue("quickCheck") && isCheck(item)) { fields.push(["check"]); }
 			if (flagIsTrue("quickSave") && isSave(item)) { fields.push(["savedc"]); }
+			if (flagIsTrue("quickSave")) { fields.push(["ammosavedc"]); }
 
 			const quickDamage = Object.entries(getFlag("quickDamage") ?? []);
 			if (quickDamage.length > 0) {
