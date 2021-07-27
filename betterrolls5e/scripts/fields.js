@@ -260,6 +260,9 @@ export class RollFields {
 
 		// Require a formula to continue
 		if (!formula) {
+			if (isVersatile) {
+				ui.notifications.warn('br5e.error.noVersatile', { localize: true });
+			}
 			return null;
 		}
 
