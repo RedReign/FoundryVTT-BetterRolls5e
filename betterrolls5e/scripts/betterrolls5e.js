@@ -471,6 +471,11 @@ const actorId = "${item.actorId}";
 const itemId = "${item.data._id}";
 const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
 const itemToRoll = actorToRoll?.items.get(itemId);
+
+if (game.modules.get('itemacro')?.active && itemToRoll.hasMacro()) {
+	return itemToRoll.executeMacro();
+}
+
 if (!itemToRoll) {
 	return ui.notifications.warn(game.i18n.format("DND5E.ActionWarningNoItem", { item: itemId, name: actorToRoll?.name ?? "[Not Found]" }));
 }
