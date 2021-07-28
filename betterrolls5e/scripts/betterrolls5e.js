@@ -467,20 +467,7 @@ export function BetterRolls() {
 			const vanilla = mode === 'vanillaRoll' ? "true" : "false";
 			return `
 // HotbarUses5e: ActorID="${item.actorId}" ItemID="${item.data._id}"
-const actorId = "${item.actorId}";
-const itemId = "${item.data._id}";
-const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
-const itemToRoll = actorToRoll?.items.get(itemId);
-
-if (game.modules.get('itemacro')?.active && itemToRoll.hasMacro()) {
-	return itemToRoll.executeMacro();
-}
-
-if (!itemToRoll) {
-	return ui.notifications.warn(game.i18n.format("DND5E.ActionWarningNoItem", { item: itemId, name: actorToRoll?.name ?? "[Not Found]" }));
-}
-
-return itemToRoll.roll({ vanilla: ${vanilla} });
+return BetterRolls.rollFromMacro("${item.actorId}", "${item.data._id}", ${vanilla})
 `;
 		}
 		let macro = game.macros.find(m => (m.name === item.name) && (m.command === command));
@@ -495,6 +482,21 @@ return itemToRoll.roll({ vanilla: ${vanilla} });
 		}
 		game.user.assignHotbarMacro(macro, slot);
 	};
+
+	async function rollFromMacro(actorId, itemId, vanilla) {
+		const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
+		const itemToRoll = actorToRoll?.items.get(itemId);
+
+		if (!itemToRoll) {
+			return ui.notifications.warn(game.i18n.format("DND5E.ActionWarningNoItem", { item: itemId, name: actorToRoll?.name ?? "[Not Found]" }));
+		}
+		
+		if (game.modules.get('itemacro')?.active && itemToRoll.hasMacro()) {
+			return itemToRoll.executeMacro();
+		}
+
+		return itemToRoll.roll({ vanilla });
+	}
 
 	// Performs a vanilla roll message, searching the actor and item by ID.
 	function vanillaRoll(actorId, itemId) {
@@ -569,6 +571,7 @@ return itemToRoll.roll({ vanilla: ${vanilla} });
 	return {
 		version: Utils.getVersion(),
 		assignMacro:assignMacro,
+		rollFromMacro:rollFromMacro,
 		vanillaRoll:vanillaRoll,
 		quickRoll:quickRoll,
 		quickRollById:quickRollById,
