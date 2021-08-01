@@ -2,7 +2,8 @@ import { getSettings } from "../settings.js";
 import { libWrapper } from "./libWrapper.js";
 
 import { d20Roll } from "../../../../systems/dnd5e/module/dice.js";
-import { i18n } from "../utils/utils.js";
+import { dnd5e, i18n, Utils } from "../utils/index.js";
+import { CustomRoll } from "../custom-roll.js";
 
 export function patchCoreFunctions() {
 	if (!libWrapper.is_fallback && !libWrapper.version_at_least?.(1, 4, 0)) {
@@ -14,8 +15,12 @@ export function patchCoreFunctions() {
 		return;
 	}
 
+	const actorProto = "CONFIG.Actor.documentClass.prototype";
 	override("CONFIG.Item.documentClass.prototype.roll", itemRoll);
 	override("CONFIG.Item.documentClass.prototype.rollAttack", itemRollAttack);
+	libWrapper.register("betterrolls5e", `${actorProto}.rollSkill`, actorRollSkill, "MIXED");
+	libWrapper.register("betterrolls5e", `${actorProto}.rollAbilityTest`, actorRollAbilityTest, "MIXED");
+	libWrapper.register("betterrolls5e", `${actorProto}.rollAbilitySave`, actorRollAbilitySave, "MIXED");
 }
 
 /**
@@ -53,7 +58,7 @@ function itemRoll(defaultRoll, options) {
 	}
 
 	const preset = altKey ? 1 : 0;
-	const card = BetterRolls.rollItem(item, { preset, event: options.event });
+	const card = window.BetterRolls.rollItem(item, { preset, event: options.event });
 	return card.toMessage({ rollMode, createMessage });
 }
 
@@ -120,4 +125,36 @@ async function itemRollAttack(defaultRoll, options) {
 	const roll = await d20Roll(rollConfig);
 	if ( roll === false ) return null;
 	return roll;
+}
+
+async function actorRollSkill(original, skillId, options) {
+	const roll = await original.call(this, skillId, {
+		fastForward: true,
+		chatMessage: false,
+		...Utils.eventToAdvantage(options.event ?? event),
+	});
+
+	CustomRoll._fullRollActor(this, i18n(dnd5e.skills[skillId]), roll);
+}
+
+async function actorRollAbilityTest(original, ability, options) {
+	const roll = await original.call(this, ability, {
+		fastForward: true,
+		chatMessage: false,
+		...Utils.eventToAdvantage(options.event ?? event),
+	});
+
+	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.check")}`;
+	CustomRoll._fullRollActor(this, label, roll);
+}
+
+async function actorRollAbilitySave(original, ability, options) {
+	const roll = await original.call(this, ability, {
+		fastForward: true,
+		chatMessage: false,
+		...Utils.eventToAdvantage(options.event ?? event),
+	});
+
+	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.save")}`;
+	CustomRoll._fullRollActor(this, label, roll);
 }

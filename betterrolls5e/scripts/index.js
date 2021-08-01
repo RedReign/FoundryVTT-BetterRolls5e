@@ -1,6 +1,6 @@
 import { BRSettings } from "./settings.js";
 import { BetterRollsChatCard } from "./chat-message.js";
-import { addItemSheetButtons, BetterRolls, changeRollsToDual } from "./betterrolls5e.js";
+import { addItemSheetButtons, BetterRolls } from "./betterrolls5e.js";
 import { ItemUtils, Utils } from "./utils/index.js";
 import { addBetterRollsContent } from "./item-tab.js";
 import { patchCoreFunctions } from "./patching/index.js"
@@ -13,8 +13,9 @@ Hooks.on("renderActorSheet5e", (app, html, data) => {
 
 	// this timeout allows other modules to modify the sheet before we do
 	setTimeout(() => {
-		game.settings.get("betterrolls5e", "rollButtonsEnabled") ? addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer) : null;
-		changeRollsToDual(app.object, html, data);
+		if (game.settings.get("betterrolls5e", "rollButtonsEnabled")) {
+			addItemSheetButtons(app.object, html, data, triggeringElement, buttonContainer)
+		}
 	}, 0);
 });
 

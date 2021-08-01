@@ -119,15 +119,15 @@ export class Utils {
 	}
 
 	/**
-	 * Returns an {adv, disadv} object when given an event.
+	 * Returns an {advantage, disadvantage} object when given an event.
 	 */
 	static eventToAdvantage(ev={}) {
 		if (ev.shiftKey) {
-			return {adv:1, disadv:0};
+			return {advantage: 1, disadvantage:0};
 		} else if (ev.ctrlKey || ev.metaKey) {
-			return {adv:0, disadv:1};
+			return {advantage: 0, disadvantage:1};
 		} else {
-			return {adv:0, disadv:0};
+			return {advantage: 0, disadvantage:0};
 		}
 	}
 
@@ -136,19 +136,10 @@ export class Utils {
 	 * @param {object} param0
 	 * @returns {import("../fields.js").RollState}
 	 */
-	static getRollState({rollState=null, event=null, adv=null, disadv=null}={}) {
+	static getRollState({rollState=null, event=null, advantage=null, disadvantage=null, adv=null, disadv=null}={}) {
 		if (rollState) return rollState;
-
-		if (adv || disadv) {
-			adv = adv || 0;
-			disadv = disadv || 0;
-			if (adv > 0 || disadv > 0) {
-				if (adv > disadv) { return "highest"; }
-				else if (adv < disadv) { return "lowest"; }
-			} else {
-				return null;
-			}
-		}
+		if (advantage ?? adv) return "highest";
+		if (disadvantage ?? disadv) return "lowest";
 
 		if (event) {
 			const modifiers = Utils.eventToAdvantage(event);

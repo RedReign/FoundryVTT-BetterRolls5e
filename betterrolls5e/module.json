@@ -8,7 +8,7 @@
   "flags": {},
   "version": "1.5.6",
   "minimumCoreVersion": "0.8.6",
-  "compatibleCoreVersion": "0.8.8",
+  "compatibleCoreVersion": "0.8.9",
   "scripts": [
     "greensock/dist/gsap.min.js"
   ],

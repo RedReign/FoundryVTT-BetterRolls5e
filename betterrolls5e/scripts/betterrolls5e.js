@@ -33,9 +33,10 @@ export function isCheck(item) {
 export function addItemContent(actor, html,
 	triggeringElement = ".item .item-name h4",
 	buttonContainer = ".item-properties",
-	itemButton = ".item .rollable") {
-	(game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) ? addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer) : null;
-	itemButton ? changeRollsToDual(actor, html, null, {itemButton}) : null;
+) {
+	if (game.settings.get("betterrolls5e", "rollButtonsEnabled") && triggeringElement && buttonContainer) {
+		addItemSheetButtons(actor, html, null, triggeringElement, buttonContainer)
+	}
 }
 
 const dnd5e = DND5E;
@@ -359,105 +360,6 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			new CustomItemRoll(item, params, fields).toMessage();
 		}
 	});
-}
-
-/**
- * Replaces the sheet's d20 rolls for ability checks, skill checks, and saving throws into dual d20s.
- * Also replaces the default button on items with a "standard" roll.
- */
-export function changeRollsToDual (actor, html, data, params) {
-	if (actor && actor.permission < 3) { return; }
-
-	let paramRequests = mergeObject({
-			abilityButton: '.ability-name',
-			checkButton: '.ability-mod',
-			saveButton: '.ability-save',
-			skillButton: '.skill-name',
-			itemButton: '.item:not(.magic-item) .item-image',
-			singleAbilityButton: true
-		},params || {});
-
-	function getAbility(target) {
-		let ability = null;
-		for (let i=0; i <= 3; i++) {
-			ability = target.getAttribute("data-ability");
-			if (ability) { break; }
-			else {
-				target = target.parentElement;
-			}
-		}
-		return ability;
-	}
-
-	// Assign new action to ability check button
-	let abilityName = html.find(paramRequests.abilityButton);
-	if (abilityName.length > 0 && paramRequests.singleAbilityButton === true) {
-		abilityName.off();
-		abilityName.click(event => {
-			event.preventDefault();
-			const ability = getAbility(event.currentTarget);
-			if (event.ctrlKey || event.metaKey) {
-				CustomRoll.rollAttribute(actor, ability, "check");
-			} else if (event.shiftKey) {
-				CustomRoll.rollAttribute(actor, ability, "save");
-			} else {
-				new Dialog({
-					title: `${i18n(dnd5e.abilities[ability])} ${i18n("Ability Roll")}`,
-					content: `<p><span style="font-weight: bold;">${i18n(dnd5e.abilities[ability])}:</span> ${i18n("What type of roll?")}</p>`,
-					buttons: {
-						test: {
-							label: i18n("Ability Check"),
-							callback: async () => { CustomRoll.rollAttribute(actor, ability, "check"); }
-						},
-						save: {
-							label: i18n("Saving Throw"),
-							callback: async () => { CustomRoll.rollAttribute(actor, ability, "save"); }
-						}
-					}
-				}).render(true);
-			}
-		});
-	}
-
-	// Assign new action to ability button
-	let checkName = html.find(paramRequests.checkButton);
-	if (checkName.length > 0) {
-		checkName.off();
-		checkName.addClass("rollable");
-		checkName.click(async event => {
-			event.preventDefault();
-			let ability = getAbility(event.currentTarget),
-				abl = actor.data.data.abilities[ability],
-				params = Utils.eventToAdvantage(event);
-			CustomRoll.rollAttribute(actor, ability, "check", params);
-		});
-	}
-
-	// Assign new action to save button
-	let saveName = html.find(paramRequests.saveButton);
-	if (saveName.length > 0) {
-		saveName.off();
-		saveName.addClass("rollable");
-		saveName.click(async event => {
-			event.preventDefault();
-			let ability = getAbility(event.currentTarget),
-				abl = actor.data.data.abilities[ability],
-				params = Utils.eventToAdvantage(event);
-			CustomRoll.rollAttribute(actor, ability, "save", params);
-		});
-	}
-
-	// Assign new action to skill button
-	let skillName = html.find(paramRequests.skillButton);
-	if (skillName.length > 0) {
-		skillName.off();
-		skillName.click(async event => {
-			event.preventDefault();
-			let params = Utils.eventToAdvantage(event);
-			let skill = event.currentTarget.parentElement.getAttribute("data-skill");
-			CustomRoll.rollSkill(actor, skill, params);
-		});
-	}
 }
 
 /** Frontend for macros */
