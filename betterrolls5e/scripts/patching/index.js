@@ -128,20 +128,28 @@ async function itemRollAttack(defaultRoll, options) {
 }
 
 async function actorRollSkill(original, skillId, options) {
+	if (options?.chatMessage === false) {
+		return original.call(this, skillId, options);
+	}
+
 	const roll = await original.call(this, skillId, {
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options.event ?? event),
+		...Utils.eventToAdvantage(options?.event ?? event),
 	});
 
 	CustomRoll._fullRollActor(this, i18n(dnd5e.skills[skillId]), roll);
 }
 
 async function actorRollAbilityTest(original, ability, options) {
+	if (options?.chatMessage === false) {
+		return original.call(this, ability, options);
+	}
+
 	const roll = await original.call(this, ability, {
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options.event ?? event),
+		...Utils.eventToAdvantage(options?.event ?? event),
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.check")}`;
@@ -149,10 +157,14 @@ async function actorRollAbilityTest(original, ability, options) {
 }
 
 async function actorRollAbilitySave(original, ability, options) {
+	if (options?.chatMessage === false) {
+		return original.call(this, ability, options);
+	}
+
 	const roll = await original.call(this, ability, {
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options.event ?? event),
+		...Utils.eventToAdvantage(options?.event ?? event),
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.save")}`;
