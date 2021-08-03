@@ -138,12 +138,12 @@ export class Utils {
 	 */
 	static getRollState({rollState=null, event=null, advantage=null, disadvantage=null, adv=null, disadv=null}={}) {
 		if (rollState) return rollState;
-		if (advantage ?? adv) return "highest";
-		if (disadvantage ?? disadv) return "lowest";
+		if (advantage || adv) return "highest";
+		if (disadvantage || disadv) return "lowest";
 
 		if (event) {
 			const modifiers = Utils.eventToAdvantage(event);
-			if (modifiers.adv || modifiers.disadv) {
+			if (modifiers.advantage || modifiers.disadvantage) {
 				return Utils.getRollState(modifiers);
 			}
 		}

@@ -125,8 +125,8 @@ let defaultParams = {
 	useCharge: {},
 	useTemplate: false,
 	event: null,
-	adv: 0,
-	disadv: 0,
+	advantage: 0,
+	disadvantage: 0,
 	consume: true
 };
 
