@@ -244,7 +244,7 @@ class Settings {
 	}
 
 	get damageContextPlacement() {
-		return getBRSetting("damageContextPlacement");
+		return getBRSetting("damageContextPlacement") || "0";
 	}
 
 	get contextReplacesTitle() {

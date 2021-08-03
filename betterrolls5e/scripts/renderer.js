@@ -249,7 +249,7 @@ export class Renderer {
 			if (contextPlacement === titlePlacement && pushedTitle) {
 				const title = labels[contextPlacement][0];
 				labels[contextPlacement][0] = (title ? title + " " : "") + `(${contextStr})`;
-			} else {
+			} else if (contextPlacement !== "0") {
 				labels[contextPlacement].push(contextStr);
 			}
 		}
