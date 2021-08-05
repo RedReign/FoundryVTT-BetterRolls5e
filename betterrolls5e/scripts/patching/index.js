@@ -18,6 +18,7 @@ export function patchCoreFunctions() {
 	const actorProto = "CONFIG.Actor.documentClass.prototype";
 	override("CONFIG.Item.documentClass.prototype.roll", itemRoll);
 	override("CONFIG.Item.documentClass.prototype.rollAttack", itemRollAttack);
+	override("CONFIG.Item.documentClass.prototype.rollToolCheck", itemRollToolCheck);
 	libWrapper.register("betterrolls5e", `${actorProto}.rollSkill`, actorRollSkill, "MIXED");
 	libWrapper.register("betterrolls5e", `${actorProto}.rollAbilityTest`, actorRollAbilityTest, "MIXED");
 	libWrapper.register("betterrolls5e", `${actorProto}.rollAbilitySave`, actorRollAbilitySave, "MIXED");
@@ -127,12 +128,24 @@ async function itemRollAttack(defaultRoll, options) {
 	return roll;
 }
 
+async function itemRollToolCheck(original, options) {
+	if (options?.chatMessage === false) {
+		return original.call(this, options);
+	}
+
+	const evt = options?.event ?? event;
+	const preset = evt?.altKey ? 1 : 0;
+	const card = window.BetterRolls.rollItem(this, { preset, event: evt });
+	return card.toMessage();
+}
+
 async function actorRollSkill(original, skillId, options) {
 	if (options?.chatMessage === false) {
 		return original.call(this, skillId, options);
 	}
 
 	const roll = await original.call(this, skillId, {
+		...options,
 		fastForward: true,
 		chatMessage: false,
 		...Utils.eventToAdvantage(options?.event ?? event),
@@ -147,6 +160,7 @@ async function actorRollAbilityTest(original, ability, options) {
 	}
 
 	const roll = await original.call(this, ability, {
+		...options,
 		fastForward: true,
 		chatMessage: false,
 		...Utils.eventToAdvantage(options?.event ?? event),
@@ -162,6 +176,7 @@ async function actorRollAbilitySave(original, ability, options) {
 	}
 
 	const roll = await original.call(this, ability, {
+		...options,
 		fastForward: true,
 		chatMessage: false,
 		...Utils.eventToAdvantage(options?.event ?? event),
