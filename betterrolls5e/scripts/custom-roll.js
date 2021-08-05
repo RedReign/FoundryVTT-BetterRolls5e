@@ -785,11 +785,12 @@ export class CustomItemRoll {
 			flags["dnd5e.roll.itemId"] = this.itemId;
 		}
 
-		// If the Item was destroyed in the process of displaying its card - embed the item data in the chat message
-		// We retrieve the private internal cached actor/items so that this method can stay synchronous,
-		// If we destroyed the last item, the actor/item should have been retrieved anyways.
+		// If the item was destroyed in the process of displaying its card or is a temp item with non-transfer effects,
+		// then embed the item data in the chat message
+		// We retrieve the private internal cached actor/items so that this method can stay synchronous.
 		const { _actor, _item } = this;
-		if ((_item?.data.type === "consumable") && !_actor.items.has(_item.id) ) {
+		const wasConsumed = (_item?.data.type === "consumable") && !_actor.items.has(_item.id);
+		if (wasConsumed || (_item && !_item.id && _item?.data.effects.find(ae => !ae.data.transfer))) {
 			flags["dnd5e.itemData"] = _item.data;
 		}
 
@@ -1181,7 +1182,7 @@ export class CustomItemRoll {
 	async consume() {
 		const actor = await this.getActor();
 		const baseItem = await this.getItem();
-		if (!baseItem) return;
+		if (!baseItem || !baseItem.id) return;
 
 		// The error message for spells uses the item level, so we tweak so that it reports correctly
 		const itemLevel = this.params.slotLevel ?? baseItem.data.data.level;
