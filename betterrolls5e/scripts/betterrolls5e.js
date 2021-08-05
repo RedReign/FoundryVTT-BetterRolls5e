@@ -72,7 +72,7 @@ CONFIG.betterRolls5e = {
 			quickDamage: { type: "Array", value: [], altValue: [], context: [] },
 			quickVersatile: { type: "Boolean", value: false, altValue: false },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
-			quickCharges: { type: "Boolean", value: {use: false, resource: true}, altValue: {use: false, resource: true} },
+			quickCharges: { type: "Boolean", value: {use: true, resource: true}, altValue: {use: true, resource: true} },
 			quickTemplate: { type: "Boolean", value: true, altValue: true },
 			quickOther: { type: "Boolean", value: true, altValue: true, context: "" },
 			quickFlavor: { type: "Boolean", value: true, altValue: true },
