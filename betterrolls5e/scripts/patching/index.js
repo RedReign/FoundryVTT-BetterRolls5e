@@ -151,7 +151,7 @@ async function actorRollSkill(original, skillId, options) {
 		...Utils.eventToAdvantage(options?.event ?? event),
 	});
 
-	CustomRoll._fullRollActor(this, i18n(dnd5e.skills[skillId]), roll);
+	return CustomRoll._fullRollActor(this, i18n(dnd5e.skills[skillId]), roll);
 }
 
 async function actorRollAbilityTest(original, ability, options) {
@@ -167,7 +167,7 @@ async function actorRollAbilityTest(original, ability, options) {
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.check")}`;
-	CustomRoll._fullRollActor(this, label, roll);
+	return CustomRoll._fullRollActor(this, label, roll);
 }
 
 async function actorRollAbilitySave(original, ability, options) {
@@ -183,5 +183,5 @@ async function actorRollAbilitySave(original, ability, options) {
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.save")}`;
-	CustomRoll._fullRollActor(this, label, roll);
+	return CustomRoll._fullRollActor(this, label, roll);
 }

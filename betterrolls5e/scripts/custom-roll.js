@@ -43,14 +43,16 @@ export class CustomRoll {
 	static async _fullRollActor(actor, title, formula, rollType, params) {
 		// Entries to show for the render
 		const rollState = Utils.getRollState({ event, ...params });
-		return new CustomItemRoll(actor, { rollState }, [
+		const roll = new CustomItemRoll(actor, { rollState }, [
 			['header', { title }],
 			['check', {
 				formula,
 				critThreshold: params?.critThreshold,
 				rollType
 			}]
-		]).toMessage();
+		]);
+		await roll.toMessage();
+		return roll;
 	}
 
 	/**
@@ -761,8 +763,6 @@ export class CustomItemRoll {
 			if ('formula' in field[1] && field[1].formula?.formula) {
 				newField[1].formula = field[1].formula.formula;
 			}
-			console.log(field);
-			console.log(newField);
 			return newField;
 		});
 
