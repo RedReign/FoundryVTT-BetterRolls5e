@@ -760,7 +760,7 @@ export class CustomItemRoll {
 		// Transform rolls in fields into formulas when saving into flags
 		const fields = this.fields.map((field) => {
 			const newField = deepClone(field);
-			if ('formula' in field[1] && field[1].formula?.formula) {
+			if (field[1] && 'formula' in field[1] && field[1].formula?.formula) {
 				newField[1].formula = field[1].formula.formula;
 			}
 			return newField;
