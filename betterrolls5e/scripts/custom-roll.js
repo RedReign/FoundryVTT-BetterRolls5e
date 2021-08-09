@@ -879,7 +879,7 @@ export class CustomItemRoll {
 	 * This repeat does not consume uses, and overrides advantage/disadvantage / prompts
 	 * @returns {Promise<CustomItemRoll>}
 	 */
-	async repeat() {
+	async repeat(options={}) {
 		if (!this.canRepeat()) return;
 
 		// Show error messages if the item/actor was deleted

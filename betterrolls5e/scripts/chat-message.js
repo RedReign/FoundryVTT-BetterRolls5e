@@ -119,7 +119,7 @@ export class BetterRollsChatCard {
 				const binding = getBinding(li);
 				return binding && binding.roll.canRepeat();
 			},
-			callback: li => getBinding(li)?.roll.repeat()
+			callback: li => getBinding(li)?.roll.repeat({ event })
 		})
 	}
 
@@ -347,7 +347,7 @@ export class BetterRollsChatCard {
 				await this.roll.update();
 			}
 		} else if (action === "repeat") {
-			await this.roll.repeat();
+			await this.roll.repeat({ event });
 		} else if (action === "apply-active-effects") {
 			if (!window.DAE) {
 				return ui.notifications.warn(i18n("br5e.error.noDAE"));
