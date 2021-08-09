@@ -895,7 +895,7 @@ export class CustomItemRoll {
 		const fields = duplicate(this.fields.filter(f => !invalidFields.includes(f[0])));
 		const params = duplicate(this.params);
 		params.consume = false;
-		params.rollState = Utils.getRollState({ event });
+		params.rollState = Utils.getRollState(options);
 
 		const newRoll = new CustomItemRoll(subject, params, fields);
 		await newRoll.toMessage();

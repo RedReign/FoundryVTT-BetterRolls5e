@@ -129,18 +129,18 @@ async function itemRollAttack(defaultRoll, options) {
 }
 
 async function itemRollToolCheck(original, options) {
-	if (options?.chatMessage === false) {
+	if (options?.chatMessage === false || options?.vanilla) {
 		return original.call(this, options);
 	}
 
 	const evt = options?.event ?? event;
 	const preset = evt?.altKey ? 1 : 0;
-	const card = window.BetterRolls.rollItem(this, { preset, event: evt });
+	const card = window.BetterRolls.rollItem(this, { preset, ...options });
 	return card.toMessage();
 }
 
 async function actorRollSkill(original, skillId, options) {
-	if (options?.chatMessage === false) {
+	if (options?.chatMessage === false || options?.vanilla) {
 		return original.call(this, skillId, options);
 	}
 
@@ -148,14 +148,14 @@ async function actorRollSkill(original, skillId, options) {
 		...options,
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options?.event ?? event),
+		...Utils.getRollState(options),
 	});
 
 	return CustomRoll._fullRollActor(this, i18n(dnd5e.skills[skillId]), roll);
 }
 
 async function actorRollAbilityTest(original, ability, options) {
-	if (options?.chatMessage === false) {
+	if (options?.chatMessage === false || options?.vanilla) {
 		return original.call(this, ability, options);
 	}
 
@@ -163,7 +163,7 @@ async function actorRollAbilityTest(original, ability, options) {
 		...options,
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options?.event ?? event),
+		...Utils.getRollState(options),
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.check")}`;
@@ -171,7 +171,7 @@ async function actorRollAbilityTest(original, ability, options) {
 }
 
 async function actorRollAbilitySave(original, ability, options) {
-	if (options?.chatMessage === false) {
+	if (options?.chatMessage === false || options?.vanilla) {
 		return original.call(this, ability, options);
 	}
 
@@ -179,7 +179,7 @@ async function actorRollAbilitySave(original, ability, options) {
 		...options,
 		fastForward: true,
 		chatMessage: false,
-		...Utils.eventToAdvantage(options?.event ?? event),
+		...Utils.getRollState(options),
 	});
 
 	const label = `${i18n(dnd5e.abilities[ability])} ${i18n("br5e.chat.save")}`;
