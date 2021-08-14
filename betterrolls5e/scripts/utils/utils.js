@@ -43,10 +43,8 @@ export class Utils {
 	 * @returns {string}
 	 */
 	static getDiceSound(hasMaestroSound=false) {
-		const has3DDiceSound = game.dice3d ? game.settings.get("dice-so-nice", "settings").enabled : false;
-		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds")
-
-		if (playRollSounds && !has3DDiceSound && !hasMaestroSound) {
+		const playRollSounds = game.settings.get("betterrolls5e", "playRollSounds");
+		if (playRollSounds && !game.dice3d?.isEnabled() && !hasMaestroSound) {
 			return CONFIG.sounds.dice;
 		}
 
