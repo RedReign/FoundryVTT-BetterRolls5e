@@ -52,7 +52,7 @@ export class DiceCollection {
 		const hasDice = pool.dice.length > 0;
 		if (game.dice3d && hasDice) {
 			const wd = whisperData ?? Utils.getWhisperData();
-			await game.dice3d.showForRoll(pool, game.user, true, wd.whisper, wd.blind || false);
+			await game.dice3d.showForRoll(pool, game.user, true, wd.whisper, wd.blind || false, null, wd.speaker);
 		}
 
 		const sound = Utils.getDiceSound(hasMaestroSound);
