@@ -358,7 +358,14 @@ export class BetterRollsChatCard {
 			if (data.ammo) {
 				item = item.parent.items.get(item.data.data.consume.target)
 			}
-			const targets = game.user.targets.size ? game.user.targets : Utils.getTargetTokens();
+
+			let targets
+			if (item.data.data?.target?.type === 'self' && canvas.tokens?.controlled?.length) {
+				targets = Utils.getTargetTokens();
+			} else {
+				targets = game.user.targets.size ? game.user.targets : Utils.getTargetTokens();
+			}
+
 			window.DAE.doEffects(item, true, targets, {
 				whisper: false,
 				spellLevel: roll.params.slotLevel,
