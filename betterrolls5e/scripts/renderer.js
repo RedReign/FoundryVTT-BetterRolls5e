@@ -198,7 +198,7 @@ export class Renderer {
 
 	/**
 	 * Renders damage html data
-	 * @param {DamageDataProps} properties
+	 * @param {DamageDataProps | CritDataProps} properties
 	 */
 	static async renderDamage(properties, settings) {
 		const { damageType, baseRoll, critRoll, context } = properties;
@@ -233,6 +233,9 @@ export class Renderer {
 		} else if (!titleString && CONFIG.DND5E.damageTypes[damageType]) {
 			// Show "Damage" prefix if it's a damage roll
 			titleString += i18n("br5e.chat.damage");
+		} else if (properties.type === "crit") {
+			// 5e crits don't have a damage type, so we mark as critical and have the user figure it out
+			titleString += i18n("br5e.critString.choices.5");
 		}
 
 		// Title

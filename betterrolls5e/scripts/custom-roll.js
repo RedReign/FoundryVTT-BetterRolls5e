@@ -1105,9 +1105,7 @@ export class CustomItemRoll {
 			}
 			if (flagIsTrue("quickTemplate")) { useTemplate = true; }
 
-			if (quickDamage.length > 0 && brFlags.critDamage?.value) {
-				fields.push(["crit"]);
-			}
+			fields.push(["crit"]);
 		} else {
 			//console.log("Request made to Quick Roll item without flags!");
 			fields.push(["desc"]);

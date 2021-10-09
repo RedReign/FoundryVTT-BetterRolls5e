@@ -419,9 +419,8 @@ export class ItemUtils {
 	static getCritThreshold(item) {
 		if (!item) return null;
 
-		// Get item crit. If its a weapon or spell, it might have a DND flag to change the range
-		// We take the smallest item crit value
-		let itemCrit = Number(getProperty(item, "data.flags.betterRolls5e.critRange.value")) || 20;
+		// Get item crit, favoring the smaller between it and the actor's crit threshold
+		let itemCrit = item.data.data.critical.threshold || 20;
 		const characterCrit = ActorUtils.getCritThreshold(item.actor, item.data.type);
 		return Math.min(20, characterCrit, itemCrit);
 	}
@@ -657,7 +656,7 @@ export class ItemUtils {
 		}
 
 		// If critBehavior = 3, maximize base and maximize crit dice
-		// Need to get the difference because we're not able to change the base roll from here so we add it to the critical roll 
+		// Need to get the difference because we're not able to change the base roll from here so we add it to the critical roll
 		else if (critBehavior === "3") {
 			let maxDifference = new Roll(baseFormula).evaluate({maximize:true}).total - baseTotal;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();

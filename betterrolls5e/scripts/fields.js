@@ -326,12 +326,7 @@ export class RollFields {
 
 		// If no formula was given, derive from the item
 		if (!formula && item) {
-			const itemData = item.data.data;
-			const flags = item.data.flags.betterRolls5e;
-			const damageIndex = Number(options.damageIndex ?? flags.critDamage?.value);
-			formula = itemData.damage.parts[damageIndex][0];
-			damageType = damageType ?? itemData.damage.parts[damageIndex][1];
-			context = context ?? flags.quickDamage.context?.[damageIndex];
+			formula = item.data.data.critical?.damage;
 		}
 
 		// Require a formula to continue
