@@ -75,8 +75,6 @@ CONFIG.betterRolls5e = {
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		equipmentFlags: {
-			critRange: { type: "String", value: "" },
-			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -88,8 +86,6 @@ CONFIG.betterRolls5e = {
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		featFlags: {
-			critRange: { type: "String", value: "" },
-			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -103,7 +99,6 @@ CONFIG.betterRolls5e = {
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		toolFlags: {
-			critRange: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickCheck: { type: "Boolean", value: true, altValue: true },
 			quickProperties: { type: "Boolean", value: true, altValue: true },
@@ -111,8 +106,6 @@ CONFIG.betterRolls5e = {
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		consumableFlags: {
-			critRange: { type: "String", value: "" },
-			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },

@@ -7,7 +7,7 @@ export async function migrate() {
 	try {
 		// Migration for the crit damage change
 		if (isNewerVersion("1.6.12", lastVersion)) {
-			numItemsUpdated += await iterAndUpdateItems((item, actor) => {
+			numItemsUpdated += await iterAndUpdateItems((item) => {
 				const updates = {};
 				const brFlags = item.data.flags.betterRolls5e;
 				if (!brFlags) return;
@@ -18,8 +18,8 @@ export async function migrate() {
 				}
 
 				const critDamage = brFlags.critDamage?.value;
-				if (critDamage && !item.data.data.critical.critDamage && critDamage !== "0") {
-					updates["data.critical.damage"] = critDamage;
+				if (critDamage && !item.data.data.critical.critDamage) {
+					updates["data.critical.damage"] = item.data.data.damage.parts[critDamage]?.[0];
 				}
 
 				if ("critRange" in brFlags) {
