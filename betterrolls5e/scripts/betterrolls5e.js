@@ -49,8 +49,6 @@ CONFIG.betterRolls5e = {
 	validItemTypes: ["weapon", "spell", "equipment", "feat", "tool", "consumable"],
 	allFlags: {
 		weaponFlags: {
-			critRange: { type: "String", value: "" },
-			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", get value() { return getQuickDescriptionDefault() }, get altValue() { return getQuickDescriptionDefault() } },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },
@@ -64,8 +62,6 @@ CONFIG.betterRolls5e = {
 			quickPrompt: { type: "Boolean", value: false, altValue: false },
 		},
 		spellFlags: {
-			critRange: { type: "String", value: "" },
-			critDamage: { type: "String", value: "" },
 			quickDesc: { type: "Boolean", value: true, altValue: true },
 			quickAttack: { type: "Boolean", value: true, altValue: true },
 			quickSave: { type: "Boolean", value: true, altValue: true },

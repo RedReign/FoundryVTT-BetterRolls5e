@@ -14,7 +14,7 @@ class Settings {
 		// Special non-config flag to handle migrations
 		game.settings.register("betterrolls5e", "migration", {
 			config: false,
-			default: { status: false, version: Utils.getVersion() },
+			default: { status: false, version: "1.0.0" },
 			scope: 'world',
 			type: Object
 		});

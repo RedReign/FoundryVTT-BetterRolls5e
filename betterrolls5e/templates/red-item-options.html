@@ -1,33 +1,4 @@
 <div class="tab item-betterRolls" data-group="primary" data-tab="betterRolls5e">
-
-	{{#if flags.betterRolls5e.critRange}}
-	<div class="form-group">
-		<label>{{localize "br5e.settings.critThreshold"}}</label>
-		<input
-			type="number"
-			name="flags.betterRolls5e.critRange.value"
-			value="{{flags.betterRolls5e.critRange.value}}"
-			data-dtype="{{flags.betterRolls5e.critRange.type}}"
-		/>
-	</div>
-	{{/if}}
-
-	{{#if flags.betterRolls5e.critDamage}}
-	<div class="form-group select">
-		<label>{{localize "br5e.settings.critDamage.name"}}</label>
-		<select name="flags.betterRolls5e.critDamage.value">
-			{{#select flags.betterRolls5e.critDamage.value}}
-			<option value="">{{ localize "DND5E.None" }}</option>
-	  		{{#each flags.betterRolls5e.quickDamage.value as |part i| }}
-			<option value="{{i}}">
-				{{i}}: {{lookup ../flags.betterRolls5e.quickDamage.context i}} ({{lookup ../DND5E.damageTypes (lookup (lookup ../item.data.data.damage.parts i) 1)}})
-			</option>
-			{{/each}}
-			{{/select}}
-	</select>
-	</div>
-	{{/if}}
-
 	<h3 class="form-header">
 		<label>{{localize "br5e.settings.quickRollsLabel"}}</label>
 	</h3>
