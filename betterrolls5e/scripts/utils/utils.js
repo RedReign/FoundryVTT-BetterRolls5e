@@ -420,7 +420,7 @@ export class ItemUtils {
 		if (!item) return null;
 
 		// Get item crit, favoring the smaller between it and the actor's crit threshold
-		let itemCrit = item.data.data.critical.threshold || 20;
+		let itemCrit = item.data.data.critical?.threshold || 20;
 		const characterCrit = ActorUtils.getCritThreshold(item.actor, item.data.type);
 		return Math.min(20, characterCrit, itemCrit);
 	}

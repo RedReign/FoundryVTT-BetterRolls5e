@@ -13,12 +13,12 @@ export async function migrate() {
 				if (!brFlags) return;
 
 				const critRange = brFlags.critRange?.value;
-				if (critRange && !item.data.data.critical.threshold) {
+				if (critRange && !item.data.data.critical?.threshold) {
 					updates["data.critical.threshold"] = Number(critRange) || null;
 				}
 
 				const critDamage = brFlags.critDamage?.value;
-				if (critDamage && !item.data.data.critical.critDamage) {
+				if (critDamage && !item.data.data.critical?.critDamage) {
 					updates["data.critical.damage"] = item.data.data.damage.parts[critDamage]?.[0];
 				}
 
