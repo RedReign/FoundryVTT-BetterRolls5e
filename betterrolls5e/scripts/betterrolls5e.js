@@ -363,7 +363,7 @@ const itemId = "${item.data._id}";
 const actorToRoll = canvas.tokens.placeables.find(t => t.actor?.id === actorId)?.actor ?? game.actors.get(actorId);
 const itemToRoll = actorToRoll?.items.get(itemId);
 
-if (game.modules.get('itemacro')?.active && itemToRoll.hasMacro()) {
+if (game.modules.get('itemacro')?.active && itemToRoll?.hasMacro() && game.settings.get('itemacro', 'defaultmacro')) {
 	return itemToRoll.executeMacro();
 }
 

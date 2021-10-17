@@ -61,7 +61,9 @@
     }
   ],
   "packs": [],
-  "system": ["dnd5e"],
+  "system": [
+    "dnd5e"
+  ],
   "dependencies": [],
   "socket": true,
   "manifest": "https://raw.githubusercontent.com/RedReign/FoundryVTT-BetterRolls5e/master/betterrolls5e/module.json",
