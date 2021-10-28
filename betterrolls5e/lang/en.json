@@ -62,6 +62,8 @@
 	"br5e.critBehavior.choices.2": "Roll Base Damage, Max Critical",
 	"br5e.critBehavior.choices.3": "Max Base & Max Critical Damage",
 	"br5e.critBehavior.choices.4": "Max Base Damage, Roll Critical Damage",
+	"br5e.critBehavior.choices.5": "Double Base Damage Dice Value",
+	"br5e.critBehavior.choices.6": "Double Base Damage Dice Value and Modifiers",
 
 	"br5e.critString.name": "Critical Indicator",
 	"br5e.critString.hint": "Determines how criticals are labeled. Appears as text to the right of the critical damage roll. Only works on Better Rolls.",

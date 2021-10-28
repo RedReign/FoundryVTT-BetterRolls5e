@@ -269,14 +269,27 @@ export class RollFields {
 		// Assemble roll data and defer to the general damage construction
 		try {
 			const rollFormula = [formula, ...parts].join("+");
-			const baseRoll = new Roll(rollFormula, rollData).roll();
+			var baseRoll = new Roll(rollFormula, rollData).roll();
 			const total = baseRoll.total;
 
 			// Roll crit damage if relevant
 			let critRoll = null;
 			if (damageIndex !== "other") {
-				if (isCrit && critBehavior !== "0") {
-					critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, extraCritDice });
+				if (isCrit){
+					//if critBehavior = 5, double the base damage dice value
+					//modifies the formula of the base roll to be base dice x 2 and rerolls it
+					if (critBehavior === "5") {
+						var formulaSplit = formula.split("+");
+						var newFormula = formulaSplit[0] + " * 2 +" + formulaSplit.slice(1).join("+");
+						baseRoll = new Roll(newFormula, rollData).roll();
+					}
+					if (critBehavior === "6") {
+						critRoll = baseRoll;
+					}
+					//If critbehavior != 5, 6 or 0, roll crit damage dice based on choosen option
+					else if (critBehavior !== "0") {
+						critRoll = ItemUtils.getCritRoll(baseRoll.formula, total, { settings, extraCritDice });
+					}
 				}
 			}
 

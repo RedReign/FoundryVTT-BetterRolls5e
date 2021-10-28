@@ -60,6 +60,8 @@
 	"br5e.critBehavior.choices.1": "Rolar dados de Dano Crítico",
 	"br5e.critBehavior.choices.2": "Rolar Dano Base, Maximizar Crítico",
 	"br5e.critBehavior.choices.3": "Maximizar Base e Dano Crítico",
+	"br5e.critBehavior.choices.5": "Dobrar o valor do Dado de Dano Base",
+	"br5e.critBehavior.choices.6": "Dobrar o valor do Dado de Dano Base e dos Modificadores",
 
 	"br5e.critString.name": "Indicador Crítico",
 	"br5e.critString.hint": "Determina como os críticos são rotulados. Aparece como texto à direita da rolagem de dano crítico. Funciona apenas com Rolagens Melhores.",
