@@ -611,7 +611,7 @@ export class CustomItemRoll {
 
 		// Pre-update item configurations which updates the params
 		if (item) {
-			await ItemUtils.ensureFlags(item, { commit: true });
+			await ItemUtils.ensureFlags(item);
 
 			// Set up preset but only if there aren't fields
 			if (!this.fields || this.fields.length === 0) {

@@ -14,7 +14,7 @@ export async function addBetterRollsContent(app, protoHtml) {
 	if (CONFIG.betterRolls5e.validItemTypes.indexOf(item.data.type) == -1) { return; }
 
 	// Initialize flags. Don't commit to avoid a nested re-render
-	await ItemUtils.ensureFlags(item, { commit: false });
+	await ItemUtils.ensureFlags(item);
 
 	let html = protoHtml;
 

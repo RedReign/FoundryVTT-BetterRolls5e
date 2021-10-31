@@ -488,19 +488,13 @@ export class ItemUtils {
 
 	/**
 	 * Ensures that better rolls flag data is set on the item if applicable.
-	 * Performs an item update if anything was set and commit is true
-	 * @param {Item} itemData item to update
-	 * @param {boolean} commit whether to update at the end or not
+	 * Does not perform an item update, only assigns to data
+	 * @param {Item} item item to update flags for
 	 */
-	static async ensureFlags(item, { commit=true } = {}) {
+	static async ensureFlags(item) {
 		const flags = this.createFlags(item?.data);
 		if (!flags) return;
 		item.data.flags.betterRolls5e = flags;
-
-		// Save the updates. Foundry checks for diffs to avoid unnecessary updates
-		if (commit) {
-			await item.data.update({ "flags.betterRolls5e": flags }, { diff: true });
-		}
 	}
 
 	/**
