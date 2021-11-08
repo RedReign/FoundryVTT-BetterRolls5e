@@ -217,6 +217,7 @@ export class CustomItemRoll {
 	}
 
 	set item(item) {
+		ItemUtils.ensureFlags(item);
 		this._item = item;
 		this.itemId = item.id;
 		this.actor = item?.actor;
@@ -271,6 +272,7 @@ export class CustomItemRoll {
 		}
 
 		this._item = item; // store a backup so we don't need to fetch again
+		ItemUtils.ensureFlags(item);
 		return item;
 	}
 
@@ -611,8 +613,6 @@ export class CustomItemRoll {
 
 		// Pre-update item configurations which updates the params
 		if (item) {
-			await ItemUtils.ensureFlags(item);
-
 			// Set up preset but only if there aren't fields
 			if (!this.fields || this.fields.length === 0) {
 				this.params.preset = this.params.preset ?? 0;
@@ -641,7 +641,7 @@ export class CustomItemRoll {
 		// Update item casted level property to match the slot level
 		// This ensure things like the property list showing the correct spell level
 		if (item && this.params.slotLevel) {
-			item.data.update({ 'data.castedLevel': this.params.slotLevel });
+			item.data.data.castedLevel = this.params.slotLevel;
 		}
 
 		// Show Advantage/Normal/Disadvantage dialog if enabled

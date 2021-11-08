@@ -491,7 +491,7 @@ export class ItemUtils {
 	 * Does not perform an item update, only assigns to data
 	 * @param {Item} item item to update flags for
 	 */
-	static async ensureFlags(item) {
+	static ensureFlags(item) {
 		const flags = this.createFlags(item?.data);
 		if (!flags) return;
 		item.data.flags.betterRolls5e = flags;
