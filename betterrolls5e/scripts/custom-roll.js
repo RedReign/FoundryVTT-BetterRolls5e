@@ -568,7 +568,7 @@ export class CustomItemRoll {
 
 		// Add more rolls if necessary
 		while (multiroll.entries?.length < numRolls) {
-			const roll = multiroll.entries[0].roll.reroll();
+			const roll = multiroll.entries[0].roll.reroll({ async: false });
 			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20], multiroll.bonus));
 			this.dicePool.push(roll);
 		}
@@ -839,7 +839,7 @@ export class CustomItemRoll {
 			...Utils.getWhisperData(rollMode),
 
 			// If not blank, D&D will try to modify the card...
-			roll: new Roll("0").roll()
+			roll: new Roll("0").roll({ async: false })
 		};
 
 		await Hooks.callAll("messageBetterRolls", this, chatData);

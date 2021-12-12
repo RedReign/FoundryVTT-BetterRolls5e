@@ -640,30 +640,30 @@ export class ItemUtils {
 		if (!critRoll) return null;
 
 		critRoll.alter(1, extraCritDice ?? 0);
-		critRoll.roll();
+		critRoll.roll({async: false});
 
 		const { critBehavior } = getSettings(settings);
 
 		// If critBehavior = 2, maximize base dice
 		if (critBehavior === "2") {
-			critRoll = new Roll(critRoll.formula).evaluate({maximize:true});
+			critRoll = new Roll(critRoll.formula).evaluate({maximize:true, async: false});
 		}
 
 		// If critBehavior = 3, maximize base and maximize crit dice
 		// Need to get the difference because we're not able to change the base roll from here so we add it to the critical roll
 		else if (critBehavior === "3") {
-			let maxDifference = new Roll(baseFormula).evaluate({maximize:true}).total - baseTotal;
+			let maxDifference = new Roll(baseFormula).evaluate({maximize:true, async: false}).total - baseTotal;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = new Roll(newFormula).evaluate({maximize:true});
+			critRoll = new Roll(newFormula).evaluate({maximize:true, async: false});
 		}
 
 		// If critBehavior = 4, maximize base dice and roll crit dice
 		// Need to get the difference because we're not able to change the base roll from here so we add it to the critical roll
 		else if (critBehavior === "4") {
-			let maxRoll = new Roll(baseFormula).evaluate({maximize:true});
+			let maxRoll = new Roll(baseFormula).evaluate({maximize:true, async: false});
 			let maxDifference = maxRoll.total - baseTotal;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = new Roll(newFormula).evaluate();
+			critRoll = new Roll(newFormula).evaluate({async: false});
 		}
 
 		return critRoll;

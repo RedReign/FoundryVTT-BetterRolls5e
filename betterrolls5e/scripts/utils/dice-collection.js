@@ -6,7 +6,7 @@ import { Utils } from "./utils.js";
  */
 export class DiceCollection {
 	/** Roll object containing all the dice */
-	pool = new Roll("0").roll();
+	pool = new Roll("0").roll({async: false});
 
 	/**
 	 * Creates a new DiceCollection object
@@ -75,7 +75,7 @@ export class DiceCollection {
 	 */
 	pop() {
 		const pool = this.pool;
-		this.pool = new Roll("0").roll();
+		this.pool = new Roll("0").roll({async: false});
 		return pool;
 	}
 }

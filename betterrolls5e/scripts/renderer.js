@@ -288,8 +288,8 @@ export class Renderer {
 			damagebottom: labels[3],
 			formula: baseRoll?.formula ?? critRoll.formula,
 			damageType,
-			maxRoll: baseRoll ? new Roll(baseRoll.formula).evaluate({maximize:true}).total : null,
-			maxCrit: critRoll ? new Roll(critRoll.formula).evaluate({maximize:true}).total : null
+			maxRoll: baseRoll ? new Roll(baseRoll.formula).evaluate({maximize:true, async: false}).total : null,
+			maxCrit: critRoll ? new Roll(critRoll.formula).evaluate({maximize:true, async: false}).total : null
 		});
 	}
 
