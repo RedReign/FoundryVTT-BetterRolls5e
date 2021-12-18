@@ -340,7 +340,7 @@ async function addButtonsToItemLi(li, actor, buttonContainer) {
 			case 'otherFormulaRoll':
 				fields.push(["other"]); break;
 			case 'infoRoll':
-				fields.push(["header"], ["desc"]); params.consume = false; params.properties = true; break;
+				fields.push(["header"], ["desc"]); params.consume = false; params.properties = true; params.infoOnly = true; break;
 			case 'vanillaRoll':
 				item.roll({ vanilla: true });
 		}

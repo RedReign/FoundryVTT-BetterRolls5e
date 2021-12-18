@@ -129,7 +129,8 @@ let defaultParams = {
 	event: null,
 	advantage: 0,
 	disadvantage: 0,
-	consume: true
+	consume: true,
+	infoOnly: false,
 };
 
 /*
