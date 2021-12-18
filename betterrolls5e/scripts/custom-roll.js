@@ -130,7 +130,7 @@ let defaultParams = {
 	advantage: 0,
 	disadvantage: 0,
 	consume: true,
-	infoOnly: false
+	infoOnly: false,
 };
 
 /*
