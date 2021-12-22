@@ -618,8 +618,16 @@ export class ItemUtils {
 	static getBaseCritRoll(baseFormula) {
 		if (!baseFormula) return null;
 
-		const critFormula = baseFormula.replace(/[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g,"").concat();
-		let critRoll = new Roll(critFormula);
+		// Remove all flavor from the formula so we can use the regex
+		// In the future, go through the terms to determine the bonus crit damage instead
+		const strippedRoll = new Roll(baseFormula);
+		for (const term of strippedRoll.terms) {
+			if (term.options) term.options = {};
+		}
+
+		const critRegex = /[+-]+\s*(?:@[a-zA-Z0-9.]+|[0-9]+(?![Dd]))/g;
+		const critFormula = strippedRoll.formula.replace(critRegex, "").concat();
+		const critRoll = new Roll(critFormula);
 		if (critRoll.terms.length === 1 && typeof critRoll.terms[0] === "number") {
 			return null;
 		}
