@@ -1279,7 +1279,7 @@ export class CustomItemRoll {
 		// Destroy item if it gets consumed
 		if (itemUpdates["data.quantity"] === 0 && autoDestroy) {
 			output = "destroy";
-			await actor.deleteOwnedItem(item.id);
+			await actor.deleteEmbeddedDocuments("Item", [item.id]);
 		}
 
 		return output;
