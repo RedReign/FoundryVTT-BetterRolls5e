@@ -494,7 +494,7 @@ export class ItemUtils {
 	static ensureFlags(item) {
 		const flags = this.createFlags(item?.data);
 		if (!flags) return;
-		item.data.update( { flags: { betterRolls5e: flags } } );
+		item.data.flags.betterRolls5e = flags;
 	}
 
 	/**
