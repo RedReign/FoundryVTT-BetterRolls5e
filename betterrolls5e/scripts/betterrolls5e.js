@@ -162,21 +162,22 @@ const createButton = ({ content, action, value = null }) => (
 )
 
 async function addButtonsToItemLi(li, actor, buttonContainer) {
+	if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
+
 	const itemId = String(li.attr("data-item-id") ?? "");
 	if (!itemId) {
 		return;
 	}
 
 	const item = actor.items.get(itemId);
+	ItemUtils.ensureFlags(item);
+
 	const itemData = item.data.data;
 	const flags = item.data.flags.betterRolls5e;
 
 	// Check settings
 	const settings = getSettings();
 	const contextEnabled = settings.damageContextPlacement !== "0" ? true : false;
-
-	if (!li.hasClass("expanded")) return;  // this is a way to not continue if the items description is not shown, but its only a minor gain to do this while it may break this module in sheets that dont use "expanded"
-
 
 	// Create the buttons
 	let buttons = $(`<div class="item-buttons"></div>`);
