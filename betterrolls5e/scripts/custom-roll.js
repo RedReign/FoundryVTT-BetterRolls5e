@@ -266,8 +266,9 @@ export class CustomItemRoll {
 		}
 
 		const actor = await this.getActor();
-		const Item5e = game.dnd5e.entities.Item5e;
-		const item = storedData && actor ? Item5e.createOwned(storedData, actor) : actor?.items.get(this.itemId);
+		const item = storedData && actor
+			? await actor.createEmbeddedDocuments("Item", [storedData])[0]
+			: actor?.items.get(this.itemId);
 		if (item) {
 			console.info(`BetterRolls | Card loaded existing item data ${item.name}`);
 		}
