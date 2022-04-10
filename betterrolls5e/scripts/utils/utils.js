@@ -643,12 +643,12 @@ export class ItemUtils {
 	 * @param {number?} param2.critDice extra crit dice
 	 * @returns {Roll | null} the crit result, or null if there is no dice
 	 */
-	static getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
+	static async getCritRoll(baseFormula, baseTotal, {settings=null, extraCritDice=null}={}) {
 		let critRoll = ItemUtils.getBaseCritRoll(baseFormula);
 		if (!critRoll) return null;
 
 		critRoll.alter(1, extraCritDice ?? 0);
-		critRoll.roll({async: false});
+		await critRoll.roll({async: true});
 
 		const { critBehavior } = getSettings(settings);
 
@@ -671,7 +671,7 @@ export class ItemUtils {
 			let maxRoll = new Roll(baseFormula).evaluate({maximize:true, async: false});
 			let maxDifference = maxRoll.total - baseTotal;
 			let newFormula = critRoll.formula + "+" + maxDifference.toString();
-			critRoll = new Roll(newFormula).evaluate({async: false});
+			critRoll = await new Roll(newFormula).evaluate({async: true});
 		}
 
 		return critRoll;
