@@ -681,7 +681,7 @@ export class CustomItemRoll {
 		// Check if we need to consume ammo. It will be consumed later (so that attack calcs work properly)
 		// This consumes even if consuming is globally disabled. Roll repeats need to consume ammo.
 		let ammo = null;
-		let ammoUpdate = {};
+		let ammoUpdate = null;
 		if (actor && item) {
 			const request = this.params.useCharge;
 			const consume = item.data.data.consume;
@@ -692,7 +692,7 @@ export class CustomItemRoll {
 					this.error = true;
 					return;
 				}
-				ammoUpdate = usage.resourceUpdates || {};
+				ammoUpdate = usage.resourceUpdates || [];
 			}
 		}
 
@@ -702,9 +702,8 @@ export class CustomItemRoll {
 		}
 
 		// Consume ammo (now that fields have been processed)
-		if (ammo && !isObjectEmpty(ammoUpdate)) {
-			await ammo.update(ammoUpdate);
-		}
+		if (ammoUpdate?.length)
+			await actor?.updateEmbeddedDocuments("Item", ammoUpdate);
 
 		// Post-build item updates
 		if (item) {
@@ -1200,14 +1199,14 @@ export class CustomItemRoll {
 
 		let actorUpdates = {};
 		let itemUpdates = {};
-		let resourceUpdates = {};
+		let resourceUpdates = [];
 
 		// Merges update data from _getUsageUpdates() into the result dictionaries
 		// Note: mergeObject() also resolves "." nesting which is not what we want
 		function mergeUpdates(updates) {
 			actorUpdates = { ...actorUpdates, ...(updates.actorUpdates ?? {})};
 			itemUpdates = { ...itemUpdates, ...(updates.itemUpdates ?? {})};
-			resourceUpdates = { ...resourceUpdates, ...(updates.resourceUpdates ?? {})};
+			resourceUpdates.push(...(updates.resourceUpdates ?? []));
 		}
 
 		const itemData = item.data.data;
@@ -1271,10 +1270,8 @@ export class CustomItemRoll {
 		if (!isObjectEmpty(itemUpdates)) await item.update(itemUpdates);
 		if (!isObjectEmpty(actorUpdates)) await actor.update(actorUpdates);
 
-		if (!isObjectEmpty(resourceUpdates)) {
-			const resource = actor.items.get(itemData.consume?.target);
-			if (resource) await resource.update(resourceUpdates);
-		}
+		if (resourceUpdates.length)
+			await actor?.updateEmbeddedDocuments("Item", resourceUpdates);
 
 		// Destroy item if it gets consumed
 		if (itemUpdates["data.quantity"] === 0 && autoDestroy) {
