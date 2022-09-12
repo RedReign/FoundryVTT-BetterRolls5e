@@ -702,6 +702,8 @@ export class CustomItemRoll {
 		}
 
 		// Consume ammo (now that fields have been processed)
+		// ammoUpdate may be an array containing the actual object we're interested in at entry 0
+		if(ammo && Array.isArray(ammoUpdate)){ ammoUpdate = ammoUpdate[0]; }
 		if (ammo && !isObjectEmpty(ammoUpdate)) {
 			await ammo.update(ammoUpdate);
 		}
