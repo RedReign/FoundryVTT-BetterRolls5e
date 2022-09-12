@@ -1,6 +1,6 @@
 import { isSave } from "../betterrolls5e.js";
 import { getSettings } from "../settings.js";
-import { DND5E } from "../../../../systems/dnd5e/module/config.js";
+import { DND5E } from "../../../../systems/dnd5e/dnd5e.mjs";
 
 export const dnd5e = DND5E;
 

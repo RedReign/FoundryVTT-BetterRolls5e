@@ -1,4 +1,4 @@
-import { DND5E } from "../../../systems/dnd5e/module/config.js";
+import { DND5E } from "../../../systems/dnd5e/dnd5e.mjs";
 import { CustomRoll, CustomItemRoll } from "./custom-roll.js";
 import { i18n, Utils, ItemUtils } from "./utils/index.js";
 import { getSettings } from "./settings.js";
@@ -448,7 +448,7 @@ return itemToRoll.roll({ vanilla: ${vanilla} });
 		return actor;
 	}
 
-	Hooks._hooks.hotbarDrop = [(bar, data, slot) => {
+	Hooks.events.hotbarDrop[0].fn = (bar, data, slot) => {
 		if ( data.type !== "Item" ) return true;
 		if (event && event.altKey) { // not using isAlt(event) because it's not related to alternative roll
 			assignMacro(data, slot, "vanillaRoll");
@@ -456,7 +456,7 @@ return itemToRoll.roll({ vanilla: ${vanilla} });
 			assignMacro(data, slot, "id");
 		}
 		return false;
-	}].concat(Hooks._hooks.hotbarDrop || []);
+	}
 
 	return {
 		version: Utils.getVersion(),
