@@ -1,3 +1,5 @@
+This project is no longer being maintained. For alternatives, give https://github.com/MangoFVTT/fvtt-ready-set-roll-5e a try.
+
 # Better Rolls for 5e - A FoundryVTT Module
 A Foundry VTT module that replaces the built in rolling system for DnD5e. It allows for quick, compounded rolls for items, ability checks saving throws, and just about any roll you might want. Though initially a fork of Hooking's [Item Sheet Buttons](https://gitlab.com/hooking/foundry-vtt---item-sheet-buttons) module, it now includes several roll templates designed for Foundry's 5e sheets to increase speed of play. Felix's Chat Damage Buttons module has also been implemented into core Better Rolls. 
 
