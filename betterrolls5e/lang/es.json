@@ -93,6 +93,7 @@
     "br5e.error.rollEvaluation": "La evaluación de la tirada de dados falló: {msg}",
     "br5e.error.noDAE": "DAE es necesario para aplicar los efectos activos a los objetivos",
     "br5e.error.libWrapperMinVersion": "Better Rolls requiere libWrapper versión {version} o más reciente.",
+	"br5e.error.noVersatile": "Intentar hacer una tirada de daño versátil cuando no se ha establecido ninguna",
 
     "br5e.settings.critThreshold": "Umbral para Crítico",
     "br5e.settings.critDamage.name": "Daño Crítico Extra",
