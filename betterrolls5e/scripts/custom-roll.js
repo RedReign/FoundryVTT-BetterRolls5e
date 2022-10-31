@@ -423,7 +423,7 @@ export class CustomItemRoll {
 						const { formula, total } = entry.baseRoll;
 						const extraCritDice = entry.extraCritDice ?? baseExtraCritDice;
 						entry.extraCritDice = extraCritDice;
-						entry.critRoll = ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
+						entry.critRoll = await ItemUtils.getCritRoll(formula, total, { settings, extraCritDice });
 						entry._critBackup = entry.critRoll; // prevent undoing the crit
 						this.dicePool.push(entry.critRoll);
 					}
@@ -569,7 +569,7 @@ export class CustomItemRoll {
 
 		// Add more rolls if necessary
 		while (multiroll.entries?.length < numRolls) {
-			const roll = multiroll.entries[0].roll.reroll({ async: false });
+			const roll = await multiroll.entries[0].roll.reroll({ async: true });
 			multiroll.entries.push(Utils.processRoll(roll, multiroll.critThreshold, [20], multiroll.bonus));
 			this.dicePool.push(roll);
 		}
@@ -840,7 +840,7 @@ export class CustomItemRoll {
 			...Utils.getWhisperData(rollMode),
 
 			// If not blank, D&D will try to modify the card...
-			roll: new Roll("0").roll({ async: false })
+			roll: await new Roll("0").roll({ async: true })
 		};
 
 		await Hooks.callAll("messageBetterRolls", this, chatData);
